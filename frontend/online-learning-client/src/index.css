@@ -204,3 +204,18 @@
   .reveal { opacity: 1; transform: none; }
   .drift, .rise-in { animation: none; }
 }
+
+/* Hàng cuộn ngang kiểu "sàn": ẩn thanh cuộn nhưng vẫn vuốt/cuộn được */
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Số thứ tự lớn chỉ có viền (mục Xu hướng) */
+@utility rank-outline {
+  color: var(--color-surface-2);
+  -webkit-text-stroke: 3px var(--color-brand-600);
+  paint-order: stroke fill;
+}

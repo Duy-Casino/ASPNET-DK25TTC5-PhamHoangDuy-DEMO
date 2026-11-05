@@ -24,7 +24,7 @@
 
 | Tệp | Kịch bản |
 | --- | --- |
-| `public.spec.ts` | Hero: gõ tên → hiện trên chứng chỉ mẫu; tìm kiếm → chi tiết; lọc + sắp xếp lưu trên URL; mua khi chưa đăng nhập → chuyển tới đăng nhập; xác minh mã không tồn tại; `/quan-tri` yêu cầu đăng nhập |
+| `public.spec.ts` | Trang chủ kiểu sàn: banner chuyển trang, thanh lĩnh vực lọc đúng, ô xác minh chứng chỉ; tìm kiếm → chi tiết; lọc + sắp xếp lưu trên URL; mua khi chưa đăng nhập → chuyển tới đăng nhập; xác minh mã không tồn tại; `/quan-tri` yêu cầu đăng nhập |
 | `student.spec.ts` | Đăng ký → thêm giỏ → mã sai/đúng → kênh test (có thông báo "chưa thu tiền thật") → kết quả thành công → vào học (có video). Đăng ký khóa miễn phí → học hết bài → làm quiz đạt → nhận mã chứng chỉ → tải PDF → người lạ xác minh hợp lệ. Dashboard học viên mẫu → "Học tiếp" |
 | `staff.spec.ts` | Giảng viên: biểu đồ tổng quan, tạo khóa, chương, bài, bài kiểm tra, gửi duyệt bị chặn vì thiếu thông tin. Admin: duyệt khóa chờ duyệt → khóa xuất hiện công khai; trang giao dịch. Học viên bị chặn khỏi `/quan-tri` và `/giang-day` |
 | `mobile.spec.ts` | Không tràn ngang trên 6 trang; menu điện thoại; bộ lọc dạng sheet |

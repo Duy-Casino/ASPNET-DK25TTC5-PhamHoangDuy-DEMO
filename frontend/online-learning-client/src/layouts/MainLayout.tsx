@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
-import { LogOut, Menu, Search, ShoppingCart, User as UserIcon, X } from 'lucide-react'
+import { BookOpen, LogOut, Menu, Search, ShoppingCart, User as UserIcon, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { Avatar, Logo } from '../components/ui'
+import { useAsync } from '../hooks/useAsync'
 import { useAuth, useCart } from '../hooks/useAuth'
+import { catalogService } from '../services/api'
 
 function SearchBox({ onDone }: { onDone?: () => void }) {
   const navigate = useNavigate()
@@ -18,17 +20,20 @@ function SearchBox({ onDone }: { onDone?: () => void }) {
   }
 
   return (
-    <form role="search" onSubmit={submit} className="relative w-full">
+    <form role="search" onSubmit={submit} className="flex w-full overflow-hidden rounded-xl bg-white">
       <label htmlFor="site-search" className="sr-only">Tìm khóa học</label>
-      <Search className="pointer-events-none absolute top-1/2 left-4 size-5 -translate-y-1/2 text-ink-muted" aria-hidden="true" />
+      <Search className="ml-4 size-5 shrink-0 self-center text-ink-muted" aria-hidden="true" />
       <input
         id="site-search"
         type="search"
         value={q}
         onChange={(e) => setQ(e.target.value)}
-        placeholder="Tìm khóa học, giảng viên…"
-        className="min-h-11 w-full rounded-(--radius-control) bg-surface-2 pr-4 pl-12 text-base text-ink placeholder:text-ink-muted focus:bg-white focus:ring-4 focus:ring-brand-100 focus:outline-none"
+        placeholder="Bạn muốn học gì hôm nay?"
+        className="min-h-11 min-w-0 flex-1 bg-transparent px-3 text-base text-ink placeholder:text-ink-muted focus:outline-none"
       />
+      <button type="submit" className="border-l border-line px-4 text-sm font-bold text-ink transition-colors hover:bg-surface-2 sm:px-5">
+        Tìm kiếm
+      </button>
     </form>
   )
 }
@@ -117,25 +122,28 @@ function Header() {
     setMobileOpen(false)
   }, [location.pathname])
 
-  const navClass = ({ isActive }: { isActive: boolean }) =>
-    `rounded-(--radius-control) px-4 py-2 font-semibold transition-colors ${isActive ? 'bg-brand-50 text-brand-700' : 'text-ink hover:bg-surface-2'}`
+  const topLink = 'inline-flex min-h-11 items-center gap-2 rounded-(--radius-control) px-3 text-sm font-semibold text-white transition-colors hover:bg-white/15'
+  const myCourses = isAuthenticated ? '/hoc-vien' : '/dang-nhap'
 
   return (
-    <header className="sticky top-0 z-40 bg-white/95 backdrop-saturate-150">
-      <div className="container-page flex h-18 items-center gap-4">
-        <Logo />
-        <nav className="hidden items-center gap-1 lg:flex" aria-label="Chính">
-          <NavLink to="/khoa-hoc" className={navClass}>Khóa học</NavLink>
-          <NavLink to="/xac-minh" className={navClass}>Xác minh chứng chỉ</NavLink>
-        </nav>
-        <div className="hidden max-w-md flex-1 md:block">
+    <header className="sticky top-0 z-40 bg-brand-600 text-white">
+      <div className="container-page flex flex-wrap items-center gap-x-4 gap-y-3 py-3">
+        <Logo inverted />
+        {/* Ô tìm kiếm luôn hiện — xuống hàng riêng trên điện thoại */}
+        <div className="order-last w-full md:order-none md:w-auto md:max-w-xl md:flex-1">
           <SearchBox />
         </div>
-        <div className="ml-auto flex items-center gap-2">
-          <Link to="/gio-hang" className="relative rounded-(--radius-control) p-2.5 transition-colors hover:bg-surface-2 active:scale-95" aria-label={`Giỏ hàng, ${cart.count} khóa học`}>
+        <div className="ml-auto flex items-center gap-1">
+          <Link to="/xac-minh" className="hidden min-h-11 items-center rounded-(--radius-control) border-[1.5px] border-white px-4 text-sm font-bold text-white transition-colors hover:bg-white hover:text-brand-700 xl:inline-flex">
+            Xác minh chứng chỉ
+          </Link>
+          <Link to={myCourses} className="hidden min-h-11 items-center gap-2 rounded-(--radius-control) px-3 text-sm font-semibold text-white transition-colors hover:bg-white/15 lg:inline-flex">
+            <BookOpen className="size-5" aria-hidden="true" /> Khóa học của tôi
+          </Link>
+          <Link to="/gio-hang" className="relative rounded-(--radius-control) p-2.5 text-white transition-colors hover:bg-white/15 active:scale-95" aria-label={`Giỏ hàng, ${cart.count} khóa học`}>
             <ShoppingCart className="size-6" aria-hidden="true" />
             {cart.count > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 flex size-5 items-center justify-center rounded-full bg-accent-500 text-xs font-bold text-ink">
+              <span className="absolute -top-0.5 -right-0.5 flex size-5 items-center justify-center rounded-full bg-sun-300 text-xs font-bold text-ink">
                 {cart.count}
               </span>
             )}
@@ -143,14 +151,15 @@ function Header() {
           {!initializing && (isAuthenticated ? (
             <UserMenu />
           ) : (
-            <div className="hidden items-center gap-2 sm:flex">
-              <Link to="/dang-nhap" className="btn-ghost">Đăng nhập</Link>
-              <Link to="/dang-ky" className="btn-primary">Đăng ký</Link>
-            </div>
+            <span className="hidden items-center text-sm font-semibold sm:inline-flex">
+              <Link to="/dang-nhap" className={topLink}>Đăng nhập</Link>
+              <span aria-hidden="true" className="text-white/60">|</span>
+              <Link to="/dang-ky" className={topLink}>Đăng ký</Link>
+            </span>
           ))}
           <button
             type="button"
-            className="rounded-(--radius-control) p-2.5 hover:bg-surface-2 lg:hidden"
+            className="rounded-(--radius-control) p-2.5 text-white hover:bg-white/15 lg:hidden"
             aria-label={mobileOpen ? 'Đóng menu' : 'Mở menu'}
             aria-expanded={mobileOpen}
             onClick={() => setMobileOpen((o) => !o)}
@@ -160,60 +169,90 @@ function Header() {
         </div>
       </div>
       {mobileOpen && (
-        <div className="container-page flex flex-col gap-3 pb-6 lg:hidden">
-          <SearchBox onDone={() => setMobileOpen(false)} />
-          <NavLink to="/khoa-hoc" className={navClass}>Khóa học</NavLink>
-          <NavLink to="/xac-minh" className={navClass}>Xác minh chứng chỉ</NavLink>
+        <nav className="container-page flex flex-col gap-1 pb-4 lg:hidden" aria-label="Menu điện thoại">
+          <NavLink to="/khoa-hoc" className={topLink}>Tất cả khóa học</NavLink>
+          <NavLink to={myCourses} className={topLink}>Khóa học của tôi</NavLink>
+          <NavLink to="/xac-minh" className={topLink}>Xác minh chứng chỉ</NavLink>
           {!isAuthenticated && (
-            <div className="flex gap-2">
-              <Link to="/dang-nhap" className="btn-soft flex-1"><UserIcon className="size-4" aria-hidden="true" />Đăng nhập</Link>
-              <Link to="/dang-ky" className="btn-primary flex-1">Đăng ký</Link>
+            <div className="mt-2 flex gap-2">
+              <Link to="/dang-nhap" className="btn flex-1 border-[1.5px] border-white text-white"><UserIcon className="size-4" aria-hidden="true" />Đăng nhập</Link>
+              <Link to="/dang-ky" className="btn flex-1 bg-white text-brand-700">Đăng ký</Link>
             </div>
           )}
-        </div>
+        </nav>
       )}
     </header>
   )
 }
 
-/** Chân trang: mặt sau của tấm thẻ — mép trên cắt hình vỏ sò. */
-function Footer() {
+/** Thanh lĩnh vực bên dưới header, giống thanh danh mục của một sàn: cuộn ngang trên điện thoại. */
+function CategoryBar() {
+  const { data } = useAsync(() => catalogService.categories(), [])
+  const { pathname } = useLocation()
+  const [params] = useSearchParams()
+  const onCourses = pathname === '/khoa-hoc'
+  const current = onCourses ? (params.get('free') === 'true' ? '__free' : params.get('category') ?? '__all') : null
+
+  const items = [
+    { key: '__all', label: 'Tất cả', to: '/khoa-hoc' },
+    ...(data ?? []).filter((c) => c.parentId === null && c.isActive).map((c) => ({ key: c.slug, label: c.name, to: `/khoa-hoc?category=${c.slug}` })),
+    { key: '__free', label: 'Miễn phí', to: '/khoa-hoc?free=true' },
+  ]
+
   return (
-    <footer className="mt-auto bg-brand-700 pt-24 text-white">
-      <div className="container-page">
-        <div className="relative bg-brand-50 px-6 pt-16 pb-8 text-ink sm:px-12">
-          <svg className="absolute -top-[23px] left-0 h-6 w-full text-brand-50" viewBox="0 0 1200 24" preserveAspectRatio="none" aria-hidden="true">
-            <path fill="currentColor" d={`M0 24 ${Array.from({ length: 12 }, (_, i) => `A50 24 0 0 1 ${(i + 1) * 100} 24`).join(' ')} Z`} />
-          </svg>
-          <div className="grid gap-12 md:grid-cols-2">
-            <div>
-              <p className="text-3xl font-extrabold tracking-tight">Học hôm nay, dùng ngay ngày mai.</p>
-              <p className="mt-4 max-w-md text-ink-soft">
-                EduViet là nơi giảng viên Việt chia sẻ kinh nghiệm thực tế. Mỗi chứng chỉ có mã riêng để nhà tuyển dụng tự kiểm tra.
-              </p>
-              <div className="mt-6"><Logo /></div>
-            </div>
-            <div className="grid grid-cols-2 gap-8 text-base">
-              <ul className="flex flex-col gap-3">
-                <li className="font-bold">Khám phá</li>
-                <li><Link className="hover:text-brand-700" to="/khoa-hoc">Tất cả khóa học</Link></li>
-                <li><Link className="hover:text-brand-700" to="/khoa-hoc?sort=popular">Bán chạy</Link></li>
-                <li><Link className="hover:text-brand-700" to="/khoa-hoc?free=true">Miễn phí</Link></li>
-                <li><Link className="hover:text-brand-700" to="/xac-minh">Xác minh chứng chỉ</Link></li>
-              </ul>
-              <ul className="flex flex-col gap-3">
-                <li className="font-bold">Liên hệ</li>
-                <li><a className="hover:text-brand-700" href="mailto:hotro@eduviet.local">hotro@eduviet.local</a></li>
-                <li><a className="hover:text-brand-700" href="tel:19001234">1900 1234</a></li>
-                <li>TP. Hồ Chí Minh</li>
-              </ul>
-            </div>
-          </div>
-          <p className="mt-16 text-center text-sm text-ink-soft">
-            © {new Date().getFullYear()} EduViet. Ảnh minh họa: Unsplash qua picsum.photos.
-          </p>
+    <nav className="border-b border-line bg-white" aria-label="Lĩnh vực">
+      <ul className="container-page no-scrollbar flex gap-7 overflow-x-auto">
+        {items.map((it) => {
+          const active = current === it.key
+          return (
+            <li key={it.key} className="shrink-0">
+              <Link
+                to={it.to}
+                aria-current={active ? 'page' : undefined}
+                className={`flex min-h-12 items-center border-b-[3px] text-[15px] font-semibold whitespace-nowrap transition-colors ${active ? 'border-brand-600 text-brand-700' : 'border-transparent text-ink hover:text-brand-700'}`}
+              >
+                {it.label}
+              </Link>
+            </li>
+          )
+        })}
+      </ul>
+    </nav>
+  )
+}
+
+function Footer() {
+  const col = 'flex flex-col gap-3'
+  const lnk = 'text-ink-soft hover:text-brand-700'
+  return (
+    <footer className="mt-auto border-t border-line bg-white">
+      <div className="container-page grid gap-10 py-12 sm:grid-cols-2 lg:grid-cols-4">
+        <div className={col}>
+          <Logo />
+          <p className="max-w-xs text-ink-soft">Nền tảng khóa học trực tuyến của giảng viên Việt. Mỗi chứng chỉ có mã riêng để nhà tuyển dụng tự kiểm tra.</p>
         </div>
+        <ul className={col}>
+          <li className="font-bold">Khám phá</li>
+          <li><Link className={lnk} to="/khoa-hoc">Tất cả khóa học</Link></li>
+          <li><Link className={lnk} to="/khoa-hoc?sort=popular">Bán chạy</Link></li>
+          <li><Link className={lnk} to="/khoa-hoc?free=true">Miễn phí</Link></li>
+        </ul>
+        <ul className={col}>
+          <li className="font-bold">Dành cho học viên</li>
+          <li><Link className={lnk} to="/hoc-vien">Khóa học của tôi</Link></li>
+          <li><Link className={lnk} to="/tai-khoan/don-hang">Lịch sử mua hàng</Link></li>
+          <li><Link className={lnk} to="/xac-minh">Xác minh chứng chỉ</Link></li>
+        </ul>
+        <ul className={col}>
+          <li className="font-bold">Liên hệ</li>
+          <li><a className={lnk} href="mailto:hotro@eduviet.local">hotro@eduviet.local</a></li>
+          <li><a className={lnk} href="tel:19001234">1900 1234</a></li>
+          <li className="text-ink-soft">Thanh toán VNPay · MoMo</li>
+        </ul>
       </div>
+      <p className="border-t border-line py-5 text-center text-sm text-ink-muted">
+        © {new Date().getFullYear()} EduViet. Ảnh minh họa: Unsplash qua picsum.photos.
+      </p>
     </footer>
   )
 }
@@ -230,6 +269,7 @@ export default function MainLayout() {
         Bỏ qua tới nội dung
       </a>
       <Header />
+      <CategoryBar />
       <main id="main" className="flex-1">
         <Outlet />
       </main>

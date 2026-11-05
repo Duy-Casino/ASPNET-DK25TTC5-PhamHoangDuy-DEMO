@@ -15,7 +15,7 @@ test.describe('Điện thoại', () => {
   test('menu và bộ lọc dạng sheet hoạt động', async ({ page }) => {
     await page.goto('/')
     await page.getByRole('button', { name: 'Mở menu' }).click()
-    await expect(page.getByRole('link', { name: 'Xác minh chứng chỉ' }).first()).toBeVisible()
+    await expect(page.getByRole('navigation', { name: 'Menu điện thoại' }).getByRole('link', { name: 'Xác minh chứng chỉ' })).toBeVisible()
 
     await page.goto('/khoa-hoc')
     await page.getByRole('button', { name: 'Bộ lọc' }).click()

@@ -1,18 +1,29 @@
 import { expect, test } from '@playwright/test'
 
 test.describe('Trang công khai', () => {
-  test('trang chủ hiển thị hero chứng chỉ và các khu vực chính', async ({ page }) => {
+  test('trang chủ kiểu sàn: banner, các hàng khóa học, thanh lĩnh vực', async ({ page }) => {
     await page.goto('/')
-    await expect(page.getByRole('heading', { level: 1, name: 'Học online, nhận chứng chỉ thật' })).toBeVisible()
+    await expect(page.getByRole('heading', { level: 1, name: 'Khóa học trực tuyến có chứng chỉ' })).toBeVisible()
 
-    // Thứ khách tương tác được: gõ tên → in lên chứng chỉ
-    await page.getByLabel('Thử in tên bạn lên chứng chỉ').fill('Phạm Gia Bảo')
-    await expect(page.getByText('Phạm Gia Bảo', { exact: true })).toBeVisible()
-    await expect(page.getByText(/^EDV-\d{4}-[2-9A-Z]{8}$/)).toBeVisible()
-
-    for (const name of ['Học theo lĩnh vực', 'Khóa học nổi bật', 'Học viên chọn nhiều nhất', 'Thư viện đang mở', 'Học viên nói gì']) {
+    for (const name of ['Khóa học đặc biệt', 'Xu hướng tuần này', 'Mới xuất bản', 'Giảng viên nổi bật', 'Xác minh chứng chỉ EduViet']) {
       await expect(page.getByRole('heading', { name })).toBeVisible()
     }
+
+    // Banner: nút "tiếp theo" chuyển sang trang banner kế
+    const next = page.getByRole('button', { name: 'Banner tiếp theo' })
+    await next.click()
+    await expect(page.getByRole('button', { name: 'Trang banner 2' })).toHaveAttribute('aria-current', 'true')
+
+    // Thanh lĩnh vực dẫn tới trang khóa học đã lọc
+    await page.getByRole('navigation', { name: 'Lĩnh vực' }).getByRole('link', { name: 'Lập trình' }).click()
+    await expect(page).toHaveURL(/category=lap-trinh/)
+    await expect(page.getByRole('navigation', { name: 'Lĩnh vực' }).getByRole('link', { name: 'Lập trình' })).toHaveAttribute('aria-current', 'page')
+
+    // Ô xác minh ở trang chủ
+    await page.goto('/')
+    await page.getByLabel('Mã chứng chỉ').fill('edv-2026-khongco1')
+    await page.getByRole('button', { name: 'Kiểm tra' }).click()
+    await expect(page).toHaveURL(/\/xac-minh\/EDV-2026-KHONGCO1/)
   })
 
   test('tìm kiếm, lọc và mở chi tiết khóa học', async ({ page }) => {

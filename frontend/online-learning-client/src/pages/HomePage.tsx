@@ -1,343 +1,300 @@
-import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
-import { ArrowRight, QrCode } from 'lucide-react'
-import { CourseGrid } from '../components/course/CourseCard'
-import { Avatar, ErrorState, RatingStars, Skeleton } from '../components/ui'
+import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { ArrowRight, BookOpen, ChevronLeft, ChevronRight, Clock, QrCode } from 'lucide-react'
+import { Avatar, ErrorState, Skeleton } from '../components/ui'
 import { useAsync, useDocumentTitle } from '../hooks/useAsync'
 import { useAuth } from '../hooks/useAuth'
-import { useReveal } from '../hooks/useReveal'
 import { catalogService } from '../services/api'
-import type { HomeData } from '../types/api'
-import { formatDuration, formatNumber, formatPrice } from '../utils/format'
+import type { CourseSummary, HomeData } from '../types/api'
+import { discountPercent, formatDuration, formatNumber, formatPrice } from '../utils/format'
 
-const ALPHABET = '23456789ABCDEFGHJKMNPQRSTUVWXYZ'
+/* ------------------------------------------------------------------ */
+/* Hàng cuộn ngang dùng chung: vuốt trên điện thoại, nút ‹ › trên máy tính */
+/* ------------------------------------------------------------------ */
+function useRail() {
+  const ref = useRef<HTMLDivElement>(null)
+  const [state, setState] = useState({ page: 0, pages: 1, atStart: true, atEnd: true })
 
-/** Mã minh họa ổn định theo tên — cùng định dạng mã chứng chỉ thật EDV-YYYY-XXXXXXXX. */
-function sampleCode(name: string): string {
-  let h = 2166136261
-  for (const ch of name.normalize('NFC')) h = Math.imul(h ^ ch.codePointAt(0)!, 16777619)
-  let out = ''
-  for (let i = 0; i < 8; i++) {
-    h = Math.imul(h ^ (h >>> 15), 2246822507)
-    out += ALPHABET[Math.abs(h) % ALPHABET.length]
+  const measure = useCallback(() => {
+    const el = ref.current
+    if (!el) return
+    const pages = Math.max(1, Math.round(el.scrollWidth / el.clientWidth))
+    setState({
+      page: Math.min(pages - 1, Math.round(el.scrollLeft / el.clientWidth)),
+      pages,
+      atStart: el.scrollLeft <= 4,
+      atEnd: el.scrollLeft + el.clientWidth >= el.scrollWidth - 4,
+    })
+  }, [])
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    measure()
+    el.addEventListener('scroll', measure, { passive: true })
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    return () => {
+      el.removeEventListener('scroll', measure)
+      ro.disconnect()
+    }
+  }, [measure])
+
+  const go = (dir: 1 | -1) => {
+    const el = ref.current
+    if (el) el.scrollBy({ left: dir * el.clientWidth, behavior: 'smooth' })
   }
-  return `EDV-${new Date().getFullYear()}-${out}`
+  const goTo = (page: number) => {
+    const el = ref.current
+    if (el) el.scrollTo({ left: page * el.clientWidth, behavior: 'smooth' })
+  }
+  return { ref, ...state, go, goTo }
 }
 
-/* ------------------------------------------------------------------ */
-/* Hero: tấm chứng chỉ đặt trên nền ảnh tối — gõ tên để thấy tên mình */
-/* ------------------------------------------------------------------ */
-function CertificateHero({ data }: { data: HomeData | null }) {
-  const { isAuthenticated, initializing } = useAuth()
-  const showSignUp = !initializing && !isAuthenticated
-  const [name, setName] = useState('')
-  const shownName = name.trim() || 'Tên của bạn'
-  const code = useMemo(() => sampleCode(name.trim() || 'EduViet'), [name])
-  const course = data?.featured[0] ?? data?.bestSelling[0]
-
+function RailButtons({ rail, label }: { rail: ReturnType<typeof useRail>; label: string }) {
+  const cls = 'flex size-11 items-center justify-center rounded-full border border-line bg-white text-ink transition-[opacity,scale] active:scale-95 disabled:opacity-35'
   return (
-    <section className="relative isolate overflow-hidden bg-ink" aria-labelledby="hero-title">
-      <img
-        src="https://picsum.photos/id/1005/2400/1400"
-        alt=""
-        width={2400}
-        height={1400}
-        fetchPriority="high"
-        className="drift absolute inset-0 -z-10 size-full object-cover brightness-[0.55]"
-      />
-      <div className="container-page flex min-h-[calc(100svh-4.5rem)] items-center py-10 sm:py-16">
-        <div className="rise-in mx-auto w-full max-w-5xl bg-white text-ink">
-          <h1 id="hero-title" className="px-5 pt-8 text-[clamp(2.1rem,1.2rem+3.4vw,3.6rem)] leading-[1.02] font-extrabold tracking-[-0.03em] sm:px-10 sm:pt-12">
-            Học online, nhận chứng chỉ thật
-          </h1>
+    <div className="flex items-center gap-2">
+      <button type="button" className={cls} onClick={() => rail.go(-1)} disabled={rail.atStart} aria-label={`${label}: xem trước`}>
+        <ChevronLeft className="size-5" aria-hidden="true" />
+      </button>
+      <button type="button" className={cls} onClick={() => rail.go(1)} disabled={rail.atEnd} aria-label={`${label}: xem tiếp`}>
+        <ChevronRight className="size-5" aria-hidden="true" />
+      </button>
+    </div>
+  )
+}
 
-          <div className="grid gap-8 px-5 pt-6 pb-8 sm:px-10 sm:pb-10 md:grid-cols-[1.2fr_1fr] md:gap-10">
-            <div className="flex flex-col md:justify-center">
-              <p className="max-w-[36ch] text-lg text-ink-soft">
-                Khóa học do giảng viên Việt hướng dẫn. Học xong, chứng chỉ của bạn có mã riêng để ai cũng kiểm tra được.
-              </p>
-              <div className="mt-8 flex flex-wrap items-center gap-3">
-                <Link to="/khoa-hoc" className="btn-primary min-h-12 px-7 text-base">
-                  Khám phá khóa học <ArrowRight className="size-5" aria-hidden="true" />
-                </Link>
-                {/* Chỉ mời đăng ký khi chắc chắn là khách (đã khôi phục phiên xong và chưa đăng nhập) */}
-                {showSignUp && (
-                  <Link to="/dang-ky" className="btn-ghost min-h-12 text-base underline-offset-4 hover:underline">Đăng ký miễn phí</Link>
-                )}
-              </div>
-            </div>
-
-            {/* Phần "chứng nhận" — thứ khách tương tác được */}
-            <div className="flex flex-col justify-between gap-6 bg-brand-50 p-5 sm:p-6">
-              <div>
-                <p className="-mx-5 -mt-5 mb-5 flex justify-between gap-3 bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white sm:-mx-6 sm:-mt-6 sm:px-6">
-                  <span>EduViet</span><span>Chứng chỉ hoàn thành</span>
-                </p>
-                <p className="text-sm text-ink-soft">Chứng nhận</p>
-                <p className="mt-1 min-h-[2.4em] text-2xl leading-tight font-extrabold break-words text-brand-700" aria-live="polite">
-                  {shownName}
-                </p>
-                <p className="mt-3 text-sm text-ink-soft">đã hoàn thành khóa học</p>
-                <p className="mt-1 font-bold">{course?.title ?? 'Lập trình C# từ cơ bản đến nâng cao'}</p>
-              </div>
-              <div className="flex items-end justify-between gap-3">
-                <div>
-                  <p className="text-sm text-ink-soft">Mã xác minh</p>
-                  <p className="font-bold tabular-nums tracking-wide">{code}</p>
-                </div>
-                <QrCode className="size-12 text-ink" aria-hidden="true" />
-              </div>
-              <div>
-                <label htmlFor="hero-name" className="text-sm font-semibold">Thử in tên bạn lên chứng chỉ</label>
-                <input
-                  id="hero-name"
-                  value={name}
-                  maxLength={40}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Ví dụ: Nguyễn Thu Hà"
-                  className="input mt-1.5 min-h-11 bg-white"
-                  autoComplete="name"
-                />
-              </div>
-            </div>
+function Rail({ id, title, link, children, boxed = false }: { id: string; title: string; link?: string; children: ReactNode; boxed?: boolean }) {
+  const rail = useRail()
+  return (
+    <section className="container-page pt-10" aria-labelledby={id}>
+      <div className={boxed ? 'rounded-2xl border border-line bg-white p-5 sm:p-6' : ''}>
+        <div className="mb-5 flex items-center justify-between gap-4">
+          <h2 id={id} className="text-2xl font-extrabold tracking-tight">{title}</h2>
+          <div className="flex items-center gap-4">
+            {link && <Link to={link} className="text-sm font-semibold text-brand-700 hover:underline">Xem thêm</Link>}
+            <div className="hidden md:block"><RailButtons rail={rail} label={title} /></div>
           </div>
-
-          {/* Mép dưới của chứng chỉ: số liệu thật */}
-          <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 bg-surface-2 px-5 py-4 text-sm text-ink-soft sm:px-10">
-            {data ? (
-              <>
-                <span><b className="text-ink">{formatNumber(data.stats.totalCourses)}</b> khóa học đang mở</span>
-                <span><b className="text-ink">{formatNumber(data.stats.totalInstructors)}</b> giảng viên</span>
-                <span><b className="text-ink">{formatNumber(data.stats.totalStudents)}</b> học viên đã đăng ký</span>
-              </>
-            ) : (
-              <Skeleton className="h-5 w-2/3" />
-            )}
-          </div>
+        </div>
+        <div ref={rail.ref} className="no-scrollbar -mx-1 flex snap-x snap-mandatory gap-4 overflow-x-auto px-1 pb-1">
+          {children}
         </div>
       </div>
     </section>
   )
 }
 
-/* ------------------------------------------------------------------ */
-function Categories({ data }: { data: HomeData }) {
-  const ref = useReveal<HTMLElement>()
-  return (
-    <section ref={ref} className="container-page py-24 md:py-32" aria-labelledby="cat-title">
-      <div className="grid gap-10 md:grid-cols-[1fr_2fr] md:gap-16">
-        <div data-reveal>
-          <h2 id="cat-title" className="text-title font-extrabold">Học theo lĩnh vực</h2>
-          <p className="mt-4 max-w-sm text-lg text-ink-soft">
-            Từ lập trình, thiết kế đến kỹ năng mềm. Chọn một lĩnh vực để xem toàn bộ khóa học trong đó.
-          </p>
-        </div>
-        <ul className="flex flex-wrap content-start gap-3">
-          {data.categories.filter((c) => c.courseCount > 0).map((c) => (
-            <li key={c.id} data-reveal>
-              <Link
-                to={`/khoa-hoc?category=${c.slug}`}
-                className="group inline-flex min-h-14 items-center gap-3 rounded-(--radius-control) bg-brand-50 px-6 text-lg font-bold text-brand-800 transition-[background-color,color,scale] duration-200 hover:bg-brand-600 hover:text-white active:scale-[0.97]"
-              >
-                {c.name}
-                <span className="rounded-(--radius-control) bg-white px-2.5 py-0.5 text-sm font-semibold text-brand-700 tabular-nums">
-                  {c.courseCount}
-                </span>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </div>
-    </section>
+function Thumb({ course }: { course: CourseSummary }) {
+  return course.thumbnailUrl ? (
+    <img src={course.thumbnailUrl} alt="" width={800} height={450} loading="lazy"
+      className="size-full object-cover transition-transform duration-500 ease-(--ease-out-strong) group-hover:scale-[1.04]" />
+  ) : (
+    <span className="flex size-full items-end bg-brand-600 p-4 text-xl font-extrabold text-white">{course.category.name}</span>
   )
 }
 
-function CourseSection({ id, title, lead, courses, link }: { id: string; title: string; lead: string; courses: HomeData['featured']; link: string }) {
-  const ref = useReveal<HTMLElement>()
+function courseTag(c: CourseSummary): string {
+  const off = discountPercent(c.price, c.discountPrice)
+  if (c.effectivePrice === 0) return 'Miễn phí'
+  if (off !== null) return `Giảm ${off}%`
+  if (c.isFeatured) return 'Nổi bật'
+  return c.category.name
+}
+
+/* ------------------------------------------------------------------ */
+/* Banner đôi */
+/* ------------------------------------------------------------------ */
+function BannerCarousel({ courses }: { courses: CourseSummary[] }) {
+  const rail = useRail()
   if (courses.length === 0) return null
   return (
-    <section ref={ref} className="container-page py-20 md:py-28" aria-labelledby={id}>
-      <div className="mb-10 flex flex-wrap items-end justify-between gap-4" data-reveal>
-        <div>
-          <h2 id={id} className="text-title font-extrabold">{title}</h2>
-          <p className="mt-3 max-w-xl text-lg text-ink-soft">{lead}</p>
-        </div>
-        <Link to={link} className="btn-soft">Xem tất cả <ArrowRight className="size-4" aria-hidden="true" /></Link>
-      </div>
-      {/* Lấy bội số của 4 để hàng cuối không bị lẻ trên desktop */}
-      <CourseGrid courses={courses.length >= 4 ? courses.slice(0, Math.min(8, Math.floor(courses.length / 4) * 4)) : courses} />
-    </section>
-  )
-}
-
-/** Bán chạy: một khóa lớn bên trái, danh sách gọn bên phải (khác bố cục lưới của các phần lân cận). */
-function BestSelling({ data }: { data: HomeData }) {
-  const ref = useReveal<HTMLElement>()
-  const [first, ...rest] = data.bestSelling
-  if (!first) return null
-  return (
-    <section ref={ref} className="bg-surface-2 py-20 md:py-28" aria-labelledby="best-title">
-      <div className="container-page">
-        <h2 id="best-title" className="text-title font-extrabold" data-reveal>Học viên chọn nhiều nhất</h2>
-        <div className="mt-10 grid gap-10 lg:grid-cols-[1.3fr_1fr]">
-          <Link to={`/khoa-hoc/${first.slug}`} className="group flex flex-col gap-5" data-reveal>
-            <div className="aspect-video overflow-hidden rounded-(--radius-card)">
-              <img src={first.thumbnailUrl ?? ''} alt="" width={1200} height={675} loading="lazy"
-                className="size-full object-cover transition-transform duration-700 ease-(--ease-out-strong) group-hover:scale-[1.03]" />
-            </div>
-            <div>
-              <h3 className="text-3xl font-extrabold tracking-tight group-hover:text-brand-700">{first.title}</h3>
-              <p className="mt-3 text-lg text-ink-soft">{first.shortDescription}</p>
-              <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2">
-                <RatingStars value={first.averageRating} count={first.reviewCount} />
-                <span className="text-ink-soft">{formatNumber(first.enrollmentCount)} học viên · {formatDuration(first.totalDurationSeconds)}</span>
-                <span className="text-2xl font-extrabold">{formatPrice(first.effectivePrice)}</span>
-              </div>
-            </div>
+    <section className="container-page pt-6" aria-label="Khóa học nổi bật">
+      <div ref={rail.ref} className="no-scrollbar flex snap-x snap-mandatory gap-4 overflow-x-auto">
+        {courses.map((c, i) => (
+          <Link
+            key={c.id}
+            to={`/khoa-hoc/${c.slug}`}
+            className="group relative aspect-[16/10] shrink-0 basis-full snap-start overflow-hidden rounded-2xl bg-surface-3 sm:aspect-video lg:basis-[calc(50%-8px)]"
+          >
+            {c.thumbnailUrl && (
+              <img src={c.thumbnailUrl} alt="" width={1200} height={675} loading={i < 2 ? 'eager' : 'lazy'} fetchPriority={i === 0 ? 'high' : undefined}
+                className="absolute inset-0 size-full object-cover transition-transform duration-700 ease-(--ease-out-strong) group-hover:scale-[1.03]" />
+            )}
+            <span className="absolute right-3 bottom-3 left-3 flex flex-col gap-2 rounded-xl bg-white p-4 sm:right-auto sm:max-w-[78%] sm:p-5">
+              <span className="self-start rounded-md bg-sun-300 px-2.5 py-1 text-xs font-extrabold text-ink">{courseTag(c)}</span>
+              <span className="line-clamp-2 text-lg leading-tight font-extrabold tracking-tight sm:text-2xl">{c.title}</span>
+              <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink-soft">
+                <span>{c.instructor.fullName}</span>
+                <span className="font-extrabold text-brand-700">{formatPrice(c.effectivePrice)}</span>
+              </span>
+            </span>
           </Link>
-          <ul className="flex flex-col gap-2">
-            {rest.slice(0, 5).map((c) => (
-              <li key={c.id} data-reveal>
-                <Link to={`/khoa-hoc/${c.slug}`} className="group grid grid-cols-[112px_1fr] gap-4 rounded-(--radius-card) p-2 transition-colors hover:bg-white sm:grid-cols-[144px_1fr]">
-                  <img src={c.thumbnailUrl ?? ''} alt="" width={288} height={162} loading="lazy" className="aspect-video w-full rounded-lg object-cover" />
-                  <div className="min-w-0">
-                    <h3 className="line-clamp-2 font-bold group-hover:text-brand-700">{c.title}</h3>
-                    <p className="mt-1 text-sm text-ink-soft">{c.instructor.fullName} · {formatNumber(c.enrollmentCount)} học viên</p>
-                    <p className="mt-1 font-extrabold">{formatPrice(c.effectivePrice)}</p>
-                  </div>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
+        ))}
       </div>
+      {rail.pages > 1 && (
+        <div className="mt-4 flex items-center justify-center gap-4">
+          <button type="button" onClick={() => rail.go(-1)} disabled={rail.atStart} aria-label="Banner trước"
+            className="flex size-11 items-center justify-center rounded-full border border-line bg-white transition-[opacity,scale] active:scale-95 disabled:opacity-35">
+            <ChevronLeft className="size-5" aria-hidden="true" />
+          </button>
+          <div className="flex gap-1" role="group" aria-label="Chọn trang banner">
+            {Array.from({ length: rail.pages }, (_, i) => (
+              <button key={i} type="button" aria-label={`Trang banner ${i + 1}`} aria-current={i === rail.page ? 'true' : undefined}
+                onClick={() => rail.goTo(i)} className="flex h-11 items-center px-1">
+                <span className={`block h-2 rounded-full transition-[width,background-color] duration-300 ${i === rail.page ? 'w-7 bg-brand-600' : 'w-2 bg-ink-muted/40'}`} />
+              </button>
+            ))}
+          </div>
+          <button type="button" onClick={() => rail.go(1)} disabled={rail.atEnd} aria-label="Banner tiếp theo"
+            className="flex size-11 items-center justify-center rounded-full border border-line bg-white transition-[opacity,scale] active:scale-95 disabled:opacity-35">
+            <ChevronRight className="size-5" aria-hidden="true" />
+          </button>
+        </div>
+      )}
     </section>
   )
 }
 
-/** Tổng số và "phiếu" cộng ra tổng đó: số khóa học theo từng lĩnh vực. */
-function StatsReceipt({ data }: { data: HomeData }) {
-  const ref = useReveal<HTMLElement>()
-  const rows = data.categories.filter((c) => c.courseCount > 0)
-  const total = rows.reduce((s, c) => s + c.courseCount, 0)
+/* ------------------------------------------------------------------ */
+/* Thẻ */
+/* ------------------------------------------------------------------ */
+function PosterCard({ course }: { course: CourseSummary }) {
   return (
-    <section ref={ref} className="bg-brand-600 py-20 text-white md:py-28" aria-labelledby="stats-title">
-      <div className="container-page grid gap-12 md:grid-cols-[1.2fr_1fr] md:items-stretch">
-        <div className="flex flex-col justify-between gap-10" data-reveal>
-          <div>
-            <h2 id="stats-title" className="text-title font-extrabold">Thư viện đang mở</h2>
-            <p className="mt-4 max-w-md text-lg text-brand-50">
-              Mỗi khóa học đều qua kiểm duyệt trước khi xuất bản
-              {data.stats.totalCertificates > 0 ? `, ${formatNumber(data.stats.totalCertificates)} chứng chỉ đã được cấp.` : ' và có đánh giá công khai từ học viên.'}
-            </p>
+    <Link to={`/khoa-hoc/${course.slug}`} className="group flex w-44 shrink-0 snap-start flex-col gap-2.5 sm:w-52">
+      <span className="aspect-[3/4] overflow-hidden rounded-xl bg-surface-3"><Thumb course={course} /></span>
+      <span className="line-clamp-2 leading-snug font-bold group-hover:text-brand-700">{course.title}</span>
+      <span className="text-sm font-extrabold text-brand-700">{formatPrice(course.effectivePrice)}</span>
+    </Link>
+  )
+}
+
+function RankCard({ course, rank }: { course: CourseSummary; rank: number }) {
+  return (
+    <Link to={`/khoa-hoc/${course.slug}`} className="group flex shrink-0 snap-start flex-col gap-2" aria-label={`Hạng ${rank}: ${course.title}`}>
+      <span className="flex items-end">
+        <span className="rank-outline relative z-10 -mr-6 w-24 text-right text-[8.5rem] leading-[0.78] font-black tabular-nums" aria-hidden="true">{rank}</span>
+        <span className="aspect-[3/4] w-40 overflow-hidden rounded-xl bg-surface-3 sm:w-44"><Thumb course={course} /></span>
+      </span>
+      <span className="ml-18 flex w-40 flex-col gap-0.5 sm:w-44">
+        <span className="line-clamp-1 text-sm font-bold group-hover:text-brand-700">{course.title}</span>
+        <span className="text-xs text-ink-soft">{formatNumber(course.enrollmentCount)} học viên</span>
+      </span>
+    </Link>
+  )
+}
+
+function MarketCard({ course }: { course: CourseSummary }) {
+  const off = discountPercent(course.price, course.discountPrice)
+  return (
+    <Link to={`/khoa-hoc/${course.slug}`} className="group flex flex-col overflow-hidden rounded-xl border border-line bg-white transition-colors hover:border-brand-300">
+      <span className="aspect-video overflow-hidden bg-surface-3"><Thumb course={course} /></span>
+      <span className="flex flex-1 flex-col gap-1.5 p-4">
+        <span className="line-clamp-2 leading-snug font-bold group-hover:text-brand-700">{course.title}</span>
+        <span className="flex items-baseline gap-2">
+          <span className="font-extrabold text-brand-700">{formatPrice(course.effectivePrice)}</span>
+          {off !== null && <span className="text-sm text-ink-muted line-through">{formatPrice(course.price)}</span>}
+        </span>
+        <span className="mt-auto flex flex-wrap items-center gap-x-3 gap-y-1 pt-1 text-sm text-ink-soft">
+          <span className="inline-flex items-center gap-1"><BookOpen className="size-4" aria-hidden="true" />{course.totalLessons} bài</span>
+          <span className="inline-flex items-center gap-1"><Clock className="size-4" aria-hidden="true" />{formatDuration(course.totalDurationSeconds)}</span>
+        </span>
+      </span>
+    </Link>
+  )
+}
+
+/* ------------------------------------------------------------------ */
+/* Các khối nội dung */
+/* ------------------------------------------------------------------ */
+function uniqueCourses(data: HomeData): CourseSummary[] {
+  const seen = new Map<string, CourseSummary>()
+  for (const c of [...data.featured, ...data.bestSelling, ...data.newest]) if (!seen.has(c.id)) seen.set(c.id, c)
+  return [...seen.values()]
+}
+
+/** Mỗi lĩnh vực một khối "Xem thêm", lấy từ các khóa học đã có trong dữ liệu trang chủ. */
+function CategorySections({ data }: { data: HomeData }) {
+  const groups = new Map<string, { name: string; slug: string; items: CourseSummary[] }>()
+  for (const c of uniqueCourses(data)) {
+    const g = groups.get(c.category.slug) ?? { name: c.category.name, slug: c.category.slug, items: [] }
+    g.items.push(c)
+    groups.set(c.category.slug, g)
+  }
+  const list = [...groups.values()].filter((g) => g.items.length >= 2).sort((a, b) => b.items.length - a.items.length).slice(0, 4)
+  return (
+    <>
+      {list.map((g) => (
+        <section key={g.slug} className="container-page pt-10" aria-labelledby={`cat-${g.slug}`}>
+          <div className="mb-5 flex items-center justify-between gap-4">
+            <h2 id={`cat-${g.slug}`} className="text-2xl font-extrabold tracking-tight">{g.name}</h2>
+            <Link to={`/khoa-hoc?category=${g.slug}`} className="text-sm font-semibold text-brand-700 hover:underline">Xem thêm</Link>
           </div>
-          <div>
-            <p className="text-[clamp(7rem,4rem+14vw,15rem)] leading-[0.8] font-extrabold tracking-[-0.05em] tabular-nums">{total}</p>
-            <p className="mt-4 text-lg text-brand-50">khóa học, dạy bởi {data.stats.totalInstructors} giảng viên</p>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {g.items.slice(0, 4).map((c) => <MarketCard key={c.id} course={c} />)}
           </div>
-        </div>
-        <div className="paper-receipt self-start bg-white px-6 pt-7 pb-10 text-ink sm:px-8" data-reveal>
-          <p className="text-center font-extrabold">EduViet · Phiếu thư viện</p>
-          <p className="mt-1 text-center text-sm text-ink-muted">Số khóa học theo lĩnh vực</p>
-          <ul className="mt-6 flex flex-col gap-3 tabular-nums">
-            {rows.map((c) => (
-              <li key={c.id} className="flex items-baseline">
-                <Link to={`/khoa-hoc?category=${c.slug}`} className="hover:text-brand-700">{c.name}</Link>
-                <span className="dot-leader" aria-hidden="true" />
-                <span className="font-semibold">{c.courseCount}</span>
-              </li>
-            ))}
-          </ul>
-          <p className="mt-6 flex items-baseline bg-ink px-3 py-2 font-extrabold text-white tabular-nums">
-            Tổng cộng <span className="ml-auto">{total}</span>
-          </p>
-        </div>
-      </div>
-    </section>
+        </section>
+      ))}
+    </>
   )
 }
 
 function Instructors({ data }: { data: HomeData }) {
-  const ref = useReveal<HTMLElement>()
   if (data.featuredInstructors.length === 0) return null
   return (
-    <section ref={ref} className="container-page py-20 md:py-28" aria-labelledby="ins-title">
-      <h2 id="ins-title" className="text-title font-extrabold" data-reveal>Người đứng lớp</h2>
-      <p className="mt-3 max-w-xl text-lg text-ink-soft" data-reveal>Giảng viên đang làm nghề, dạy từ chính dự án họ đã làm.</p>
-      <ul className="mt-12 grid gap-x-10 gap-y-12 md:grid-cols-3">
-        {data.featuredInstructors.slice(0, 6).map((ins) => (
-          <li key={ins.id} data-reveal>
-            <Link to={`/giang-vien/${ins.id}`} className="group flex flex-col gap-4">
-              <Avatar name={ins.fullName} src={ins.avatarUrl} size={72} />
-              <div>
-                <h3 className="text-2xl font-extrabold tracking-tight group-hover:text-brand-700">{ins.fullName}</h3>
-                <p className="mt-1 text-ink-soft">{ins.headline}</p>
-              </div>
-              <p className="text-sm text-ink-soft">
-                {ins.totalCourses} khóa học · {formatNumber(ins.totalStudents)} học viên
-                {ins.totalReviews > 0 && <> · điểm <span className="font-semibold text-accent-700">{ins.averageRating.toFixed(1)}/5</span></>}
-              </p>
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </section>
+    <Rail id="ins-title" title="Giảng viên nổi bật">
+      {data.featuredInstructors.slice(0, 10).map((ins) => (
+        <Link key={ins.id} to={`/giang-vien/${ins.id}`} className="group flex w-64 shrink-0 snap-start items-center gap-3 rounded-xl border border-line bg-white p-4 transition-colors hover:border-brand-300">
+          <Avatar name={ins.fullName} src={ins.avatarUrl} size={56} />
+          <span className="min-w-0">
+            <span className="block truncate font-bold group-hover:text-brand-700">{ins.fullName}</span>
+            <span className="block text-sm text-ink-soft">{ins.totalCourses} khóa · {formatNumber(ins.totalStudents)} học viên</span>
+          </span>
+        </Link>
+      ))}
+    </Rail>
   )
 }
 
-/** Đánh giá in trên những mẩu giấy xé, xếp chồng nghiêng. */
-function Testimonials({ data }: { data: HomeData }) {
-  const ref = useReveal<HTMLElement>()
-  const items = data.testimonials.slice(0, 3)
-  if (items.length === 0) return null
-  const tilt = ['md:-rotate-3', 'md:rotate-2', 'md:rotate-[4deg]']
+function VerifyStrip() {
+  const navigate = useNavigate()
+  const [code, setCode] = useState('')
+  const submit = (e: FormEvent) => {
+    e.preventDefault()
+    const v = code.trim().toUpperCase()
+    navigate(v ? `/xac-minh/${encodeURIComponent(v)}` : '/xac-minh')
+  }
   return (
-    <section ref={ref} className="overflow-hidden bg-accent-500 py-20 md:py-28" aria-labelledby="quote-title">
-      <div className="container-page">
-        <h2 id="quote-title" className="text-title font-extrabold text-ink" data-reveal>Học viên nói gì</h2>
-        <ul className="mt-12 grid gap-6 md:grid-cols-3 md:gap-0">
-          {items.map((t, i) => (
-            <li key={t.id} data-reveal className={`${tilt[i]} ${i > 0 ? 'md:-ml-6' : ''} ${i === 1 ? 'md:mt-10' : ''}`}>
-              <figure className="paper-torn flex h-full flex-col gap-4 bg-white px-7 py-10">
-                <RatingStars value={t.rating} size={16} showValue={false} />
-                <blockquote className="text-lg leading-relaxed">“{t.comment}”</blockquote>
-                <figcaption className="mt-auto flex items-center gap-3">
-                  <Avatar name={t.userFullName} src={t.userAvatarUrl} size={44} />
-                  <span>
-                    <span className="block font-bold">{t.userFullName}</span>
-                    <Link to={`/khoa-hoc/${t.courseSlug}`} className="text-sm text-ink-soft hover:text-brand-700">{t.courseTitle}</Link>
-                  </span>
-                </figcaption>
-              </figure>
-            </li>
-          ))}
-        </ul>
+    <section className="container-page pt-12" aria-labelledby="verify-title">
+      <div className="flex flex-col gap-5 rounded-2xl bg-accent-50 p-6 sm:p-8 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex items-start gap-4">
+          <QrCode className="mt-1 size-10 shrink-0 text-accent-700" aria-hidden="true" />
+          <div>
+            <h2 id="verify-title" className="text-2xl font-extrabold tracking-tight">Xác minh chứng chỉ EduViet</h2>
+            <p className="mt-1 text-ink-soft">Nhập mã dạng EDV-2026-XXXXXXXX hoặc quét mã QR in trên chứng chỉ.</p>
+          </div>
+        </div>
+        <form onSubmit={submit} className="flex w-full gap-2 lg:max-w-md">
+          <label htmlFor="home-verify" className="sr-only">Mã chứng chỉ</label>
+          <input id="home-verify" value={code} onChange={(e) => setCode(e.target.value)} placeholder="EDV-2026-…" className="input min-h-12 min-w-0 flex-1 bg-white" />
+          <button type="submit" className="btn-accent min-h-12 px-6">Kiểm tra</button>
+        </form>
       </div>
     </section>
   )
 }
 
-/** Lời mời hành động: tấm thẻ hồi đáp đặt nghiêng, bị mép section cắt. */
-function ReplyCard() {
-  const ref = useReveal<HTMLElement>()
+function GuestCta() {
   return (
-    <section ref={ref} className="overflow-hidden bg-brand-700 text-white" aria-labelledby="cta-title">
-      <div className="container-page grid gap-10 pt-20 md:grid-cols-[1fr_1.3fr] md:items-end md:pt-28">
-        <p className="max-w-sm pb-16 text-xl text-brand-50 md:text-2xl" data-reveal>
-          Tạo tài khoản mất một phút. Khóa học miễn phí đầu tiên đã sẵn sàng cho bạn.
-        </p>
-        <div className="translate-y-10 rotate-1 bg-white px-8 py-12 text-center text-ink sm:px-12 md:rotate-2" data-reveal>
-          <h2 id="cta-title" className="text-3xl font-extrabold tracking-tight">Bắt đầu học hôm nay</h2>
-          <p className="mx-auto mt-4 max-w-sm text-lg text-ink-soft">
-            Lưu tiến độ trên mọi thiết bị, nhận chứng chỉ có mã xác minh khi hoàn thành.
-          </p>
-          <Link to="/dang-ky" className="btn mt-8 min-h-14 w-full rounded-none bg-ink text-base text-white hover:bg-brand-800">
-            Tạo tài khoản miễn phí
-          </Link>
-          <p className="mt-6 pb-8 text-sm text-ink-muted">
-            Đã có tài khoản? <Link to="/dang-nhap" className="font-semibold text-brand-700 hover:underline">Đăng nhập</Link>
-          </p>
+    <section className="container-page pt-6" aria-labelledby="cta-title">
+      <div className="flex flex-col gap-5 rounded-2xl bg-brand-600 p-6 text-white sm:p-8 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h2 id="cta-title" className="text-2xl font-extrabold tracking-tight">Bắt đầu với một khóa học miễn phí</h2>
+          <p className="mt-1 text-brand-50">Tạo tài khoản trong một phút, lưu tiến độ trên mọi thiết bị.</p>
         </div>
+        <Link to="/dang-ky" className="btn min-h-12 bg-white px-7 text-base text-brand-700 hover:bg-brand-50">
+          Đăng ký miễn phí <ArrowRight className="size-5" aria-hidden="true" />
+        </Link>
       </div>
     </section>
   )
@@ -345,9 +302,15 @@ function ReplyCard() {
 
 function HomeSkeleton() {
   return (
-    <div className="container-page py-24">
-      <Skeleton className="mb-10 h-12 w-72" />
-      <CourseGrid courses={[]} loading />
+    <div className="container-page pt-6" aria-hidden="true">
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Skeleton className="aspect-video w-full rounded-2xl" />
+        <Skeleton className="hidden aspect-video w-full rounded-2xl lg:block" />
+      </div>
+      <Skeleton className="mt-10 h-8 w-56" />
+      <div className="mt-5 flex gap-4 overflow-hidden">
+        {Array.from({ length: 6 }, (_, i) => <Skeleton key={i} className="aspect-[3/4] w-52 shrink-0 rounded-xl" />)}
+      </div>
     </div>
   )
 }
@@ -357,26 +320,47 @@ export default function HomePage() {
   const { data, loading, error, reload } = useAsync(() => catalogService.home(), [])
   const { isAuthenticated, initializing } = useAuth()
 
+  const banners = data ? (data.featured.length > 0 ? data.featured : data.bestSelling).slice(0, 6) : []
+  const specials = data ? uniqueCourses(data).filter((c) => !banners.some((b) => b.id === c.id)).slice(0, 10) : []
+
   return (
-    <>
-      <CertificateHero data={data} />
+    <div className="bg-surface-2 pb-16">
+      <div className="container-page flex flex-wrap items-end justify-between gap-x-6 gap-y-1 pt-6">
+        <h1 className="text-2xl font-extrabold tracking-tight sm:text-[1.75rem]">Khóa học trực tuyến có chứng chỉ</h1>
+        {data && (
+          <p className="text-sm text-ink-soft">
+            {formatNumber(data.stats.totalCourses)} khóa học · {formatNumber(data.stats.totalInstructors)} giảng viên · {formatNumber(data.stats.totalStudents)} học viên
+          </p>
+        )}
+      </div>
+
       {loading && <HomeSkeleton />}
       {error && <div className="container-page py-24"><ErrorState message={error} onRetry={reload} /></div>}
       {data && (
         <>
-          <Categories data={data} />
-          <CourseSection id="featured-title" title="Khóa học nổi bật" lead="Được đội ngũ EduViet chọn vì nội dung thực tế và đánh giá tốt."
-            courses={data.featured} link="/khoa-hoc?sort=popular" />
-          <BestSelling data={data} />
-          <StatsReceipt data={data} />
-          <CourseSection id="newest-title" title="Mới xuất bản" lead="Những khóa học vừa qua kiểm duyệt."
-            courses={data.newest} link="/khoa-hoc?sort=newest" />
+          <BannerCarousel courses={banners} />
+          {specials.length > 0 && (
+            <Rail id="special-title" title="Khóa học đặc biệt" link="/khoa-hoc?sort=popular" boxed>
+              {specials.map((c) => <PosterCard key={c.id} course={c} />)}
+            </Rail>
+          )}
+          {data.bestSelling.length > 0 && (
+            <Rail id="trend-title" title="Xu hướng tuần này" link="/khoa-hoc?sort=popular">
+              {data.bestSelling.slice(0, 10).map((c, i) => <RankCard key={c.id} course={c} rank={i + 1} />)}
+            </Rail>
+          )}
+          <CategorySections data={data} />
+          {data.newest.length > 0 && (
+            <Rail id="new-title" title="Mới xuất bản" link="/khoa-hoc?sort=newest">
+              {data.newest.slice(0, 10).map((c) => <PosterCard key={c.id} course={c} />)}
+            </Rail>
+          )}
           <Instructors data={data} />
-          <Testimonials data={data} />
-          {/* Thẻ mời tạo tài khoản chỉ dành cho khách */}
-          {!initializing && !isAuthenticated && <ReplyCard />}
+          <VerifyStrip />
+          {/* Lời mời đăng ký chỉ dành cho khách */}
+          {!initializing && !isAuthenticated && <GuestCta />}
         </>
       )}
-    </>
+    </div>
   )
 }
