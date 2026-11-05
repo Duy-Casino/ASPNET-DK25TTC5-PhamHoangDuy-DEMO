@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>OnlineLearning.Infrastructure</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\OnlineLearning.Application\OnlineLearning.Application.csproj" />
+    <ProjectReference Include="..\OnlineLearning.Domain\OnlineLearning.Domain.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="CloudinaryDotNet" Version="1.29.3" />
+    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.*" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.*" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.*" />
+    <PackageReference Include="QRCoder" Version="1.8.1" />
+    <PackageReference Include="QuestPDF" Version="2026.9.1" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.*" />
+    <!-- Ghim bản vá: bản 9.0.11 kéo theo transitive có lỗ hổng GHSA-846f-f764-76mx -->
+    <PackageReference Include="System.Security.Cryptography.Pkcs" Version="10.0.*" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.*">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+</Project>

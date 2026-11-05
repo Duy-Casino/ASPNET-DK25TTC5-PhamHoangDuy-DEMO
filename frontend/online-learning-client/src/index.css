@@ -1,0 +1,206 @@
+@import 'tailwindcss';
+
+/* =====================================================================
+   EduViet design tokens
+   Màu tươi trẻ, lấy cảm hứng từ cổng tuyển sinh VHU: xanh dương rực (#005CF8),
+   xanh đậm (#004DC1), điểm nhấn cam (#EF8000) và vàng nắng (#FFDC7C), nền xanh rất nhạt.
+   Quy tắc: không gradient, không shadow khi tĩnh, tách mặt phẳng bằng bậc tông màu.
+   ===================================================================== */
+@theme {
+  /* Typeface: một họ chữ, hỗ trợ đầy đủ dấu tiếng Việt */
+  --font-sans: 'Be Vietnam Pro', ui-sans-serif, system-ui, 'Segoe UI', Roboto, sans-serif;
+
+  /* Brand blue — 600 là màu chính (chữ trắng trên 600 đạt 5.4:1) */
+  --color-brand-50: #eff6ff;
+  --color-brand-100: #dceaff;
+  --color-brand-200: #b9d4ff;
+  --color-brand-300: #85b3ff;
+  --color-brand-400: #4d8cfc;
+  --color-brand-500: #1f6dfa;
+  --color-brand-600: #005cf8;
+  --color-brand-700: #004dc1;
+  --color-brand-800: #003c96;
+  --color-brand-900: #062b66;
+
+  /* Accent cam — chỉ dùng với chữ màu ink (chữ trắng trên cam không đạt AA) */
+  --color-accent-50: #fff4e5;
+  --color-accent-100: #ffe6c2;
+  --color-accent-200: #ffd199;
+  --color-accent-400: #f79a2e;
+  --color-accent-500: #ef8000;
+  --color-accent-600: #c96a00;
+  --color-accent-700: #9e5300;
+
+  /* Vàng nắng — nền highlight, huy hiệu "Bán chạy" */
+  --color-sun-100: #fff6d6;
+  --color-sun-300: #ffdc7c;
+  --color-sun-500: #f5b800;
+
+  /* Neutral */
+  --color-ink: #0b1b33;
+  --color-ink-soft: #3d4a5c;
+  --color-ink-muted: #6b7686;
+  --color-surface: #ffffff;
+  --color-surface-2: #f3f6fb;
+  --color-surface-3: #e8eef7;
+  --color-line: #dfe5ee;
+
+  /* Trạng thái */
+  --color-success: #12924f;
+  --color-success-50: #e7f6ee;
+  --color-warning: #b86e00;
+  --color-warning-50: #fff4e0;
+  --color-danger: #d92d20;
+  --color-danger-50: #fdecea;
+
+  /* Bo góc: thẻ 12px, nút dạng pill (quyết định một lần cho toàn hệ thống) */
+  --radius-card: 12px;
+  --radius-control: 9999px;
+
+  /* Thang chữ: hai cỡ làm việc chính + cỡ hiển thị lớn */
+  --text-display: clamp(2.5rem, 1.2rem + 5.2vw, 5.5rem);
+  --text-display--line-height: 1;
+  --text-display--letter-spacing: -0.035em;
+  --text-title: clamp(1.75rem, 1.2rem + 2vw, 2.75rem);
+  --text-title--line-height: 1.1;
+  --text-title--letter-spacing: -0.02em;
+
+  /* Chuyển động */
+  --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out-strong: cubic-bezier(0.77, 0, 0.175, 1);
+  --duration-fast: 140ms;
+  --duration-base: 220ms;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    @apply bg-surface font-sans text-base leading-relaxed text-ink antialiased;
+  }
+
+  ::selection {
+    background: var(--color-brand-200);
+    color: var(--color-ink);
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--color-brand-400);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@utility container-page {
+  @apply mx-auto w-full max-w-[1280px] px-4 sm:px-6 lg:px-8;
+}
+
+/* Nút: phẳng, một màu nền, pill; nhấn co 0.97 */
+@utility btn {
+  @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-(--radius-control) px-5 text-sm font-semibold
+    transition-[background-color,color,scale] duration-(--duration-fast) ease-(--ease-out-strong)
+    active:scale-[0.97] disabled:pointer-events-none disabled:opacity-50;
+}
+@utility btn-primary {
+  @apply btn bg-brand-600 text-white hover:bg-brand-700;
+}
+@utility btn-accent {
+  @apply btn bg-accent-500 text-ink hover:bg-accent-400;
+}
+@utility btn-soft {
+  @apply btn bg-brand-50 text-brand-700 hover:bg-brand-100;
+}
+@utility btn-ghost {
+  @apply btn bg-transparent text-ink hover:bg-surface-2;
+}
+@utility btn-light {
+  @apply btn bg-white text-brand-700 hover:bg-brand-50;
+}
+
+/* Ô nhập: trường biểu mẫu là nơi duy nhất dùng viền */
+@utility input {
+  @apply min-h-12 w-full rounded-xl border border-line bg-white px-4 text-base text-ink placeholder:text-ink-muted
+    transition-[border-color,box-shadow] duration-(--duration-fast)
+    focus:border-brand-500 focus:ring-4 focus:ring-brand-100 focus:outline-none
+    aria-[invalid=true]:border-danger aria-[invalid=true]:ring-danger-50;
+}
+
+/* ---------- Giấy tờ: chứng chỉ, phiếu, thẻ hồi đáp ---------- */
+
+/* Mép xé răng cưa ở trên và dưới */
+@utility paper-torn {
+  clip-path: polygon(
+    0% 8px, 4% 0%, 8% 8px, 12% 0%, 16% 8px, 20% 0%, 24% 8px, 28% 0%, 32% 8px, 36% 0%, 40% 8px, 44% 0%, 48% 8px,
+    52% 0%, 56% 8px, 60% 0%, 64% 8px, 68% 0%, 72% 8px, 76% 0%, 80% 8px, 84% 0%, 88% 8px, 92% 0%, 96% 8px, 100% 0%,
+    100% calc(100% - 8px), 96% 100%, 92% calc(100% - 8px), 88% 100%, 84% calc(100% - 8px), 80% 100%, 76% calc(100% - 8px),
+    72% 100%, 68% calc(100% - 8px), 64% 100%, 60% calc(100% - 8px), 56% 100%, 52% calc(100% - 8px), 48% 100%,
+    44% calc(100% - 8px), 40% 100%, 36% calc(100% - 8px), 32% 100%, 28% calc(100% - 8px), 24% 100%, 20% calc(100% - 8px),
+    16% 100%, 12% calc(100% - 8px), 8% 100%, 4% calc(100% - 8px), 0% 100%
+  );
+}
+
+/* Mép răng cưa chỉ ở dưới (phiếu tính tiền) */
+@utility paper-receipt {
+  clip-path: polygon(
+    0 0, 100% 0, 100% calc(100% - 10px), 95% 100%, 90% calc(100% - 10px), 85% 100%, 80% calc(100% - 10px), 75% 100%,
+    70% calc(100% - 10px), 65% 100%, 60% calc(100% - 10px), 55% 100%, 50% calc(100% - 10px), 45% 100%, 40% calc(100% - 10px),
+    35% 100%, 30% calc(100% - 10px), 25% 100%, 20% calc(100% - 10px), 15% 100%, 10% calc(100% - 10px), 5% 100%, 0 calc(100% - 10px)
+  );
+}
+
+/* Hàng chấm tròn dẫn giữa mô tả và số tiền */
+@utility dot-leader {
+  flex: 1;
+  min-width: 1rem;
+  height: 4px;
+  margin-inline: 0.5rem;
+  align-self: center;
+  background-image: radial-gradient(circle, var(--color-ink-muted) 1.5px, transparent 2px);
+  background-size: 8px 4px;
+  background-repeat: repeat-x;
+}
+
+/* ---------- Chuyển động ---------- */
+.reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition:
+    opacity 600ms var(--ease-out-strong) var(--reveal-delay, 0ms),
+    transform 600ms var(--ease-out-strong) var(--reveal-delay, 0ms);
+}
+.reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+@keyframes slow-drift {
+  from { transform: scale(1.06) translate3d(0, 0, 0); }
+  to { transform: scale(1.12) translate3d(-1.5%, -1%, 0); }
+}
+.drift {
+  animation: slow-drift 24s var(--ease-in-out-strong) infinite alternate;
+}
+
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(16px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+.rise-in {
+  animation: rise-in 700ms var(--ease-out-strong) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1; transform: none; }
+  .drift, .rise-in { animation: none; }
+}

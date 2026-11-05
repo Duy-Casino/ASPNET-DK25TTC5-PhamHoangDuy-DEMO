@@ -1,0 +1,10 @@
+**/bin/
+**/obj/
+**/*.db
+**/*.db-shm
+**/*.db-wal
+**/App_Data/
+**/wwwroot/uploads/*
+tests/
+.vs/
+*.user

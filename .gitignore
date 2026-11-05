@@ -1,0 +1,38 @@
+# .NET
+bin/
+obj/
+*.user
+.vs/
+appsettings.*.local.json
+
+# Node
+node_modules/
+dist/
+.env
+.env.local
+*.local
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Tools
+.taste-skill/
+
+# Demo database
+*.db
+*.db-shm
+*.db-wal
+
+# Tệp tải lên khi lưu cục bộ
+backend/src/OnlineLearning.API/wwwroot/uploads/*
+!backend/src/OnlineLearning.API/wwwroot/uploads/.gitkeep
+backend/src/OnlineLearning.API/App_Data/
+
+# Playwright
+test-results/
+playwright-report/
+blob-report/

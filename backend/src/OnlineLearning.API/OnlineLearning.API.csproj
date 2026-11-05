@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <RootNamespace>OnlineLearning.API</RootNamespace>
+    <UserSecretsId>onlinelearning-api-7c1e2f0a</UserSecretsId>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);1591</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\OnlineLearning.Application\OnlineLearning.Application.csproj" />
+    <ProjectReference Include="..\OnlineLearning.Infrastructure\OnlineLearning.Infrastructure.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.*">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.*" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="9.*" />
+  </ItemGroup>
+</Project>

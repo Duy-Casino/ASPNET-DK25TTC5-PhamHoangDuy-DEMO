@@ -1,0 +1,66 @@
+# CI: build + test backend, build frontend, chạy E2E Playwright trên API demo (SQLite) + Vite.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Backend (.NET 10)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - run: dotnet restore
+      - run: dotnet build --no-restore -c Release
+      - run: dotnet test --no-build -c Release --logger "trx;LogFileName=results.trx"
+      - name: Kiểm tra model không lệch migration
+        run: |
+          dotnet tool install --global dotnet-ef --version 10.*
+          dotnet ef migrations has-pending-model-changes -p src/OnlineLearning.Infrastructure -s src/OnlineLearning.API
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-test-results
+          path: backend/**/TestResults/*.trx
+
+  frontend:
+    name: Frontend (build + E2E)
+    runs-on: ubuntu-latest
+    needs: backend
+    defaults:
+      run:
+        working-directory: frontend/online-learning-client
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/online-learning-client/package-lock.json
+      - run: npm ci
+      - run: npm run build
+      - name: Cài font tiếng Việt (chứng chỉ PDF) và trình duyệt Playwright
+        run: |
+          sudo apt-get update && sudo apt-get install -y fonts-dejavu-core
+          npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: frontend/online-learning-client/playwright-report
+          retention-days: 14

@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>OnlineLearning.Application</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\OnlineLearning.Domain\OnlineLearning.Domain.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.*" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.*" />
+    <PackageReference Include="Microsoft.Extensions.Identity.Core" Version="10.0.*" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.*" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.*" />
+    <PackageReference Include="HtmlSanitizer" Version="9.*" />
+  </ItemGroup>
+</Project>
