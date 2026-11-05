@@ -4,6 +4,7 @@ import { ArrowRight, QrCode } from 'lucide-react'
 import { CourseGrid } from '../components/course/CourseCard'
 import { Avatar, ErrorState, RatingStars, Skeleton } from '../components/ui'
 import { useAsync, useDocumentTitle } from '../hooks/useAsync'
+import { useAuth } from '../hooks/useAuth'
 import { useReveal } from '../hooks/useReveal'
 import { catalogService } from '../services/api'
 import type { HomeData } from '../types/api'
@@ -27,6 +28,8 @@ function sampleCode(name: string): string {
 /* Hero: tấm chứng chỉ đặt trên nền ảnh tối — gõ tên để thấy tên mình */
 /* ------------------------------------------------------------------ */
 function CertificateHero({ data }: { data: HomeData | null }) {
+  const { isAuthenticated, initializing } = useAuth()
+  const showSignUp = !initializing && !isAuthenticated
   const [name, setName] = useState('')
   const shownName = name.trim() || 'Tên của bạn'
   const code = useMemo(() => sampleCode(name.trim() || 'EduViet'), [name])
@@ -57,7 +60,10 @@ function CertificateHero({ data }: { data: HomeData | null }) {
                 <Link to="/khoa-hoc" className="btn-primary min-h-12 px-7 text-base">
                   Khám phá khóa học <ArrowRight className="size-5" aria-hidden="true" />
                 </Link>
-                <Link to="/dang-ky" className="btn-ghost min-h-12 text-base underline-offset-4 hover:underline">Đăng ký miễn phí</Link>
+                {/* Chỉ mời đăng ký khi chắc chắn là khách (đã khôi phục phiên xong và chưa đăng nhập) */}
+                {showSignUp && (
+                  <Link to="/dang-ky" className="btn-ghost min-h-12 text-base underline-offset-4 hover:underline">Đăng ký miễn phí</Link>
+                )}
               </div>
             </div>
 
@@ -349,6 +355,7 @@ function HomeSkeleton() {
 export default function HomePage() {
   useDocumentTitle('Khóa học trực tuyến có chứng chỉ')
   const { data, loading, error, reload } = useAsync(() => catalogService.home(), [])
+  const { isAuthenticated, initializing } = useAuth()
 
   return (
     <>
@@ -366,7 +373,8 @@ export default function HomePage() {
             courses={data.newest} link="/khoa-hoc?sort=newest" />
           <Instructors data={data} />
           <Testimonials data={data} />
-          <ReplyCard />
+          {/* Thẻ mời tạo tài khoản chỉ dành cho khách */}
+          {!initializing && !isAuthenticated && <ReplyCard />}
         </>
       )}
     </>
