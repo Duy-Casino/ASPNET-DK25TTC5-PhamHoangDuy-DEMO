@@ -59,7 +59,10 @@ services:
       - uploads:/app/wwwroot/uploads
 
   web:
-    build: ./frontend/online-learning-client
+    build:
+      context: ./frontend/online-learning-client
+      args:
+        VITE_SITE_URL: ${PUBLIC_URL}
     restart: unless-stopped
     depends_on:
       - api

@@ -1,13 +1,16 @@
-import { useEffect, useRef, useState, type FormEvent, type ReactNode, type RefObject } from 'react'
+import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode, type RefObject } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import {
-  ArrowRight, BookOpen, ChevronDown, GraduationCap, Home, LogOut, Mail, MapPin, Menu, Phone, Search, ShieldCheck, ShoppingCart, X,
+  ArrowRight, Bell, BookOpen, ChevronDown, GraduationCap, Home, LogOut, Mail, MapPin, Menu, Phone, Search, ShieldCheck, ShoppingCart, X,
 } from 'lucide-react'
 import { toast } from 'sonner'
-import { Avatar, DecorBlobs, Logo } from '../components/ui'
+import { Avatar, DecorBlobs, Logo, Spinner } from '../components/ui'
+import type { Notification } from '../types/api'
+import { formatRelative } from '../utils/format'
 import { useAsync } from '../hooks/useAsync'
 import { useAuth, useCart } from '../hooks/useAuth'
-import { catalogService } from '../services/api'
+import { site } from '../config/site'
+import { catalogService, notificationService } from '../services/api'
 
 /** Đóng một vùng nổi khi bấm ra ngoài hoặc nhấn Escape. */
 function useDismiss(open: boolean, close: () => void, ref: RefObject<HTMLElement | null>) {
@@ -100,6 +103,111 @@ function UserMenu() {
           <button type="button" role="menuitem" onClick={doLogout} className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-danger hover:bg-danger-50">
             <LogOut className="size-4" aria-hidden="true" /> Đăng xuất
           </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+/** Chuông thông báo: số chưa đọc (cập nhật mỗi phút, khi quay lại tab, khi đổi trang) + danh sách 10 thông báo mới nhất. */
+function NotificationBell() {
+  const [open, setOpen] = useState(false)
+  const [count, setCount] = useState(0)
+  const [items, setItems] = useState<Notification[] | null>(null)
+  const [failed, setFailed] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+  const navigate = useNavigate()
+  const { pathname } = useLocation()
+  useDismiss(open, () => setOpen(false), ref)
+
+  const refreshCount = useCallback(() => {
+    notificationService.unreadCount().then((r) => setCount(r.count)).catch(() => { /* bỏ qua: chuông chỉ là phụ */ })
+  }, [])
+
+  useEffect(() => {
+    refreshCount()
+    const id = window.setInterval(refreshCount, 60_000)
+    const onFocus = () => refreshCount()
+    window.addEventListener('focus', onFocus)
+    return () => { window.clearInterval(id); window.removeEventListener('focus', onFocus) }
+  }, [refreshCount])
+  useEffect(() => { refreshCount(); setOpen(false) }, [pathname, refreshCount])
+
+  useEffect(() => {
+    if (!open) return
+    setFailed(false)
+    notificationService.mine(1).then((r) => setItems(r.items)).catch(() => setFailed(true))
+  }, [open])
+
+  const openItem = async (n: Notification) => {
+    if (!n.isRead) {
+      setItems((list) => list?.map((x) => (x.id === n.id ? { ...x, isRead: true } : x)) ?? null)
+      setCount((c) => Math.max(0, c - 1))
+      notificationService.markRead(n.id).catch(() => refreshCount())
+    }
+    setOpen(false)
+    if (n.link) {
+      if (/^https?:\/\//i.test(n.link)) window.location.assign(n.link)
+      else navigate(n.link)
+    }
+  }
+
+  const markAll = async () => {
+    setItems((list) => list?.map((x) => ({ ...x, isRead: true })) ?? null)
+    setCount(0)
+    try { await notificationService.markAllRead() } catch { refreshCount() }
+  }
+
+  return (
+    <div ref={ref} className="relative">
+      <button type="button" aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen((o) => !o)}
+        aria-label={count > 0 ? `Thông báo, ${count} chưa đọc` : 'Thông báo'}
+        className="relative flex size-11 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-surface-2 hover:text-ink active:scale-95">
+        <Bell className="size-5" aria-hidden="true" />
+        {count > 0 && (
+          <span className="absolute top-1 right-1 flex min-w-5 items-center justify-center rounded-full bg-danger px-1 text-[11px] leading-5 font-bold text-white tabular-nums">
+            {count > 9 ? '9+' : count}
+          </span>
+        )}
+      </button>
+      {open && (
+        <div role="dialog" aria-label="Thông báo" className="rise-in card absolute right-0 z-50 mt-2 w-[min(380px,calc(100vw-2rem))] origin-top-right overflow-hidden shadow-(--shadow-lift)" style={{ animationDuration: '180ms' }}>
+          <div className="flex items-center justify-between gap-3 border-b border-line/70 px-4 py-3">
+            <p className="font-display font-semibold">Thông báo</p>
+            <button type="button" className="text-sm font-semibold text-brand-700 hover:underline disabled:text-ink-muted disabled:no-underline"
+              onClick={markAll} disabled={!items?.some((n) => !n.isRead)}>
+              Đánh dấu đã đọc tất cả
+            </button>
+          </div>
+          <div className="max-h-[420px] overflow-y-auto">
+            {failed ? (
+              <p className="p-6 text-center text-ink-soft">Không tải được thông báo. Thử lại sau.</p>
+            ) : items === null ? (
+              <div className="flex justify-center p-8"><Spinner className="size-5 text-brand-600" /></div>
+            ) : items.length === 0 ? (
+              <div className="flex flex-col items-center gap-2 p-8 text-center">
+                <Bell className="size-8 text-ink-muted" aria-hidden="true" />
+                <p className="font-semibold">Chưa có thông báo</p>
+                <p className="text-sm text-ink-soft">Thông báo về đơn hàng, khóa học và chứng chỉ sẽ hiện ở đây.</p>
+              </div>
+            ) : (
+              <ul>
+                {items.map((n) => (
+                  <li key={n.id}>
+                    <button type="button" onClick={() => openItem(n)}
+                      className={`flex w-full gap-3 border-b border-line/50 px-4 py-3 text-left transition-colors hover:bg-surface-2 ${n.isRead ? '' : 'bg-brand-50/60'}`}>
+                      <span className={`mt-2 size-2 shrink-0 rounded-full ${n.isRead ? 'bg-transparent' : 'bg-brand-600'}`} aria-hidden="true" />
+                      <span className="min-w-0 flex-1">
+                        <span className="block font-semibold">{n.title}<span className="sr-only">{n.isRead ? '' : ' (chưa đọc)'}</span></span>
+                        <span className="mt-0.5 line-clamp-2 block text-sm text-ink-soft">{n.message}</span>
+                        <span className="mt-1 block text-xs text-ink-muted">{formatRelative(n.createdAt)}</span>
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
       )}
     </div>
@@ -231,6 +339,7 @@ function Header() {
               <span className="absolute top-0.5 right-0.5 flex size-5 items-center justify-center rounded-full bg-accent-500 text-xs font-bold text-ink">{cart.count}</span>
             )}
           </Link>
+          {!initializing && isAuthenticated && <NotificationBell />}
           {!initializing && (isAuthenticated ? (
             <UserMenu />
           ) : (
@@ -325,32 +434,40 @@ function Footer() {
             Nền tảng khóa học trực tuyến của giảng viên Việt. Mỗi chứng chỉ có mã riêng để nhà tuyển dụng tự kiểm tra.
           </p>
           <ul className="flex flex-col gap-2.5 text-ink-soft">
-            <li><a className={`inline-flex items-center gap-2 ${lnk}`} href="mailto:hotro@eduviet.local"><Mail className="size-4 text-brand-600" aria-hidden="true" />hotro@eduviet.local</a></li>
-            <li><a className={`inline-flex items-center gap-2 ${lnk}`} href="tel:19001234"><Phone className="size-4 text-brand-600" aria-hidden="true" />1900 1234</a></li>
-            <li className="inline-flex items-center gap-2"><MapPin className="size-4 text-brand-600" aria-hidden="true" />TP. Hồ Chí Minh</li>
+            <li><a className={`inline-flex items-center gap-2 ${lnk}`} href={`mailto:${site.email}`}><Mail className="size-4 text-brand-600" aria-hidden="true" />{site.email}</a></li>
+            <li><a className={`inline-flex items-center gap-2 ${lnk}`} href={site.phoneHref}><Phone className="size-4 text-brand-600" aria-hidden="true" />{site.phone}</a></li>
+            <li className="inline-flex items-center gap-2"><MapPin className="size-4 text-brand-600" aria-hidden="true" />{site.address}</li>
           </ul>
+          {site.social.length > 0 && (
+            <ul className="flex flex-wrap gap-2">
+              {site.social.map((s) => (
+                <li key={s.href}><a href={s.href} target="_blank" rel="noopener noreferrer" className="chip min-h-9 px-3.5 text-sm">{s.label}</a></li>
+              ))}
+            </ul>
+          )}
         </div>
         <FooterCol title="Khám phá">
           <li><Link className={lnk} to="/khoa-hoc">Tất cả khóa học</Link></li>
           <li><Link className={lnk} to="/khoa-hoc?sort=popular">Bán chạy</Link></li>
-          <li><Link className={lnk} to="/khoa-hoc?sort=newest">Mới xuất bản</Link></li>
           <li><Link className={lnk} to="/khoa-hoc?free=true">Khóa miễn phí</Link></li>
-        </FooterCol>
-        <FooterCol title="Học viên">
-          <li><Link className={lnk} to="/hoc-vien">Khóa học của tôi</Link></li>
-          <li><Link className={lnk} to="/hoc-vien/chung-chi">Chứng chỉ của tôi</Link></li>
-          <li><Link className={lnk} to="/tai-khoan/don-hang">Lịch sử mua hàng</Link></li>
-          <li><Link className={lnk} to="/tai-khoan">Hồ sơ cá nhân</Link></li>
-        </FooterCol>
-        <FooterCol title="Hỗ trợ">
           <li><Link className={lnk} to="/xac-minh">Xác minh chứng chỉ</Link></li>
-          <li><Link className={lnk} to="/quen-mat-khau">Quên mật khẩu</Link></li>
+        </FooterCol>
+        <FooterCol title="Về EduViet">
+          <li><Link className={lnk} to="/gioi-thieu">Giới thiệu</Link></li>
+          <li><Link className={lnk} to="/lien-he">Liên hệ</Link></li>
+          <li><Link className={lnk} to="/hoc-vien">Khóa học của tôi</Link></li>
+          <li><Link className={lnk} to="/tai-khoan/don-hang">Lịch sử mua hàng</Link></li>
+        </FooterCol>
+        <FooterCol title="Chính sách">
+          <li><Link className={lnk} to="/chinh-sach/dieu-khoan">Điều khoản sử dụng</Link></li>
+          <li><Link className={lnk} to="/chinh-sach/hoan-tien">Chính sách hoàn tiền</Link></li>
+          <li><Link className={lnk} to="/chinh-sach/bao-mat">Chính sách bảo mật</Link></li>
           <li>Thanh toán VNPay · MoMo</li>
         </FooterCol>
       </div>
       <div className="border-t border-line/70">
         <div className="container-page flex flex-col gap-2 py-5 text-sm text-ink-muted sm:flex-row sm:items-center sm:justify-between">
-          <p>© {new Date().getFullYear()} EduViet. Bảo lưu mọi quyền.</p>
+          <p>© {new Date().getFullYear()} {site.name}. Bảo lưu mọi quyền.</p>
           <p>Ảnh minh họa: Unsplash qua picsum.photos</p>
         </div>
       </div>

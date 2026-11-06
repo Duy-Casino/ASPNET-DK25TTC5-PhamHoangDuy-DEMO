@@ -1,7 +1,8 @@
-import { useId, type InputHTMLAttributes, type ReactNode, type TextareaHTMLAttributes } from 'react'
+import { useId, type ImgHTMLAttributes, type InputHTMLAttributes, type ReactNode, type TextareaHTMLAttributes } from 'react'
 import { Link } from 'react-router-dom'
 import { Loader2, Star } from 'lucide-react'
 import { initials } from '../../utils/format'
+import { responsiveImage } from '../../utils/image'
 
 export function Logo({ inverted = false, asLink = true }: { inverted?: boolean; asLink?: boolean }) {
   const content = (
@@ -61,6 +62,18 @@ export function Avatar({ name, src, size = 40 }: { name: string; src?: string | 
 
 export function Skeleton({ className = '' }: { className?: string }) {
   return <div className={`animate-pulse rounded-(--radius-card) bg-surface-3 ${className}`} aria-hidden="true" />
+}
+
+/**
+ * Ảnh có srcSet/sizes (Cloudinary, picsum) để trình duyệt tải đúng cỡ; mặc định lazy + decode bất đồng bộ.
+ * `sizes` mô tả bề rộng hiển thị, ví dụ "(min-width: 1024px) 300px, 100vw".
+ */
+export function ResponsiveImg({ url, sizes, maxWidth = 960, ratio, eager = false, alt = '', ...rest }: Omit<ImgHTMLAttributes<HTMLImageElement>, 'src' | 'srcSet' | 'loading'> & {
+  url: string | null | undefined; sizes: string; maxWidth?: number; ratio?: number; eager?: boolean
+}) {
+  const img = responsiveImage(url, maxWidth, ratio)
+  if (!img) return null
+  return <img src={img.src} srcSet={img.srcSet} sizes={img.srcSet ? sizes : undefined} alt={alt} loading={eager ? 'eager' : 'lazy'} decoding="async" {...rest} />
 }
 
 /** Khối tròn mờ trang trí phía sau nội dung (mint + xanh), không nhận sự kiện chuột. */

@@ -3,7 +3,7 @@ import { BookOpen, Clock, Users } from 'lucide-react'
 import type { CourseSummary } from '../../types/api'
 import { courseLevelLabel } from '../../types/common'
 import { discountPercent, formatDuration, formatNumber, formatPrice } from '../../utils/format'
-import { RatingStars, Skeleton } from '../ui'
+import { RatingStars, ResponsiveImg, Skeleton } from '../ui'
 
 /** Thẻ khóa học: ảnh trong khung bo góc, lĩnh vực, tên, giảng viên, đánh giá, giá. Cả thẻ là một liên kết. */
 export function CourseCard({ course, eager = false }: { course: CourseSummary; eager?: boolean }) {
@@ -15,17 +15,14 @@ export function CourseCard({ course, eager = false }: { course: CourseSummary; e
       data-reveal
     >
       <div className="relative aspect-video overflow-hidden rounded-xl bg-surface-3">
-        {course.thumbnailUrl && (
-          <img
-            src={course.thumbnailUrl}
-            alt=""
-            width={800}
-            height={450}
-            loading={eager ? 'eager' : 'lazy'}
-            decoding="async"
-            className="size-full object-cover transition-transform duration-500 ease-(--ease-out-strong) group-hover:scale-[1.04]"
-          />
-        )}
+        <ResponsiveImg
+          url={course.thumbnailUrl}
+          sizes="(min-width: 1280px) 290px, (min-width: 1024px) 30vw, (min-width: 640px) 46vw, 92vw"
+          width={800}
+          height={450}
+          eager={eager}
+          className="size-full object-cover transition-transform duration-500 ease-(--ease-out-strong) group-hover:scale-[1.04]"
+        />
         <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">
           {course.enrollmentCount >= 5 && (
             <span className="rounded-full bg-sun-300 px-2.5 py-1 text-xs font-bold text-ink">Bán chạy</span>
@@ -69,12 +66,13 @@ export function CourseCardSkeleton() {
   )
 }
 
-export function CourseGrid({ courses, loading, skeletons = 8, columns = 4 }: { courses: CourseSummary[]; loading?: boolean; skeletons?: number; columns?: 3 | 4 }) {
+/** `eagerCount`: số ảnh đầu tiên tải ngay (lưới nằm ở đầu trang); lưới ở giữa/cuối trang nên để 0. */
+export function CourseGrid({ courses, loading, skeletons = 8, columns = 4, eagerCount = 4 }: { courses: CourseSummary[]; loading?: boolean; skeletons?: number; columns?: 3 | 4; eagerCount?: number }) {
   return (
     <div className={`grid grid-cols-1 gap-6 sm:grid-cols-2 ${columns === 4 ? 'lg:grid-cols-3 xl:grid-cols-4' : 'lg:grid-cols-2 xl:grid-cols-3'}`}>
       {loading
         ? Array.from({ length: skeletons }, (_, i) => <CourseCardSkeleton key={i} />)
-        : courses.map((c, i) => <CourseCard key={c.id} course={c} eager={i < 4} />)}
+        : courses.map((c, i) => <CourseCard key={c.id} course={c} eager={i < eagerCount} />)}
     </div>
   )
 }

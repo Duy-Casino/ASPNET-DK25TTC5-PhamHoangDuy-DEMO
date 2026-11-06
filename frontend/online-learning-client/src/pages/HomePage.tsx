@@ -5,8 +5,10 @@ import {
   MessagesSquare, MonitorSmartphone, Palette, PlayCircle, QrCode, Quote, Search, ShieldCheck, Users, type LucideIcon,
 } from 'lucide-react'
 import { CourseGrid } from '../components/course/CourseCard'
-import { Avatar, DecorBlobs, ErrorState, RatingStars, SectionHeading, Skeleton } from '../components/ui'
-import { useAsync, useDocumentTitle } from '../hooks/useAsync'
+import { ResponsiveImg, Avatar, DecorBlobs, ErrorState, RatingStars, SectionHeading, Skeleton } from '../components/ui'
+import { site } from '../config/site'
+import { useAsync } from '../hooks/useAsync'
+import { useSeo } from '../hooks/useSeo'
 import { useReveal } from '../hooks/useReveal'
 import { catalogService } from '../services/api'
 import type { CourseSummary, HomeData } from '../types/api'
@@ -53,13 +55,13 @@ function HeroVisual({ data }: { data: HomeData }) {
 
       {back?.thumbnailUrl && (
         <div className="card absolute top-6 right-2 w-[210px] rotate-6 p-2 sm:right-0 sm:w-[240px]">
-          <img src={back.thumbnailUrl} alt="" width={480} height={270} className="aspect-video w-full rounded-lg object-cover" />
+          <ResponsiveImg url={back.thumbnailUrl} sizes="240px" maxWidth={480} width={480} height={270} className="aspect-video w-full rounded-lg object-cover" />
         </div>
       )}
 
       <div className="card absolute top-1/2 left-1/2 z-10 w-[290px] -translate-x-1/2 -translate-y-1/2 p-3 shadow-(--shadow-lift) sm:w-[330px]">
         {main.thumbnailUrl && (
-          <img src={main.thumbnailUrl} alt="" width={660} height={371} fetchPriority="high" className="aspect-video w-full rounded-xl object-cover" />
+          <ResponsiveImg url={main.thumbnailUrl} sizes="330px" maxWidth={640} width={660} height={371} eager fetchPriority="high" className="aspect-video w-full rounded-xl object-cover" />
         )}
         <div className="flex flex-col gap-1.5 px-1 pt-3 pb-1">
           <span className="chip self-start">{main.category.name}</span>
@@ -74,10 +76,53 @@ function HeroVisual({ data }: { data: HomeData }) {
 
       <FloatChip className="float-slow top-10 left-0" icon={QrCode} tone="bg-mint-100 text-mint-700">Chứng chỉ có mã QR</FloatChip>
       <FloatChip className="float-slow-delay right-0 bottom-3" icon={CreditCard} tone="bg-brand-50 text-brand-700">VNPay · MoMo</FloatChip>
-      <FloatChip className="float-slow bottom-20 left-0 sm:-left-4" icon={Users} tone="bg-accent-50 text-accent-700">
-        {formatNumber(data.stats.totalStudents)} học viên
-      </FloatChip>
+      {data.stats.totalStudents >= site.statThresholds.students ? (
+        <FloatChip className="float-slow bottom-20 left-0 sm:-left-4" icon={Users} tone="bg-accent-50 text-accent-700">
+          {formatNumber(data.stats.totalStudents)} học viên
+        </FloatChip>
+      ) : (
+        <FloatChip className="float-slow bottom-3 left-0" icon={PlayCircle} tone="bg-accent-50 text-accent-700">Học thử miễn phí</FloatChip>
+      )}
     </div>
+  )
+}
+
+/**
+ * Dải số liệu dưới hero. Chỉ khoe con số khi đã đủ lớn (ngưỡng trong config/site.ts);
+ * khi còn nhỏ thì hiện ba cam kết của nền tảng để không làm khách mới mất niềm tin.
+ */
+function HeroFacts({ data }: { data: HomeData | null }) {
+  const box = 'mt-2 grid w-full max-w-lg grid-cols-3 divide-x divide-line rounded-2xl bg-white/80 py-4 shadow-(--shadow-soft)'
+  if (!data) return <div className={box}><div className="col-span-3 px-4"><Skeleton className="h-10 w-full" /></div></div>
+  const t = site.statThresholds
+  const s = data.stats
+  const showNumbers = s.totalStudents >= t.students && s.totalCourses >= t.courses && s.totalInstructors >= t.instructors
+  if (showNumbers) {
+    return (
+      <dl className={box}>
+        {([[s.totalCourses, 'khóa học'], [s.totalInstructors, 'giảng viên'], [s.totalStudents, 'học viên']] as const).map(([n, label]) => (
+          <div key={label} className="flex flex-col items-center gap-0.5 px-2">
+            <dt className="order-2 text-sm text-ink-soft">{label}</dt>
+            <dd className="order-1 font-display text-2xl font-semibold text-brand-700 tabular-nums">{formatNumber(n)}</dd>
+          </div>
+        ))}
+      </dl>
+    )
+  }
+  const facts: { icon: LucideIcon; label: string }[] = [
+    { icon: PlayCircle, label: 'Học thử miễn phí' },
+    { icon: CreditCard, label: 'VNPay · MoMo' },
+    { icon: QrCode, label: 'Chứng chỉ có QR' },
+  ]
+  return (
+    <ul className={box}>
+      {facts.map(({ icon: Icon, label }) => (
+        <li key={label} className="flex flex-col items-center gap-1.5 px-2 text-center">
+          <Icon className="size-6 text-brand-600" aria-hidden="true" />
+          <span className="text-sm font-medium text-ink-soft">{label}</span>
+        </li>
+      ))}
+    </ul>
   )
 }
 
@@ -105,22 +150,7 @@ function Hero({ data }: { data: HomeData | null }) {
               <ShieldCheck className="size-5" aria-hidden="true" /> Xác minh chứng chỉ
             </Link>
           </div>
-          <dl className="mt-2 grid w-full max-w-lg grid-cols-3 divide-x divide-line rounded-2xl bg-white/80 py-4 shadow-(--shadow-soft)">
-            {data ? (
-              [
-                [data.stats.totalCourses, 'khóa học'],
-                [data.stats.totalInstructors, 'giảng viên'],
-                [data.stats.totalStudents, 'học viên'],
-              ].map(([n, label]) => (
-                <div key={label} className="flex flex-col items-center gap-0.5 px-2">
-                  <dt className="order-2 text-sm text-ink-soft">{label}</dt>
-                  <dd className="order-1 font-display text-2xl font-semibold text-brand-700 tabular-nums">{formatNumber(Number(n))}</dd>
-                </div>
-              ))
-            ) : (
-              <div className="col-span-3 px-4"><Skeleton className="h-10 w-full" /></div>
-            )}
-          </dl>
+          <HeroFacts data={data} />
         </div>
         <div className="min-w-0">
           {data ? <HeroVisual data={data} /> : <Skeleton className="mx-auto h-[420px] w-full max-w-[520px]" />}
@@ -247,7 +277,7 @@ function CategoryTabs({ data }: { data: HomeData }) {
           <Link to={`/khoa-hoc/${hero.slug}`} className="group relative block">
             <div className="overflow-hidden rounded-2xl bg-surface-3">
               {hero.thumbnailUrl && (
-                <img src={hero.thumbnailUrl} alt="" width={800} height={500} loading="lazy"
+                <ResponsiveImg url={hero.thumbnailUrl} sizes="(min-width: 1024px) 560px, 92vw" ratio={16 / 10} width={800} height={500}
                   className="aspect-[16/10] w-full object-cover transition-transform duration-700 ease-(--ease-out-strong) group-hover:scale-[1.03]" />
               )}
             </div>
@@ -274,7 +304,7 @@ function CourseBlock({ id, eyebrow, title, lead, courses, link }: { id: string; 
     <section ref={ref} className="container-page pb-20 md:pb-24" aria-labelledby={id}>
       <SectionHeading id={id} eyebrow={eyebrow} title={title} lead={lead}
         action={<Link to={link} className="btn-outline">Xem tất cả <ArrowRight className="size-4" aria-hidden="true" /></Link>} />
-      <CourseGrid courses={shown} />
+      <CourseGrid courses={shown} eagerCount={0} />
     </section>
   )
 }
@@ -409,7 +439,7 @@ function VerifySplit({ data }: { data: HomeData }) {
           <p className="text-lg text-ink-soft">
             Mỗi chứng chỉ EduViet có một mã riêng dạng EDV-YYYY-XXXXXXXX và mã QR. Nhập mã bên dưới để xem chứng chỉ còn hiệu lực,
             cấp cho ai và cho khóa học nào.
-            {data.stats.totalCertificates > 0 && <> Đã có <b className="text-ink">{formatNumber(data.stats.totalCertificates)}</b> chứng chỉ được cấp.</>}
+            {data.stats.totalCertificates >= site.statThresholds.certificates && <> Đã có <b className="text-ink">{formatNumber(data.stats.totalCertificates)}</b> chứng chỉ được cấp.</>}
           </p>
           <form onSubmit={submit} className="flex w-full max-w-lg flex-col gap-2 sm:flex-row">
             <label htmlFor="home-verify" className="sr-only">Mã chứng chỉ</label>
@@ -432,8 +462,21 @@ function HomeSkeleton() {
 }
 
 export default function HomePage() {
-  useDocumentTitle('Khóa học trực tuyến có chứng chỉ')
-  const { data, loading, error, reload } = useAsync(() => catalogService.home(), [])
+  useSeo({
+    jsonLd: {
+      '@context': 'https://schema.org',
+      '@type': 'WebSite',
+      name: site.name,
+      url: window.location.origin,
+      potentialAction: {
+        '@type': 'SearchAction',
+        target: `${window.location.origin}/khoa-hoc?keyword={search_term_string}`,
+        'query-input': 'required name=search_term_string',
+      },
+    },
+  })
+  // Tự thử lại 2 lần khi API chưa sẵn sàng (vừa khởi động, mạng chập chờn) trước khi báo lỗi
+  const { data, loading, error, reload } = useAsync(() => catalogService.home(), [], { retries: 2 })
 
   return (
     <>

@@ -24,6 +24,10 @@ const OrdersPage = lazy(() => import('./pages/account/OrdersPage'))
 const VerifyCertificatePage = lazy(() => import('./pages/VerifyCertificatePage'))
 const AdminCertificatesPage = lazy(() => import('./pages/admin/AdminCertificatesPage'))
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'))
+const info = () => import('./pages/info/InfoPages')
+const AboutPage = lazy(() => info().then((m) => ({ default: m.AboutPage })))
+const ContactPage = lazy(() => info().then((m) => ({ default: m.ContactPage })))
+const PolicyPage = lazy(() => info().then((m) => ({ default: m.PolicyPage })))
 
 // Học tập
 const LearnPage = lazy(() => import('./pages/learn/LearnPage'))
@@ -79,6 +83,9 @@ export default function App() {
           <Route path="xac-nhan-email" element={<ConfirmEmailPage />} />
           <Route path="xac-minh" element={<VerifyCertificatePage />} />
           <Route path="xac-minh/:code" element={<VerifyCertificatePage />} />
+          <Route path="gioi-thieu" element={<AboutPage />} />
+          <Route path="lien-he" element={<ContactPage />} />
+          <Route path="chinh-sach/:slug" element={<PolicyPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Route>
 

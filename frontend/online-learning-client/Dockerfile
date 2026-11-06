@@ -8,6 +8,9 @@ RUN npm ci
 COPY . .
 # API cùng tên miền (Nginx chuyển /api và /uploads sang API) nên để trống VITE_API_BASE_URL
 ENV VITE_API_BASE_URL=
+# Tên miền công khai (không có / ở cuối) cho thẻ chia sẻ Open Graph và canonical
+ARG VITE_SITE_URL=http://localhost
+ENV VITE_SITE_URL=${VITE_SITE_URL}
 RUN npm run build
 
 FROM nginx:1.27-alpine AS runtime

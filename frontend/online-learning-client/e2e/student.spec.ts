@@ -91,6 +91,16 @@ test.describe('Học viên', () => {
     await page.getByRole('button', { name: 'Tải PDF' }).click()
     expect((await download).suggestedFilename()).toBe(`chung-chi-${code}.pdf`)
 
+    // Chuông thông báo: có thông báo "Bạn đã nhận chứng chỉ" chưa đọc → mở → hết chưa đọc
+    await page.goto('/')
+    const bell = page.getByRole('button', { name: /^Thông báo, \d+ chưa đọc$/ })
+    await expect(bell).toBeVisible()
+    await bell.click()
+    const panel = page.getByRole('dialog', { name: 'Thông báo' })
+    await expect(panel.getByText('Bạn đã nhận chứng chỉ')).toBeVisible()
+    await panel.getByRole('button', { name: 'Đánh dấu đã đọc tất cả' }).click()
+    await expect(page.getByRole('button', { name: 'Thông báo', exact: true })).toBeVisible()
+
     // Người lạ (không đăng nhập) xác minh được
     const anon = await browser.newPage()
     await anon.goto(`/xac-minh/${code}`)

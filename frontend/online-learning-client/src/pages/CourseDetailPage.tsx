@@ -3,8 +3,10 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import DOMPurify from 'dompurify'
 import { Check, ChevronDown, FileText, PlayCircle, Star, X } from 'lucide-react'
 import { toast } from 'sonner'
-import { Avatar, DecorBlobs, ErrorState, Pagination, RatingStars, Skeleton, Spinner, TextArea } from '../components/ui'
-import { useAsync, useDocumentTitle } from '../hooks/useAsync'
+import { ResponsiveImg, Avatar, DecorBlobs, ErrorState, Pagination, RatingStars, Skeleton, Spinner, TextArea } from '../components/ui'
+import { site } from '../config/site'
+import { useAsync } from '../hooks/useAsync'
+import { useSeo } from '../hooks/useSeo'
 import { useAuth, useCart } from '../hooks/useAuth'
 import { useReveal } from '../hooks/useReveal'
 import { catalogService, reviewService } from '../services/api'
@@ -14,12 +16,51 @@ import { courseLevelLabel } from '../types/common'
 import { discountPercent, formatClock, formatDate, formatDuration, formatNumber, formatPrice } from '../utils/format'
 import NotFoundPage from './NotFoundPage'
 
+/** Dữ liệu có cấu trúc schema.org/Course để Google hiển thị giá, đánh giá, nhà cung cấp. */
+function courseJsonLd(c: CourseDetail): Record<string, unknown> {
+  const origin = window.location.origin
+  const effective = c.discountPrice !== null && c.discountPrice < c.price ? c.discountPrice : c.price
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Course',
+    name: c.title,
+    description: c.shortDescription ?? c.title,
+    url: `${origin}/khoa-hoc/${c.slug}`,
+    ...(c.thumbnailUrl ? { image: c.thumbnailUrl } : {}),
+    inLanguage: 'vi',
+    provider: { '@type': 'Organization', name: site.name, url: origin },
+    offers: {
+      '@type': 'Offer',
+      category: effective === 0 ? 'Free' : 'Paid',
+      price: effective,
+      priceCurrency: 'VND',
+      availability: 'https://schema.org/InStock',
+      url: `${origin}/khoa-hoc/${c.slug}`,
+    },
+    hasCourseInstance: {
+      '@type': 'CourseInstance',
+      courseMode: 'Online',
+      instructor: { '@type': 'Person', name: c.instructor.fullName },
+    },
+    ...(c.reviewCount > 0
+      ? { aggregateRating: { '@type': 'AggregateRating', ratingValue: Number(c.averageRating.toFixed(1)), reviewCount: c.reviewCount, bestRating: 5 } }
+      : {}),
+  }
+}
+
 export default function CourseDetailPage() {
   const { slug = '' } = useParams()
-  const { data: course, loading, error, status, reload } = useAsync(() => catalogService.detail(slug), [slug])
+  const { data: course, loading, error, status, reload } = useAsync(() => catalogService.detail(slug), [slug], { retries: 2 })
   const [preview, setPreview] = useState<{ title: string; url: string } | null>(null)
   const ref = useReveal<HTMLDivElement>()
-  useDocumentTitle(course?.title)
+  useSeo({
+    title: course?.title,
+    description: course?.shortDescription,
+    image: course?.thumbnailUrl,
+    path: `/khoa-hoc/${slug}`,
+    noindex: status === 404,
+    jsonLd: course ? courseJsonLd(course) : null,
+  })
 
   if (status === 404) return <NotFoundPage />
   if (error) return <div className="container-page py-24"><ErrorState message={error} onRetry={reload} /></div>
@@ -153,7 +194,7 @@ function PurchaseCard({ course, onPreview }: { course: CourseDetail; onPreview: 
         onClick={() => course.previewVideoUrl && onPreview({ title: course.title, url: course.previewVideoUrl })}
         className="group relative block aspect-video w-full overflow-hidden bg-surface-3"
       >
-        {course.thumbnailUrl && <img src={course.thumbnailUrl} alt="" width={800} height={450} className="size-full object-cover" />}
+        <ResponsiveImg url={course.thumbnailUrl} sizes="(min-width: 1024px) 380px, 92vw" width={800} height={450} eager className="size-full object-cover" />
         {course.previewVideoUrl && (
           <span className="absolute inset-0 flex items-center justify-center bg-ink/30 transition-colors group-hover:bg-ink/45">
             <span className="flex items-center gap-2 rounded-(--radius-control) bg-white px-4 py-2 font-semibold transition-transform group-active:scale-95">

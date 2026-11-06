@@ -24,6 +24,26 @@ public sealed class CatalogTests(TestApp app)
     }
 
     [Fact]
+    public async Task Sitemap_lists_static_pages_and_only_published_courses()
+    {
+        var res = await app.Anonymous().GetAsync("/sitemap.xml");
+        Assert.Equal(HttpStatusCode.OK, res.StatusCode);
+        Assert.Equal("application/xml", res.Content.Headers.ContentType?.MediaType);
+
+        var doc = System.Xml.Linq.XDocument.Parse(await res.Content.ReadAsStringAsync());
+        System.Xml.Linq.XNamespace ns = "http://www.sitemaps.org/schemas/sitemap/0.9";
+        var locs = doc.Descendants(ns + "loc").Select(l => l.Value).ToList();
+
+        Assert.Contains(locs, l => l.EndsWith("/khoa-hoc"));
+        Assert.Contains(locs, l => l.EndsWith("/chinh-sach/hoan-tien"));
+        Assert.Contains(locs, l => l.EndsWith("/khoa-hoc/excel-tu-co-ban-den-nang-cao"));
+        Assert.Contains(locs, l => l.Contains("/giang-vien/"));
+        // Khóa học chưa xuất bản (Pending) không lộ ra sitemap
+        Assert.DoesNotContain(locs, l => l.Contains("docker", StringComparison.OrdinalIgnoreCase));
+        Assert.All(locs, l => Assert.StartsWith("http", l));
+    }
+
+    [Fact]
     public async Task Search_filters_by_category_keyword_and_sorts_by_price()
     {
         var client = app.Anonymous();

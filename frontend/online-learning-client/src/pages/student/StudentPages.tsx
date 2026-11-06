@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { Award, Download, Link2, PlayCircle } from 'lucide-react'
 import { toast } from 'sonner'
 import { DataTable, PageHeader, Panel, ProgressBar, StatCard } from '../../components/dashboard'
-import { EmptyState, ErrorState, Pagination, Skeleton, Spinner } from '../../components/ui'
+import { ResponsiveImg, EmptyState, ErrorState, Pagination, Skeleton, Spinner } from '../../components/ui'
 import { useAsync, useDocumentTitle } from '../../hooks/useAsync'
 import { useAuth } from '../../hooks/useAuth'
 import { getErrorMessage } from '../../services/apiClient'
@@ -48,7 +48,7 @@ export function MyCoursesPage() {
 
       {continueCourse && (
         <Link to={`/hoc/${continueCourse.slug}`} className="group grid gap-5 rounded-(--radius-card) bg-ink p-5 text-white sm:grid-cols-[200px_1fr_auto] sm:items-center">
-          <img src={continueCourse.thumbnailUrl ?? ''} alt="" width={400} height={225} className="aspect-video w-full rounded-lg object-cover" />
+          <ResponsiveImg url={continueCourse.thumbnailUrl} sizes="(min-width: 640px) 240px, 92vw" maxWidth={640} width={400} height={225} eager className="aspect-video w-full rounded-lg object-cover" />
           <div className="min-w-0">
             <p className="text-sm text-brand-100">Tiếp tục học</p>
             <p className="mt-1 text-xl font-bold">{continueCourse.title}</p>
@@ -80,7 +80,7 @@ export function MyCoursesPage() {
                 {courses.data?.items.map((c) => (
                   <li key={c.courseId}>
                     <Link to={`/hoc/${c.slug}`} className="group flex flex-col gap-3">
-                      <img src={c.thumbnailUrl ?? ''} alt="" width={800} height={450} loading="lazy" className="aspect-video w-full rounded-(--radius-card) object-cover" />
+                      <ResponsiveImg url={c.thumbnailUrl} sizes="(min-width: 1024px) 320px, (min-width: 640px) 46vw, 92vw" width={800} height={450} className="aspect-video w-full rounded-(--radius-card) object-cover" />
                       <h3 className="line-clamp-2 text-lg font-bold group-hover:text-brand-700">{c.title}</h3>
                       <p className="text-sm text-ink-soft">{c.instructorName}</p>
                       <ProgressBar value={c.progressPercent} label={`Tiến độ ${c.title}`} />

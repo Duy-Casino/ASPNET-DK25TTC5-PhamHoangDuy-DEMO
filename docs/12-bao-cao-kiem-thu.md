@@ -2,8 +2,8 @@
 
 | Tầng | Công cụ | Số kịch bản | Kết quả |
 | --- | --- | --- | --- |
-| Backend tích hợp | xUnit + WebApplicationFactory + SQLite in-memory | 30 | **30/30 đạt** |
-| End-to-end | Playwright (Chrome) + API demo + Vite | 18 (11 desktop, 7 điện thoại) | **18/18 đạt** |
+| Backend tích hợp | xUnit + WebApplicationFactory + SQLite in-memory | 31 | **31/31 đạt** |
+| End-to-end | Playwright (Chrome) + API demo + Vite | 19 (12 desktop, 7 điện thoại) | **19/19 đạt** |
 | Giao diện | taste-skill `inspect.mjs` (1440 / 768 / 390 px) | Trang chủ, chi tiết khóa, xác minh | Trang chủ 0 FAIL; các trang khác đã sửa lỗi tương phản/bố cục |
 | Thủ công trên trình duyệt | Claude Browser | Mọi luồng chính của 3 vai trò | Đạt |
 
@@ -11,7 +11,7 @@
 
 | Nhóm | Kịch bản chính |
 | --- | --- |
-| Danh mục & khóa học | Trang chủ; tìm kiếm/lọc/sắp xếp; ẩn khóa Pending; chỉ lộ video bài học thử |
+| Danh mục & khóa học | Trang chủ; sitemap.xml chỉ chứa khóa đã xuất bản; tìm kiếm/lọc/sắp xếp; ẩn khóa Pending; chỉ lộ video bài học thử |
 | Tài khoản | Đăng ký, refresh token xoay vòng, phát hiện dùng lại token cũ → thu hồi mọi phiên; đăng xuất; sai mật khẩu; validation; đổi mật khẩu; phân quyền 401/403 |
 | Mua hàng | Giỏ hàng; báo giá; chống sửa giá; mã giảm giá (sai, tối thiểu, 100%); đơn 0đ; chặn mua trùng; hủy đơn; đánh giá một lần |
 | Giảng viên/Admin | Tạo khóa → gửi duyệt → từ chối → duyệt; khóa chỉnh sửa khi chờ duyệt; giảng viên không thấy khóa của nhau; vai trò; khóa tài khoản; mã giảm giá; danh mục |
@@ -24,8 +24,8 @@
 
 | Tệp | Kịch bản |
 | --- | --- |
-| `public.spec.ts` | Trang chủ: đủ các section, tab lĩnh vực đổi nội dung, menu "Khóa học" trên header lọc đúng, ô xác minh chứng chỉ; mở ô tìm kiếm → tìm kiếm → chi tiết; lọc + sắp xếp lưu trên URL; mua khi chưa đăng nhập → chuyển tới đăng nhập; xác minh mã không tồn tại; `/quan-tri` yêu cầu đăng nhập |
-| `student.spec.ts` | Đăng ký → thêm giỏ → mã sai/đúng → kênh test (có thông báo "chưa thu tiền thật") → kết quả thành công → vào học (có video). Đăng ký khóa miễn phí → học hết bài → làm quiz đạt → nhận mã chứng chỉ → tải PDF → người lạ xác minh hợp lệ. Dashboard học viên mẫu → "Học tiếp" |
+| `public.spec.ts` | Trang chủ: đủ các section, tab lĩnh vực đổi nội dung, menu "Khóa học" trên header lọc đúng, ô xác minh chứng chỉ; trang Giới thiệu/Liên hệ/Chính sách, canonical, JSON-LD Course, robots.txt, sitemap.xml; mở ô tìm kiếm → tìm kiếm → chi tiết; lọc + sắp xếp lưu trên URL; mua khi chưa đăng nhập → chuyển tới đăng nhập; xác minh mã không tồn tại; `/quan-tri` yêu cầu đăng nhập |
+| `student.spec.ts` | Đăng ký → thêm giỏ → mã sai/đúng → kênh test (có thông báo "chưa thu tiền thật") → kết quả thành công → vào học (có video). Đăng ký khóa miễn phí → học hết bài → làm quiz đạt → nhận mã chứng chỉ → tải PDF → chuông thông báo có "Bạn đã nhận chứng chỉ" → người lạ xác minh hợp lệ. Dashboard học viên mẫu → "Học tiếp" |
 | `staff.spec.ts` | Giảng viên: biểu đồ tổng quan, tạo khóa, chương, bài, bài kiểm tra, gửi duyệt bị chặn vì thiếu thông tin. Admin: duyệt khóa chờ duyệt → khóa xuất hiện công khai; trang giao dịch. Học viên bị chặn khỏi `/quan-tri` và `/giang-day` |
 | `mobile.spec.ts` | Không tràn ngang trên 6 trang; menu điện thoại; bộ lọc dạng sheet |
 

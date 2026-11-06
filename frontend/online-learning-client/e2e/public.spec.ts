@@ -31,6 +31,42 @@ test.describe('Trang công khai', () => {
     await expect(page).toHaveURL(/\/xac-minh\/EDV-2026-KHONGCO1/)
   })
 
+  test('trang giới thiệu, liên hệ, chính sách và SEO cơ bản', async ({ page, request }) => {
+    await page.goto('/')
+    // Footer dẫn tới các trang chính sách
+    const footer = page.getByRole('contentinfo')
+    await footer.getByRole('link', { name: 'Chính sách hoàn tiền' }).click()
+    await expect(page.getByRole('heading', { level: 1, name: 'Chính sách hoàn tiền' })).toBeVisible()
+    await page.getByRole('navigation', { name: 'Các chính sách' }).getByRole('link', { name: 'Chính sách bảo mật' }).click()
+    await expect(page).toHaveURL(/\/chinh-sach\/bao-mat$/)
+    await expect(page.getByRole('heading', { level: 1, name: 'Chính sách bảo mật' })).toBeVisible()
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', /\/chinh-sach\/bao-mat$/)
+
+    await footer.getByRole('link', { name: 'Liên hệ' }).click()
+    await expect(page.getByRole('heading', { level: 1, name: 'Liên hệ' })).toBeVisible()
+    await footer.getByRole('link', { name: 'Giới thiệu' }).click()
+    await expect(page.getByRole('heading', { level: 1, name: 'Về EduViet' })).toBeVisible()
+
+    // Chính sách không tồn tại → 404
+    await page.goto('/chinh-sach/khong-co')
+    await expect(page.getByRole('heading', { level: 1, name: 'Trang này không tồn tại' })).toBeVisible()
+
+    // Chi tiết khóa học có dữ liệu có cấu trúc Course và ảnh chia sẻ
+    await page.goto('/khoa-hoc/excel-tu-co-ban-den-nang-cao')
+    await expect(page.getByRole('heading', { level: 1, name: 'Excel từ cơ bản đến nâng cao' })).toBeVisible()
+    const ld = JSON.parse((await page.locator('#seo-jsonld').textContent())!)
+    expect(ld['@type']).toBe('Course')
+    expect(ld.offers.priceCurrency).toBe('VND')
+    await expect(page.locator('meta[property="og:title"]')).toHaveAttribute('content', /Excel từ cơ bản đến nâng cao/)
+
+    // robots.txt và sitemap.xml là file thật, không phải trang SPA
+    const robots = await request.get('/robots.txt')
+    expect(await robots.text()).toContain('Disallow: /quan-tri')
+    const sitemap = await request.get('/sitemap.xml')
+    expect(sitemap.headers()['content-type']).toContain('xml')
+    expect(await sitemap.text()).toContain('/khoa-hoc/excel-tu-co-ban-den-nang-cao')
+  })
+
   test('tìm kiếm, lọc và mở chi tiết khóa học', async ({ page }) => {
     await page.goto('/')
     await page.getByRole('button', { name: 'Mở tìm kiếm' }).click()

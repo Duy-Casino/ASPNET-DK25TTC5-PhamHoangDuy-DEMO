@@ -1,6 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { Trash2 } from 'lucide-react'
-import { PageHeader, EmptyState, Skeleton, Spinner } from '../../components/ui'
+import { ResponsiveImg, PageHeader, EmptyState, Skeleton, Spinner } from '../../components/ui'
 import { useDocumentTitle } from '../../hooks/useAsync'
 import { useCart } from '../../hooks/useAuth'
 import { formatDuration, formatPrice } from '../../utils/format'
@@ -30,7 +30,7 @@ export default function CartPage() {
             {cart.items.map(({ course }) => (
               <li key={course.id} className="grid grid-cols-[120px_1fr] gap-4 rounded-(--radius-card) bg-surface-2 p-3 sm:grid-cols-[200px_1fr_auto] sm:gap-6 sm:p-4">
                 <Link to={`/khoa-hoc/${course.slug}`}>
-                  <img src={course.thumbnailUrl ?? ''} alt="" width={400} height={225} className="aspect-video w-full rounded-lg object-cover" />
+                  <ResponsiveImg url={course.thumbnailUrl} sizes="(min-width: 640px) 200px, 120px" maxWidth={480} width={400} height={225} className="aspect-video w-full rounded-lg object-cover" />
                 </Link>
                 <div className="min-w-0">
                   <Link to={`/khoa-hoc/${course.slug}`} className="line-clamp-2 text-lg font-bold hover:text-brand-700">{course.title}</Link>

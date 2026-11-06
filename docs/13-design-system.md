@@ -34,5 +34,6 @@ Mã nguồn: token và utility nằm trong `frontend/online-learning-client/src/
 - `PageHeader`: dải tiêu đề trang con gồm đường dẫn, nhãn, h1, mô tả và hành động. Đang dùng ở các trang Khóa học, Giỏ hàng, Thanh toán, Lịch sử mua hàng.
 - `SectionHeading`: tiêu đề section, căn trái kèm hành động hoặc căn giữa.
 - `DecorBlobs`: khối tròn mờ trang trí nằm phía sau nội dung.
+- `ResponsiveImg`: ảnh có `srcset`/`sizes` (Cloudinary dùng `f_auto,q_auto`; picsum đổi kích thước theo URL), mặc định tải lười.
 - `CourseCard` / `CourseGrid`: thẻ khóa học dạng card, hiển thị lĩnh vực, thông số bài, thời lượng, học viên và giá.
 - Header (`MainLayout`): menu có biểu tượng, menu thả xuống "Khóa học" lấy lĩnh vực từ API, ô tìm kiếm mở bằng biểu tượng kính lúp, có bóng khi cuộn, menu hamburger trên điện thoại. Footer: dải CTA và 4 cột liên kết.

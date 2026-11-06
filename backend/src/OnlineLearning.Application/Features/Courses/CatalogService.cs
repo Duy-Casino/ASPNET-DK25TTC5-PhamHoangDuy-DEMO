@@ -17,10 +17,26 @@ public interface ICatalogService
     Task<Result<PagedResult<ReviewDto>>> GetReviewsAsync(Guid courseId, PagedQuery query, CancellationToken ct = default);
     Task<IReadOnlyList<InstructorProfileDto>> GetFeaturedInstructorsAsync(int take, CancellationToken ct = default);
     Task<Result<InstructorProfileDto>> GetInstructorAsync(Guid instructorId, CancellationToken ct = default);
+    /// <summary>Đường dẫn công khai cho sitemap.xml: khóa học đã xuất bản và giảng viên có khóa đã xuất bản.</summary>
+    Task<IReadOnlyList<SitemapEntryDto>> GetSitemapEntriesAsync(CancellationToken ct = default);
 }
+
+public sealed record SitemapEntryDto(string Path, DateTime? LastModified);
 
 public sealed class CatalogService(IAppDbContext db, IFileStorage storage) : ICatalogService
 {
+    public async Task<IReadOnlyList<SitemapEntryDto>> GetSitemapEntriesAsync(CancellationToken ct = default)
+    {
+        var courses = await Published
+            .Select(c => new { c.Slug, Modified = c.UpdatedAt ?? c.PublishedAt ?? c.CreatedAt, c.InstructorId })
+            .ToListAsync(ct);
+        var entries = courses.Select(c => new SitemapEntryDto($"/khoa-hoc/{c.Slug}", c.Modified)).ToList();
+        entries.AddRange(courses
+            .GroupBy(c => c.InstructorId)
+            .Select(g => new SitemapEntryDto($"/giang-vien/{g.Key}", g.Max(c => c.Modified))));
+        return entries;
+    }
+
     internal static readonly Expression<Func<Course, CourseSummaryDto>> ToSummary = c => new CourseSummaryDto(
         c.Id, c.Title, c.Slug, c.ShortDescription, c.ThumbnailUrl, c.Level,
         c.Price, c.DiscountPrice,

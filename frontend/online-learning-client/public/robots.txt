@@ -1,0 +1,17 @@
+User-agent: *
+Allow: /
+# Khu vực cần đăng nhập và trang cá nhân
+Disallow: /hoc/
+Disallow: /hoc-vien
+Disallow: /giang-day
+Disallow: /quan-tri
+Disallow: /gio-hang
+Disallow: /thanh-toan
+Disallow: /don-hang/
+Disallow: /tai-khoan
+Disallow: /xac-minh/
+Disallow: /api/
+
+# Đường dẫn tương đối không được chuẩn robots chấp nhận ở mọi công cụ;
+# khi triển khai, thay bằng URL đầy đủ, ví dụ: Sitemap: https://eduviet.vn/sitemap.xml
+Sitemap: /sitemap.xml

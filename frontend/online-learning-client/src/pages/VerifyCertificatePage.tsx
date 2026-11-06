@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { BadgeCheck, Download, ShieldAlert, ShieldCheck } from 'lucide-react'
 import { DecorBlobs, ErrorState, Spinner } from '../components/ui'
-import { useDocumentTitle } from '../hooks/useAsync'
+import { useSeo } from '../hooks/useSeo'
 import { certificateService, type CertificateVerify } from '../services/certificateApi'
 import { getErrorMessage } from '../services/apiClient'
 import { formatDate, formatDuration } from '../utils/format'
@@ -18,7 +18,13 @@ export default function VerifyCertificatePage() {
   const [state, setState] = useState<{ loading: boolean; data: CertificateVerify | null; error: string | null; notFound: boolean }>({
     loading: !!routeCode, data: null, error: null, notFound: false,
   })
-  useDocumentTitle(state.data ? `Chứng chỉ ${state.data.certificateCode}` : 'Xác minh chứng chỉ')
+  useSeo({
+    title: state.data ? `Chứng chỉ ${state.data.certificateCode}` : 'Xác minh chứng chỉ',
+    description: 'Kiểm tra chứng chỉ EduViet là thật và còn hiệu lực bằng mã chứng chỉ hoặc mã QR.',
+    path: '/xac-minh',
+    // Trang kết quả có họ tên học viên: không cho công cụ tìm kiếm lập chỉ mục
+    noindex: !!routeCode,
+  })
 
   useEffect(() => {
     if (!routeCode) {

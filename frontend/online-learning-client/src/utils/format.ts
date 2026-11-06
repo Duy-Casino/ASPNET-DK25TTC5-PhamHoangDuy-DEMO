@@ -32,6 +32,16 @@ const dateTimeFmt = new Intl.DateTimeFormat('vi-VN', {
 export const formatDate = (iso: string) => dateFmt.format(new Date(iso))
 export const formatDateTime = (iso: string) => dateTimeFmt.format(new Date(iso))
 
+/** "vừa xong", "5 phút trước", "3 giờ trước", "2 ngày trước"; quá 7 ngày thì hiện ngày. */
+export function formatRelative(iso: string, now = Date.now()): string {
+  const diff = Math.max(0, now - new Date(iso).getTime()) / 1000
+  if (diff < 60) return 'vừa xong'
+  if (diff < 3600) return `${Math.floor(diff / 60)} phút trước`
+  if (diff < 86400) return `${Math.floor(diff / 3600)} giờ trước`
+  if (diff < 7 * 86400) return `${Math.floor(diff / 86400)} ngày trước`
+  return formatDate(iso)
+}
+
 export function initials(name: string): string {
   const parts = name.trim().split(/\s+/)
   const letters = parts.length === 1 ? parts[0].slice(0, 2) : parts[0][0] + parts[parts.length - 1][0]

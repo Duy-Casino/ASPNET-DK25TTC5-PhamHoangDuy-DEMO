@@ -3,7 +3,8 @@ import { useSearchParams } from 'react-router-dom'
 import { SlidersHorizontal, X } from 'lucide-react'
 import { CourseGrid } from '../components/course/CourseCard'
 import { EmptyState, ErrorState, PageHeader, Pagination } from '../components/ui'
-import { useAsync, useDocumentTitle } from '../hooks/useAsync'
+import { useAsync } from '../hooks/useAsync'
+import { useSeo } from '../hooks/useSeo'
 import { useReveal } from '../hooks/useReveal'
 import { catalogService, type CourseSearchParams } from '../services/api'
 import { courseLevelLabel, type CourseLevel } from '../types/common'
@@ -38,7 +39,12 @@ export default function CoursesPage() {
   const page = Number(params.get('page') ?? '1') || 1
   const price = params.get('free') === 'true' ? 'free' : params.get('price') ?? ''
 
-  useDocumentTitle(keyword ? `Tìm "${keyword}"` : 'Tất cả khóa học')
+  useSeo({
+    title: keyword ? `Tìm "${keyword}"` : 'Tất cả khóa học',
+    description: 'Khóa học trực tuyến về lập trình, thiết kế, dữ liệu, kinh doanh, marketing, ngoại ngữ và tin học văn phòng, có chứng chỉ xác minh.',
+    // Trang kết quả tìm kiếm không cần lập chỉ mục
+    noindex: !!keyword,
+  })
 
   const categories = useAsync(() => catalogService.categories(), [])
 
@@ -58,7 +64,7 @@ export default function CoursesPage() {
     if (max) query.maxPrice = Number(max)
   }
 
-  const result = useAsync(() => catalogService.search(query), [params.toString()])
+  const result = useAsync(() => catalogService.search(query), [params.toString()], { retries: 2 })
 
   const update = (changes: Record<string, string | null>) => {
     const next = new URLSearchParams(params)

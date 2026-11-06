@@ -191,6 +191,10 @@ export default function CheckoutPage() {
               {quote?.totalAmount === 0 ? 'Hoàn tất đăng ký' : 'Đặt hàng và thanh toán'}
             </button>
             <p className="mt-3 text-center text-xs text-ink-muted">Giá được hệ thống tính lại khi đặt hàng.</p>
+            <p className="mt-2 text-center text-xs text-ink-muted">
+              Khi đặt hàng, bạn đồng ý với <Link to="/chinh-sach/dieu-khoan" className="font-semibold text-brand-700 hover:underline">Điều khoản sử dụng</Link> và{' '}
+              <Link to="/chinh-sach/hoan-tien" className="font-semibold text-brand-700 hover:underline">Chính sách hoàn tiền</Link>.
+            </p>
           </aside>
         </div>
       )}
