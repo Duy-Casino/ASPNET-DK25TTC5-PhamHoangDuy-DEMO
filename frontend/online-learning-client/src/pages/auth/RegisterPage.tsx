@@ -56,7 +56,7 @@ export default function RegisterPage() {
 
   return (
     <>
-      <h1 className="text-title font-extrabold">Tạo tài khoản</h1>
+      <h1 className="text-title font-semibold">Tạo tài khoản</h1>
       <p className="mt-3 text-lg text-ink-soft">Miễn phí, chỉ mất một phút.</p>
       <form onSubmit={submit} className="mt-10 flex flex-col gap-5" noValidate>
         {formError && <p role="alert" className="bg-danger-50 p-4 font-medium text-danger">{formError}</p>}

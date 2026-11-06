@@ -80,7 +80,7 @@ export function InstructorCoursesPage() {
           <ul className="flex flex-col gap-3">
             {data?.items.map((c) => (
               <li key={c.id}>
-                <Link to={`/giang-day/khoa-hoc/${c.id}`} className="grid gap-4 rounded-(--radius-card) bg-white p-4 transition-colors hover:bg-brand-50 sm:grid-cols-[160px_1fr_auto] sm:items-center">
+                <Link to={`/giang-day/khoa-hoc/${c.id}`} className="grid gap-4 card p-4 transition-colors hover:bg-brand-50 sm:grid-cols-[160px_1fr_auto] sm:items-center">
                   {c.thumbnailUrl
                     ? <img src={c.thumbnailUrl} alt="" width={320} height={180} className="aspect-video w-full rounded-lg object-cover" />
                     : <div className="flex aspect-video w-full items-center justify-center rounded-lg bg-surface-3 text-sm text-ink-muted">Chưa có ảnh</div>}
@@ -230,7 +230,7 @@ export function InstructorReviewsPage() {
         : (
           <ul className="flex flex-col gap-4">
             {data?.items.map((r) => (
-              <li key={r.id} className="rounded-(--radius-card) bg-white p-5">
+              <li key={r.id} className="card p-5">
                 <div className="flex flex-wrap items-center gap-3">
                   <Avatar name={r.userFullName} src={r.userAvatarUrl} size={40} />
                   <div className="min-w-0 flex-1">
@@ -241,7 +241,7 @@ export function InstructorReviewsPage() {
                 </div>
                 {r.comment && <p className="mt-3">{r.comment}</p>}
                 {r.instructorReply ? (
-                  <div className="mt-4 bg-surface-2 p-4"><p className="text-sm font-bold">Phản hồi của bạn</p><p className="mt-1">{r.instructorReply}</p></div>
+                  <div className="mt-4 rounded-(--radius-card) bg-surface-2 p-4"><p className="text-sm font-bold">Phản hồi của bạn</p><p className="mt-1">{r.instructorReply}</p></div>
                 ) : replyingId === r.id ? (
                   <div className="mt-4 flex flex-col gap-3">
                     <TextArea label="Phản hồi" value={reply} onChange={(e) => setReply(e.target.value)} maxLength={2000} autoFocus />

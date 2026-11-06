@@ -79,7 +79,7 @@ export default function DashboardLayout({ area }: { area: keyof typeof areas }) 
       <nav aria-label={areas[area].title} className="flex flex-col gap-1">
         {areas[area].items.map(({ to, label, icon: Icon, end }) => (
           <NavLink key={to} to={to} end={end}
-            className={({ isActive }) => `flex items-center gap-3 rounded-xl px-3 py-2.5 font-medium transition-colors ${isActive ? 'bg-brand-600 text-white' : 'text-ink hover:bg-surface-2'}`}>
+            className={({ isActive }) => `flex items-center gap-3 rounded-xl px-3 py-2.5 font-medium transition-colors ${isActive ? 'bg-brand-50 font-semibold text-brand-700' : 'text-ink-soft hover:bg-surface-2 hover:text-ink'}`}>
             <Icon className="size-5" aria-hidden="true" />{label}
           </NavLink>
         ))}
@@ -105,8 +105,8 @@ export default function DashboardLayout({ area }: { area: keyof typeof areas }) 
 
   return (
     <div className="min-h-svh bg-surface-2 lg:grid lg:grid-cols-[260px_1fr]">
-      <aside className="sticky top-0 hidden h-svh bg-white lg:block">{sidebar}</aside>
-      <header className="sticky top-0 z-30 flex h-16 items-center gap-3 bg-white px-4 lg:hidden">
+      <aside className="sticky top-0 hidden h-svh border-r border-line/70 bg-white lg:block">{sidebar}</aside>
+      <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-line/70 bg-white px-4 lg:hidden">
         <button type="button" className="rounded-(--radius-control) p-2 hover:bg-surface-2" onClick={() => setOpen(true)} aria-label="Mở menu">
           <Menu className="size-6" />
         </button>

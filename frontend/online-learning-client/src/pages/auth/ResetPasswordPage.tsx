@@ -22,7 +22,7 @@ export default function ResetPasswordPage() {
   if (!email || !token) {
     return (
       <>
-        <h1 className="text-title font-extrabold">Liên kết không hợp lệ</h1>
+        <h1 className="text-title font-semibold">Liên kết không hợp lệ</h1>
         <p className="mt-4 text-lg text-ink-soft">Liên kết đặt lại mật khẩu bị thiếu thông tin. Hãy yêu cầu liên kết mới.</p>
         <Link to="/quen-mat-khau" className="btn-primary mt-8">Gửi lại liên kết</Link>
       </>
@@ -53,7 +53,7 @@ export default function ResetPasswordPage() {
 
   return (
     <>
-      <h1 className="text-title font-extrabold">Đặt lại mật khẩu</h1>
+      <h1 className="text-title font-semibold">Đặt lại mật khẩu</h1>
       <p className="mt-3 text-lg text-ink-soft">Cho tài khoản <b className="text-ink">{email}</b></p>
       <form onSubmit={submit} className="mt-10 flex flex-col gap-5" noValidate>
         {formError && <p role="alert" className="bg-danger-50 p-4 font-medium text-danger">{formError}</p>}

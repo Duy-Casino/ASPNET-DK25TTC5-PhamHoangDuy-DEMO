@@ -32,7 +32,7 @@ export default function LearnPage() {
   if (status === 403)
     return (
       <div className="container-page py-24">
-        <h1 className="text-title font-extrabold">Bạn chưa sở hữu khóa học này</h1>
+        <h1 className="text-title font-semibold">Bạn chưa sở hữu khóa học này</h1>
         <p className="mt-4 text-lg text-ink-soft">Mua khóa học để mở toàn bộ bài học và bài kiểm tra.</p>
         <Link to={`/khoa-hoc/${slug}`} className="btn-primary mt-8">Xem khóa học</Link>
       </div>

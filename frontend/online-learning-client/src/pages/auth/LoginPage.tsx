@@ -45,7 +45,7 @@ export default function LoginPage() {
 
   return (
     <>
-      <h1 className="text-title font-extrabold">Đăng nhập</h1>
+      <h1 className="text-title font-semibold">Đăng nhập</h1>
       <p className="mt-3 text-lg text-ink-soft">Tiếp tục khóa học bạn đang học dở.</p>
       <form onSubmit={submit} className="mt-10 flex flex-col gap-5" noValidate>
         {formError && <p role="alert" className="bg-danger-50 p-4 font-medium text-danger">{formError}</p>}

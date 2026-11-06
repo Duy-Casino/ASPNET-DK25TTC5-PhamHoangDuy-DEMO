@@ -33,7 +33,7 @@ export default function ForgotPasswordPage() {
   if (sent) {
     return (
       <>
-        <h1 className="text-title font-extrabold">Kiểm tra email</h1>
+        <h1 className="text-title font-semibold">Kiểm tra email</h1>
         <p className="mt-4 text-lg text-ink-soft">
           Nếu <b className="text-ink">{email}</b> đã đăng ký, bạn sẽ nhận được liên kết đặt lại mật khẩu trong vài phút. Liên kết có hiệu lực 1 giờ.
         </p>
@@ -44,7 +44,7 @@ export default function ForgotPasswordPage() {
 
   return (
     <>
-      <h1 className="text-title font-extrabold">Quên mật khẩu</h1>
+      <h1 className="text-title font-semibold">Quên mật khẩu</h1>
       <p className="mt-3 text-lg text-ink-soft">Nhập email đã đăng ký, chúng tôi sẽ gửi liên kết đặt lại mật khẩu.</p>
       <form onSubmit={submit} className="mt-10 flex flex-col gap-5" noValidate>
         <Field label="Email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} error={error ?? undefined} />

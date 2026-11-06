@@ -1,6 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { Trash2 } from 'lucide-react'
-import { EmptyState, Skeleton, Spinner } from '../../components/ui'
+import { PageHeader, EmptyState, Skeleton, Spinner } from '../../components/ui'
 import { useDocumentTitle } from '../../hooks/useAsync'
 import { useCart } from '../../hooks/useAuth'
 import { formatDuration, formatPrice } from '../../utils/format'
@@ -12,9 +12,9 @@ export default function CartPage() {
   const saving = cart.originalTotal - cart.subTotal
 
   return (
-    <div className="container-page py-12 md:py-16">
-      <h1 className="text-title font-extrabold">Giỏ hàng</h1>
-      <p className="mt-2 text-lg text-ink-soft">{cart.count} khóa học</p>
+    <>
+      <PageHeader title="Giỏ hàng" crumbs={[{ label: 'Giỏ hàng' }]} description={`${cart.count} khóa học`} />
+    <div className="container-page py-10 md:py-12">
 
       {loading && cart.count === 0 ? (
         <div className="mt-10 flex flex-col gap-4"><Skeleton className="h-28" /><Skeleton className="h-28" /></div>
@@ -28,7 +28,7 @@ export default function CartPage() {
         <div className="mt-10 grid gap-12 lg:grid-cols-[1fr_380px]">
           <ul className="flex flex-col gap-4">
             {cart.items.map(({ course }) => (
-              <li key={course.id} className="grid grid-cols-[120px_1fr] gap-4 bg-surface-2 p-3 sm:grid-cols-[200px_1fr_auto] sm:gap-6 sm:p-4">
+              <li key={course.id} className="grid grid-cols-[120px_1fr] gap-4 rounded-(--radius-card) bg-surface-2 p-3 sm:grid-cols-[200px_1fr_auto] sm:gap-6 sm:p-4">
                 <Link to={`/khoa-hoc/${course.slug}`}>
                   <img src={course.thumbnailUrl ?? ''} alt="" width={400} height={225} className="aspect-video w-full rounded-lg object-cover" />
                 </Link>
@@ -39,7 +39,7 @@ export default function CartPage() {
                 </div>
                 <div className="col-span-2 flex items-center justify-between gap-4 sm:col-span-1 sm:flex-col sm:items-end sm:justify-start">
                   <div className="text-right">
-                    <p className="text-xl font-extrabold">{formatPrice(course.effectivePrice)}</p>
+                    <p className="text-xl font-bold">{formatPrice(course.effectivePrice)}</p>
                     {course.effectivePrice < course.price && <p className="text-sm text-ink-muted line-through">{formatPrice(course.price)}</p>}
                   </div>
                   <button type="button" className="btn-ghost px-3 text-danger" disabled={pendingId === course.id}
@@ -52,11 +52,11 @@ export default function CartPage() {
           </ul>
 
           <aside className="paper-receipt self-start bg-brand-50 px-6 pt-6 pb-10 lg:sticky lg:top-24" aria-label="Tổng tiền">
-            <h2 className="text-xl font-extrabold">Tóm tắt</h2>
+            <h2 className="text-xl font-semibold">Tóm tắt</h2>
             <dl className="mt-6 flex flex-col gap-3 tabular-nums">
               <div className="flex"><dt>Giá gốc</dt><span className="dot-leader" /><dd>{formatPrice(cart.originalTotal, '0đ')}</dd></div>
               {saving > 0 && <div className="flex text-success"><dt>Khuyến mãi</dt><span className="dot-leader" /><dd>-{formatPrice(saving)}</dd></div>}
-              <div className="mt-2 flex bg-ink px-3 py-2 text-lg font-extrabold text-white"><dt>Tạm tính</dt><dd className="ml-auto">{formatPrice(cart.subTotal, '0đ')}</dd></div>
+              <div className="mt-2 flex bg-ink px-3 py-2 text-lg font-bold text-white"><dt>Tạm tính</dt><dd className="ml-auto">{formatPrice(cart.subTotal, '0đ')}</dd></div>
             </dl>
             <p className="mt-4 text-sm text-ink-soft">Mã giảm giá được áp dụng ở bước thanh toán.</p>
             <button type="button" className="btn-primary mt-6 min-h-12 w-full text-base" onClick={() => navigate('/thanh-toan')}>Thanh toán</button>
@@ -64,5 +64,6 @@ export default function CartPage() {
         </div>
       )}
     </div>
+    </>
   )
 }

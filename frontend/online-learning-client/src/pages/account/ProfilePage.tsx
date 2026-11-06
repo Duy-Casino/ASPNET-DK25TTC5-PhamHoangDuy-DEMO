@@ -22,7 +22,7 @@ export default function ProfilePage() {
       <div className="flex flex-wrap items-center gap-5">
         <Avatar name={user.fullName} src={user.avatarUrl} size={80} />
         <div>
-          <h1 className="text-title font-extrabold">{user.fullName}</h1>
+          <h1 className="text-title font-semibold">{user.fullName}</h1>
           <p className="text-ink-soft">
             {user.roles.map((r) => roleLabel[r] ?? r).join(', ')} · Tham gia {formatDate(user.createdAt)}
           </p>
@@ -75,8 +75,8 @@ function ProfileForm() {
     setForm((f) => ({ ...f, [k]: e.target.value }))
 
   return (
-    <section aria-labelledby="profile-h" className="bg-surface-2 p-6 sm:p-10">
-      <h2 id="profile-h" className="text-2xl font-extrabold">Thông tin cá nhân</h2>
+    <section aria-labelledby="profile-h" className="rounded-(--radius-card) bg-surface-2 p-6 sm:p-10">
+      <h2 id="profile-h" className="text-2xl font-semibold">Thông tin cá nhân</h2>
       <form onSubmit={submit} className="mt-8 flex flex-col gap-5">
         <Field label="Email" value={user?.email ?? ''} disabled hint="Email dùng để đăng nhập, không thể thay đổi." />
         <Field label="Họ và tên" value={form.fullName} onChange={set('fullName')} error={errors.fullName} autoComplete="name" />
@@ -122,8 +122,8 @@ function PasswordForm() {
   }
 
   return (
-    <section aria-labelledby="pw-h" className="self-start bg-brand-50 p-6 sm:p-10">
-      <h2 id="pw-h" className="text-2xl font-extrabold">Đổi mật khẩu</h2>
+    <section aria-labelledby="pw-h" className="self-start rounded-(--radius-card) bg-brand-50 p-6 sm:p-10">
+      <h2 id="pw-h" className="text-2xl font-semibold">Đổi mật khẩu</h2>
       <form onSubmit={submit} className="mt-8 flex flex-col gap-5" noValidate>
         <Field label="Mật khẩu hiện tại" type="password" autoComplete="current-password" value={form.current}
           onChange={(e) => setForm((f) => ({ ...f, current: e.target.value }))} error={errors.current} />

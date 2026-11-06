@@ -19,13 +19,13 @@ export default function ConfirmEmailPage() {
         <p className="flex items-center gap-3 text-lg" role="status"><Spinner className="size-6 text-brand-600" /> Đang xác nhận email…</p>
       ) : error ? (
         <>
-          <h1 className="text-title font-extrabold">Không xác nhận được email</h1>
+          <h1 className="text-title font-semibold">Không xác nhận được email</h1>
           <p className="mt-4 text-lg text-ink-soft">Liên kết không hợp lệ hoặc đã hết hạn.</p>
           <Link to="/" className="btn-primary mt-8 w-fit">Về trang chủ</Link>
         </>
       ) : (
         <>
-          <h1 className="text-title font-extrabold">Email đã được xác nhận</h1>
+          <h1 className="text-title font-semibold">Email đã được xác nhận</h1>
           <p className="mt-4 text-lg text-ink-soft">Cảm ơn bạn! Tài khoản của bạn đã sẵn sàng.</p>
           <Link to="/khoa-hoc" className="btn-primary mt-8 w-fit">Khám phá khóa học</Link>
         </>

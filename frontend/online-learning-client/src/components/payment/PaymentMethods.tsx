@@ -36,7 +36,7 @@ export function PaymentMethodPicker({ methods, loading, value, onChange }: {
           <label key={m.provider}
             className={`flex min-h-16 cursor-pointer items-center gap-4 rounded-xl px-4 py-3 transition-colors ${value === m.provider ? 'bg-brand-100' : 'bg-surface-2 hover:bg-surface-3'}`}>
             <input type="radio" name="payment-method" checked={value === m.provider} onChange={() => onChange(m.provider)} className="size-5 accent-brand-600" />
-            <span className={`flex size-10 items-center justify-center rounded-lg text-sm font-extrabold ${m.provider === 'MoMo' ? 'bg-[#a50064] text-white' : m.provider === 'VNPay' ? 'bg-white text-[#005baa]' : 'bg-sun-300 text-ink'}`} aria-hidden="true">
+            <span className={`flex size-10 items-center justify-center rounded-lg text-sm font-bold ${m.provider === 'MoMo' ? 'bg-[#a50064] text-white' : m.provider === 'VNPay' ? 'bg-white text-[#005baa]' : 'bg-sun-300 text-ink'}`} aria-hidden="true">
               {m.provider === 'MoMo' ? 'MoMo' : m.provider === 'VNPay' ? 'VN' : <Wallet className="size-5" />}
             </span>
             <span className="flex-1">

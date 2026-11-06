@@ -1,23 +1,28 @@
 import { expect, test } from '@playwright/test'
 
 test.describe('Trang công khai', () => {
-  test('trang chủ kiểu sàn: banner, các hàng khóa học, thanh lĩnh vực', async ({ page }) => {
+  test('trang chủ: hero, các section, tab lĩnh vực, menu khóa học', async ({ page }) => {
     await page.goto('/')
-    await expect(page.getByRole('heading', { level: 1, name: 'Khóa học trực tuyến có chứng chỉ' })).toBeVisible()
+    await expect(page.getByRole('heading', { level: 1, name: /Học kỹ năng thực tế/ })).toBeVisible()
 
-    for (const name of ['Khóa học đặc biệt', 'Xu hướng tuần này', 'Mới xuất bản', 'Giảng viên nổi bật', 'Xác minh chứng chỉ EduViet']) {
-      await expect(page.getByRole('heading', { name })).toBeVisible()
+    for (const name of ['Học trực tuyến nghiêm túc, có kết quả rõ ràng', 'Khóa học cho mọi lĩnh vực', 'Khóa học được chọn lọc',
+      'Từ lúc chọn khóa đến khi có chứng chỉ', 'Học viên nói gì về EduViet', 'Đội ngũ đứng lớp', 'Chứng chỉ ai cũng kiểm tra được']) {
+      await expect(page.getByRole('heading', { name })).toBeAttached()
     }
 
-    // Banner: nút "tiếp theo" chuyển sang trang banner kế
-    const next = page.getByRole('button', { name: 'Banner tiếp theo' })
-    await next.click()
-    await expect(page.getByRole('button', { name: 'Trang banner 2' })).toHaveAttribute('aria-current', 'true')
+    // Tab lĩnh vực: chọn tab thứ hai → bảng nội dung đổi theo, nút dẫn tới trang đã lọc
+    const tabs = page.getByRole('tablist', { name: 'Lĩnh vực' }).getByRole('tab')
+    const second = tabs.nth(1)
+    const secondName = (await second.textContent())!.trim()
+    await second.click()
+    await expect(second).toHaveAttribute('aria-selected', 'true')
+    await expect(page.getByRole('tabpanel').getByRole('heading', { level: 3 })).toHaveText(secondName)
 
-    // Thanh lĩnh vực dẫn tới trang khóa học đã lọc
-    await page.getByRole('navigation', { name: 'Lĩnh vực' }).getByRole('link', { name: 'Lập trình' }).click()
+    // Menu "Khóa học" trên header liệt kê lĩnh vực
+    await page.getByRole('navigation', { name: 'Chính' }).getByRole('button', { name: 'Khóa học' }).click()
+    await page.locator('#courses-menu').getByRole('link', { name: /Lập trình/ }).click()
     await expect(page).toHaveURL(/category=lap-trinh/)
-    await expect(page.getByRole('navigation', { name: 'Lĩnh vực' }).getByRole('link', { name: 'Lập trình' })).toHaveAttribute('aria-current', 'page')
+    await expect(page.getByRole('heading', { level: 1, name: 'Lập trình' })).toBeVisible()
 
     // Ô xác minh ở trang chủ
     await page.goto('/')
@@ -28,6 +33,7 @@ test.describe('Trang công khai', () => {
 
   test('tìm kiếm, lọc và mở chi tiết khóa học', async ({ page }) => {
     await page.goto('/')
+    await page.getByRole('button', { name: 'Mở tìm kiếm' }).click()
     await page.getByRole('searchbox', { name: 'Tìm khóa học' }).fill('Excel')
     await page.keyboard.press('Enter')
     await expect(page).toHaveURL(/\/khoa-hoc\?keyword=Excel/)

@@ -14,7 +14,7 @@ export function Logo({ inverted = false, asLink = true }: { inverted?: boolean; 
       <span className={`text-xl ${inverted ? 'text-white' : 'text-ink'}`}>EduViet</span>
     </>
   )
-  const cls = 'inline-flex items-center gap-2 font-extrabold tracking-tight'
+  const cls = 'inline-flex items-center gap-2 font-bold tracking-tight'
   return asLink
     ? <Link to="/" className={cls} aria-label="EduViet — trang chủ">{content}</Link>
     : <span className={cls}>{content}</span>
@@ -63,10 +63,90 @@ export function Skeleton({ className = '' }: { className?: string }) {
   return <div className={`animate-pulse rounded-(--radius-card) bg-surface-3 ${className}`} aria-hidden="true" />
 }
 
+/** Khối tròn mờ trang trí phía sau nội dung (mint + xanh), không nhận sự kiện chuột. */
+export function DecorBlobs({ variant = 'right' }: { variant?: 'right' | 'left' | 'center' }) {
+  const pos = {
+    right: ['-top-24 -right-24 size-[420px] bg-mint-100', 'top-1/3 right-1/4 size-[260px] bg-brand-100'],
+    left: ['-top-20 -left-28 size-[380px] bg-brand-100', 'bottom-0 left-1/4 size-[220px] bg-mint-100'],
+    center: ['-top-32 left-1/2 size-[520px] -translate-x-1/2 bg-brand-100', 'top-10 right-10 size-[200px] bg-mint-100'],
+  }[variant]
+  return (
+    <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden" aria-hidden="true">
+      {pos.map((c) => <span key={c} className={`absolute rounded-full opacity-70 blur-3xl ${c}`} />)}
+    </div>
+  )
+}
+
+/** Tiêu đề section: nhãn nhỏ + tiêu đề + mô tả + hành động (căn trái có nút bên phải, hoặc căn giữa). */
+export function SectionHeading({ id, eyebrow, title, lead, action, align = 'left' }: {
+  id?: string; eyebrow?: string; title: ReactNode; lead?: ReactNode; action?: ReactNode; align?: 'left' | 'center'
+}) {
+  if (align === 'center') {
+    return (
+      <div className="mx-auto mb-12 flex max-w-2xl flex-col items-center gap-3 text-center" data-reveal>
+        {eyebrow && <p className="eyebrow">{eyebrow}</p>}
+        <h2 id={id} className="text-title font-semibold">{title}</h2>
+        {lead && <p className="text-lg text-ink-soft">{lead}</p>}
+        {action}
+      </div>
+    )
+  }
+  return (
+    <div className="mb-10 flex flex-wrap items-end justify-between gap-6" data-reveal>
+      <div className="flex max-w-2xl flex-col gap-3">
+        {eyebrow && <p className="eyebrow">{eyebrow}</p>}
+        <h2 id={id} className="text-title font-semibold">{title}</h2>
+        {lead && <p className="text-lg text-ink-soft">{lead}</p>}
+      </div>
+      {action}
+    </div>
+  )
+}
+
+/** Dải tiêu đề đầu trang con: nền sáng có khối trang trí, đường dẫn, h1, mô tả, hành động. */
+export function PageHeader({ title, eyebrow, description, crumbs, actions, children }: {
+  title: ReactNode
+  eyebrow?: string
+  description?: ReactNode
+  crumbs?: { label: string; to?: string }[]
+  actions?: ReactNode
+  children?: ReactNode
+}) {
+  return (
+    <section className="relative isolate overflow-hidden border-b border-line/70 bg-surface-2">
+      <DecorBlobs variant="right" />
+      <div className="container-page flex flex-col gap-4 py-10 md:py-14">
+        {crumbs && crumbs.length > 0 && (
+          <nav aria-label="Đường dẫn" className="text-sm text-ink-muted">
+            <ol className="flex flex-wrap items-center gap-1.5">
+              <li><Link to="/" className="hover:text-brand-700">Trang chủ</Link></li>
+              {crumbs.map((c) => (
+                <li key={c.label} className="flex items-center gap-1.5">
+                  <span aria-hidden="true">/</span>
+                  {c.to ? <Link to={c.to} className="hover:text-brand-700">{c.label}</Link> : <span aria-current="page" className="text-ink-soft">{c.label}</span>}
+                </li>
+              ))}
+            </ol>
+          </nav>
+        )}
+        <div className="flex flex-wrap items-end justify-between gap-6">
+          <div className="flex max-w-3xl flex-col gap-3">
+            {eyebrow && <p className="eyebrow">{eyebrow}</p>}
+            <h1 className="text-title font-semibold">{title}</h1>
+            {description && <div className="text-lg text-ink-soft">{description}</div>}
+          </div>
+          {actions}
+        </div>
+        {children}
+      </div>
+    </section>
+  )
+}
+
 export function EmptyState({ title, children, action }: { title: string; children?: ReactNode; action?: ReactNode }) {
   return (
-    <div className="flex flex-col items-start gap-4 rounded-(--radius-card) bg-surface-2 p-8 sm:p-12">
-      <h3 className="text-2xl font-bold">{title}</h3>
+    <div className="card flex flex-col items-start gap-4 p-8 sm:p-12">
+      <h3 className="text-2xl font-semibold">{title}</h3>
       {children && <div className="max-w-xl text-ink-soft">{children}</div>}
       {action}
     </div>

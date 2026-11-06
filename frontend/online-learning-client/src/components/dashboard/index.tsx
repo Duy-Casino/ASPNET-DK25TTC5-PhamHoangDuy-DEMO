@@ -10,7 +10,7 @@ export function PageHeader({ title, description, actions }: { title: string; des
   return (
     <div className="flex flex-wrap items-end justify-between gap-4">
       <div>
-        <h1 className="text-3xl font-extrabold tracking-tight">{title}</h1>
+        <h1 className="text-3xl font-semibold tracking-tight">{title}</h1>
         {description && <p className="mt-2 text-ink-soft">{description}</p>}
       </div>
       {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
@@ -20,7 +20,7 @@ export function PageHeader({ title, description, actions }: { title: string; des
 
 export function Panel({ title, actions, children, className = '' }: { title?: string; actions?: ReactNode; children: ReactNode; className?: string }) {
   return (
-    <section className={`rounded-(--radius-card) bg-white p-5 sm:p-6 ${className}`}>
+    <section className={`card p-5 sm:p-6 ${className}`}>
       {(title || actions) && (
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
           {title && <h2 className="text-lg font-bold">{title}</h2>}
@@ -38,7 +38,7 @@ export function StatCard({ label, value, sub, tone = 'default' }: { label: strin
   return (
     <div className={`min-w-0 rounded-(--radius-card) p-5 [container-type:inline-size] ${toneClass}`}>
       <p className={`text-sm ${tone === 'brand' ? 'text-brand-100' : 'text-ink-soft'}`}>{label}</p>
-      <p className="mt-2 text-[clamp(1.1rem,13cqi,1.875rem)] leading-tight font-extrabold tracking-tight whitespace-nowrap tabular-nums">{value}</p>
+      <p className="mt-2 text-[clamp(1.1rem,13cqi,1.875rem)] leading-tight font-bold tracking-tight whitespace-nowrap tabular-nums">{value}</p>
       {sub && <p className={`mt-1 text-sm ${tone === 'brand' ? 'text-brand-100' : 'text-ink-muted'}`}>{sub}</p>}
     </div>
   )
@@ -95,7 +95,7 @@ export function Modal({ title, onClose, children, wide = false }: { title: strin
       <div className={`rise-in relative max-h-[92svh] w-full overflow-y-auto rounded-t-3xl bg-white p-6 shadow-[0_20px_60px_rgb(11_27_51/0.25)] sm:rounded-(--radius-card) sm:p-8 ${wide ? 'sm:max-w-3xl' : 'sm:max-w-lg'}`}
         style={{ animationDuration: '220ms' }}>
         <div className="mb-6 flex items-start justify-between gap-4">
-          <h2 className="text-xl font-extrabold">{title}</h2>
+          <h2 className="text-xl font-semibold">{title}</h2>
           <button type="button" onClick={onClose} className="rounded-full p-2 hover:bg-surface-2" aria-label="Đóng"><X className="size-5" /></button>
         </div>
         {children}

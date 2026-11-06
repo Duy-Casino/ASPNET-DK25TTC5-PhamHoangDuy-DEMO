@@ -76,7 +76,7 @@ export default function OrderDetailPage() {
         ) : (
           <Clock className="size-16 text-warning" aria-hidden="true" />
         )}
-        <h1 className="text-title font-extrabold">
+        <h1 className="text-title font-semibold">
           {paid ? 'Đăng ký thành công' : order.status === 'Pending' ? 'Đơn hàng chờ thanh toán' : 'Chi tiết đơn hàng'}
         </h1>
         <div className="flex flex-wrap items-center gap-3">
@@ -97,7 +97,7 @@ export default function OrderDetailPage() {
             </p>
             <p className="mt-1 text-sm text-ink-soft">Đơn chưa thanh toán sẽ tự hết hạn sau 30 phút kể từ lúc đặt.</p>
             {countdown.ms > 0 && (
-              <div className="mt-4 bg-white p-4">
+              <div className="mt-4 card p-4">
                 <PaymentMethodPicker methods={methods.data} loading={methods.loading} value={method ?? methods.data?.[0]?.provider ?? null} onChange={setMethod} />
               </div>
             )}
@@ -123,7 +123,7 @@ export default function OrderDetailPage() {
       </div>
 
       <aside className="paper-receipt self-start bg-surface-2 px-6 pt-6 pb-10" aria-label="Hóa đơn">
-        <p className="text-center font-extrabold">EduViet · Hóa đơn</p>
+        <p className="text-center font-bold">EduViet · Hóa đơn</p>
         <p className="text-center text-sm text-ink-muted">{order.orderCode}</p>
         <dl className="mt-6 flex flex-col gap-3 tabular-nums">
           {order.items.map((i) => (
@@ -139,7 +139,7 @@ export default function OrderDetailPage() {
           {order.discountAmount > 0 && (
             <div className="flex text-success"><dt>Giảm ({order.couponCode})</dt><span className="dot-leader" /><dd>-{formatPrice(order.discountAmount)}</dd></div>
           )}
-          <div className="mt-2 flex bg-ink px-3 py-3 text-xl font-extrabold text-white">
+          <div className="mt-2 flex bg-ink px-3 py-3 text-xl font-bold text-white">
             <dt>Tổng cộng</dt><dd className="ml-auto">{formatPrice(order.totalAmount, '0đ')}</dd>
           </div>
         </dl>

@@ -23,7 +23,7 @@ export default function InstructorPage() {
           {p ? (
             <div className="flex flex-col gap-5">
               <Avatar name={p.fullName} src={p.avatarUrl} size={96} />
-              <h1 className="text-title font-extrabold">{p.fullName}</h1>
+              <h1 className="text-title font-semibold">{p.fullName}</h1>
               <p className="text-xl text-ink-soft">{p.headline}</p>
               {p.bio && <p className="max-w-[65ch] text-lg">{p.bio}</p>}
             </div>
@@ -40,7 +40,7 @@ export default function InstructorPage() {
         </div>
       </section>
       <section className="container-page py-16" aria-labelledby="ins-courses">
-        <h2 id="ins-courses" className="text-2xl font-extrabold">Khóa học của {p?.fullName ?? 'giảng viên'}</h2>
+        <h2 id="ins-courses" className="text-2xl font-semibold">Khóa học của {p?.fullName ?? 'giảng viên'}</h2>
         <div className="mt-8">
           <CourseGrid courses={courses.data?.items ?? []} loading={courses.loading} skeletons={4} />
         </div>
@@ -53,7 +53,7 @@ function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div>
       <dt className="text-sm text-ink-soft">{label}</dt>
-      <dd className="text-4xl font-extrabold tabular-nums">{value}</dd>
+      <dd className="text-4xl font-bold tabular-nums">{value}</dd>
     </div>
   )
 }

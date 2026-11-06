@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { SlidersHorizontal, X } from 'lucide-react'
 import { CourseGrid } from '../components/course/CourseCard'
-import { EmptyState, ErrorState, Pagination } from '../components/ui'
+import { EmptyState, ErrorState, PageHeader, Pagination } from '../components/ui'
 import { useAsync, useDocumentTitle } from '../hooks/useAsync'
 import { useReveal } from '../hooks/useReveal'
 import { catalogService, type CourseSearchParams } from '../services/api'
@@ -119,16 +119,16 @@ export default function CoursesPage() {
   )
 
   return (
-    <div ref={ref} className="container-page py-12 md:py-16">
-      <div className="flex flex-wrap items-end justify-between gap-6">
-        <div>
-          <h1 className="text-title font-extrabold">
-            {keyword ? `Kết quả cho “${keyword}”` : activeCategory ? activeCategory.name : 'Tất cả khóa học'}
-          </h1>
-          <p className="mt-2 text-lg text-ink-soft" aria-live="polite">
-            {result.data ? `${formatNumber(result.data.totalCount)} khóa học` : 'Đang tìm…'}
-          </p>
-        </div>
+    <div ref={ref}>
+      <PageHeader
+        eyebrow="Thư viện khóa học"
+        title={keyword ? `Kết quả cho “${keyword}”` : activeCategory ? activeCategory.name : 'Tất cả khóa học'}
+        crumbs={activeCategory ? [{ label: 'Khóa học', to: '/khoa-hoc' }, { label: activeCategory.name }] : [{ label: 'Khóa học' }]}
+        description={<p aria-live="polite">{result.data ? `${formatNumber(result.data.totalCount)} khóa học` : 'Đang tìm…'}</p>}
+      />
+      <div className="container-page py-10 md:py-12">
+      <div className="card flex flex-wrap items-center justify-between gap-4 px-4 py-3">
+        <p className="text-sm text-ink-soft">Lọc theo lĩnh vực, trình độ, giá và đánh giá để tìm khóa phù hợp.</p>
         <div className="flex items-center gap-3">
           <button type="button" className="btn-soft lg:hidden" onClick={() => setFiltersOpen(true)}>
             <SlidersHorizontal className="size-4" aria-hidden="true" /> Bộ lọc
@@ -148,8 +148,8 @@ export default function CoursesPage() {
         </button>
       )}
 
-      <div className="mt-10 grid gap-12 lg:grid-cols-[240px_1fr]">
-        <aside className="hidden lg:block" aria-label="Bộ lọc">{filters}</aside>
+      <div className="mt-8 grid gap-8 lg:grid-cols-[260px_1fr]">
+        <aside className="card hidden self-start p-5 lg:block" aria-label="Bộ lọc">{filters}</aside>
 
         {filtersOpen && (
           <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-label="Bộ lọc">
@@ -183,6 +183,7 @@ export default function CoursesPage() {
             </>
           )}
         </section>
+      </div>
       </div>
     </div>
   )

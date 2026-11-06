@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
-import { ErrorState, Skeleton, Spinner } from '../../components/ui'
+import { PageHeader, ErrorState, Skeleton, Spinner } from '../../components/ui'
 import { PaymentMethodPicker } from '../../components/payment/PaymentMethods'
 import { useAsync, useDocumentTitle } from '../../hooks/useAsync'
 import { useCart } from '../../hooks/useAuth'
@@ -107,8 +107,9 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="container-page py-12 md:py-16">
-      <h1 className="text-title font-extrabold">Thanh toán</h1>
+    <>
+      <PageHeader title="Thanh toán" crumbs={singleCourse ? [{ label: 'Khóa học', to: '/khoa-hoc' }, { label: 'Thanh toán' }] : [{ label: 'Giỏ hàng', to: '/gio-hang' }, { label: 'Thanh toán' }]} />
+    <div className="container-page py-10 md:py-12">
       <Link to={singleCourse ? '/khoa-hoc' : '/gio-hang'} className="mt-2 inline-block font-semibold text-brand-700 hover:underline">
         ← {singleCourse ? 'Tiếp tục xem khóa học' : 'Quay lại giỏ hàng'}
       </Link>
@@ -119,11 +120,11 @@ export default function CheckoutPage() {
         <div className="mt-10 grid gap-12 lg:grid-cols-[1fr_420px]">
           <div className="flex flex-col gap-10">
             <section aria-labelledby="items-h">
-              <h2 id="items-h" className="text-2xl font-extrabold">Khóa học</h2>
+              <h2 id="items-h" className="text-2xl font-semibold">Khóa học</h2>
               <ul className="mt-6 flex flex-col gap-3">
                 {!quote && <Skeleton className="h-20" />}
                 {quote?.lines.map((l) => (
-                  <li key={l.courseId} className="flex flex-wrap items-baseline justify-between gap-3 bg-surface-2 p-4">
+                  <li key={l.courseId} className="flex flex-wrap items-baseline justify-between gap-3 rounded-(--radius-card) bg-surface-2 p-4">
                     <span className="font-bold">{l.title}</span>
                     <span className="tabular-nums">
                       {l.originalPrice > l.price && <span className="mr-2 text-sm text-ink-muted line-through">{formatPrice(l.originalPrice)}</span>}
@@ -135,7 +136,7 @@ export default function CheckoutPage() {
             </section>
 
             <section aria-labelledby="coupon-h">
-              <h2 id="coupon-h" className="text-2xl font-extrabold">Mã giảm giá</h2>
+              <h2 id="coupon-h" className="text-2xl font-semibold">Mã giảm giá</h2>
               <form onSubmit={applyCoupon} className="mt-4 flex max-w-md gap-2">
                 <label htmlFor="coupon" className="sr-only">Mã giảm giá</label>
                 <input id="coupon" value={couponInput} onChange={(e) => setCouponInput(e.target.value)} placeholder="Nhập mã, ví dụ CHAOBANMOI"
@@ -152,7 +153,7 @@ export default function CheckoutPage() {
             </section>
 
             <section aria-labelledby="method-h">
-              <h2 id="method-h" className="text-2xl font-extrabold">Phương thức thanh toán</h2>
+              <h2 id="method-h" className="text-2xl font-semibold">Phương thức thanh toán</h2>
               <div className="mt-4">
                 {quote?.totalAmount === 0 ? (
                   <p className="bg-success-50 p-4 text-sm">Đơn hàng 0đ không cần thanh toán — khóa học được mở ngay khi bạn hoàn tất.</p>
@@ -165,7 +166,7 @@ export default function CheckoutPage() {
 
           <aside className="paper-receipt self-start bg-white px-6 pt-6 pb-10 ring-0 lg:sticky lg:top-24" aria-label="Hóa đơn">
             <div className="bg-surface-2 -mx-6 -mt-6 mb-6 px-6 py-4">
-              <p className="text-center font-extrabold">EduViet · Hóa đơn tạm tính</p>
+              <p className="text-center font-bold">EduViet · Hóa đơn tạm tính</p>
             </div>
             {quote ? (
               <dl className="flex flex-col gap-3 tabular-nums">
@@ -178,7 +179,7 @@ export default function CheckoutPage() {
                 {quote.discountAmount > 0 && (
                   <div className="flex text-success"><dt>Giảm ({quote.couponCode})</dt><span className="dot-leader" /><dd>-{formatPrice(quote.discountAmount)}</dd></div>
                 )}
-                <div className="mt-2 flex bg-ink px-3 py-3 text-xl font-extrabold text-white">
+                <div className="mt-2 flex bg-ink px-3 py-3 text-xl font-bold text-white">
                   <dt>Tổng cộng</dt><dd className="ml-auto">{formatPrice(quote.totalAmount, '0đ')}</dd>
                 </div>
               </dl>
@@ -194,5 +195,6 @@ export default function CheckoutPage() {
         </div>
       )}
     </div>
+    </>
   )
 }

@@ -84,14 +84,14 @@ export default function PaymentResultPage() {
       {paid ? <CheckCircle2 className="size-16 text-success" aria-hidden="true" />
         : pending ? <Clock className="size-16 text-warning" aria-hidden="true" />
         : <XCircle className="size-16 text-danger" aria-hidden="true" />}
-      <h1 className="mt-6 text-title font-extrabold">
+      <h1 className="mt-6 text-title font-semibold">
         {paid ? 'Thanh toán thành công' : pending ? 'Đang chờ xác nhận thanh toán' : 'Thanh toán chưa thành công'}
       </h1>
       <p className="mt-4 text-lg text-ink-soft" aria-live="polite">
         {waiting ? 'Cổng thanh toán đã báo thành công, hệ thống đang chờ xác nhận chính thức…' : result.message}
       </p>
 
-      <dl className="mt-8 grid gap-4 bg-surface-2 p-6 sm:grid-cols-3">
+      <dl className="mt-8 grid gap-4 rounded-(--radius-card) bg-surface-2 p-6 sm:grid-cols-3">
         <div><dt className="text-sm text-ink-soft">Mã đơn</dt><dd className="font-bold">{result.orderCode}</dd></div>
         <div><dt className="text-sm text-ink-soft">Phương thức</dt><dd className="font-bold">{result.provider ? providerLabel[result.provider] : '—'}</dd></div>
         <div><dt className="text-sm text-ink-soft">Số tiền</dt><dd className="font-bold tabular-nums">{formatPrice(result.amount, '0đ')}</dd></div>

@@ -92,7 +92,7 @@ export default function LessonView() {
       <div className="mx-auto max-w-4xl px-4 py-8 sm:px-8 sm:py-10">
         <p className="text-sm text-ink-soft">{lesson.sectionTitle}</p>
         <div className="mt-2 flex flex-wrap items-start justify-between gap-4">
-          <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">{lesson.title}</h1>
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{lesson.title}</h1>
           {!course.isPreviewMode && (
             <button
               type="button"

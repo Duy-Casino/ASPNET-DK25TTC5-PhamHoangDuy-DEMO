@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { EmptyState, ErrorState, OrderStatusBadge, Pagination, Skeleton } from '../../components/ui'
+import { PageHeader, EmptyState, ErrorState, OrderStatusBadge, Pagination, Skeleton } from '../../components/ui'
 import { useAsync, useDocumentTitle } from '../../hooks/useAsync'
 import { orderService } from '../../services/api'
 import type { OrderStatus } from '../../types/common'
@@ -20,8 +20,9 @@ export default function OrdersPage() {
   const { data, loading, error, reload } = useAsync(() => orderService.mine(page, status || undefined), [page, status])
 
   return (
-    <div className="container-page py-12 md:py-16">
-      <h1 className="text-title font-extrabold">Lịch sử mua hàng</h1>
+    <>
+      <PageHeader title="Lịch sử mua hàng" crumbs={[{ label: 'Tài khoản', to: '/tai-khoan' }, { label: 'Lịch sử mua hàng' }]} description="Theo dõi đơn hàng, trạng thái thanh toán và hóa đơn của bạn." />
+    <div className="container-page py-10 md:py-12">
       <div className="mt-8 flex flex-wrap gap-2" role="tablist" aria-label="Lọc theo trạng thái">
         {tabs.map((t) => (
           <button key={t.value} type="button" role="tab" aria-selected={status === t.value}
@@ -72,5 +73,6 @@ export default function OrdersPage() {
         )}
       </div>
     </div>
+    </>
   )
 }

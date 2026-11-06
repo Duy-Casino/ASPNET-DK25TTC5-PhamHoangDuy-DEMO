@@ -214,7 +214,7 @@ function CurriculumTab({ course, reload }: { course: CourseEdit; reload: () => v
 
   return (
     <div className="flex flex-col gap-4">
-      {course.sections.length === 0 && <p className="bg-white p-6 text-ink-soft">Chưa có chương nào. Thêm chương đầu tiên bên dưới.</p>}
+      {course.sections.length === 0 && <p className="card p-6 text-ink-soft">Chưa có chương nào. Thêm chương đầu tiên bên dưới.</p>}
       {course.sections.map((s, si) => (
         <Panel key={s.id}>
           <div className="flex flex-wrap items-center gap-2">
@@ -262,7 +262,7 @@ function CurriculumTab({ course, reload }: { course: CourseEdit; reload: () => v
       ))}
 
       {editable && (
-        <form className="flex flex-wrap items-end gap-3 rounded-(--radius-card) bg-white p-5"
+        <form className="flex flex-wrap items-end gap-3 card p-5"
           onSubmit={(e) => { e.preventDefault(); if (newSection.trim()) void act(async () => { await instructorService.addSection(course.id, newSection.trim()); setNewSection('') }, 'Đã thêm chương') }}>
           <Field label="Chương mới" value={newSection} onChange={(e) => setNewSection(e.target.value)} placeholder="Ví dụ: Làm quen với công cụ" className="min-w-60 flex-1" maxLength={200} />
           <button type="submit" className="btn-primary" disabled={busy || !newSection.trim()}><Plus className="size-4" aria-hidden="true" />Thêm chương</button>
@@ -380,7 +380,7 @@ function LessonModal({ sectionId, lesson, onClose, onSaved }: { sectionId: strin
           <Field label="Thời lượng (phút)" type="number" min={0} value={minutes} onChange={(e) => setMinutes(e.target.value)} error={errors.durationSeconds} />
         </div>
         {f.type === 'Video' && (
-          <div className="flex flex-col gap-4 bg-surface-2 p-4">
+          <div className="flex flex-col gap-4 rounded-(--radius-card) bg-surface-2 p-4">
             {f.videoPublicId ? (
               <p className="flex flex-wrap items-center gap-3 text-sm">
                 <span className="font-semibold text-success">Đã có video tải lên (riêng tư, phát qua link có chữ ký).</span>
@@ -406,7 +406,7 @@ function LessonModal({ sectionId, lesson, onClose, onSaved }: { sectionId: strin
       </form>
 
       {lesson && (
-        <section className="mt-8 bg-surface-2 p-5" aria-labelledby="res-title">
+        <section className="mt-8 rounded-(--radius-card) bg-surface-2 p-5" aria-labelledby="res-title">
           <h3 id="res-title" className="font-bold">Tài liệu đính kèm</h3>
           <ul className="mt-3 flex flex-col gap-2">
             {resources.length === 0 && <li className="text-sm text-ink-muted">Chưa có tài liệu.</li>}

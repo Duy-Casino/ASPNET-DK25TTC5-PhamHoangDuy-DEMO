@@ -80,7 +80,7 @@ export default function QuizView() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-10 sm:px-8">
-      <h1 className="text-title font-extrabold">{q.title}</h1>
+      <h1 className="text-title font-semibold">{q.title}</h1>
       {q.description && <p className="mt-4 text-lg text-ink-soft">{q.description}</p>}
       <dl className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
         <Fact label="Số câu hỏi" value={String(q.questionCount)} />
@@ -98,7 +98,7 @@ export default function QuizView() {
             {q.inProgressAttemptId ? 'Tiếp tục làm bài' : q.attemptsUsed > 0 ? 'Làm lại' : 'Bắt đầu làm bài'}
           </button>
         ) : (
-          <p className="bg-surface-2 p-4 text-ink-soft">Bạn đã dùng hết số lượt làm bài.</p>
+          <p className="rounded-(--radius-card) bg-surface-2 p-4 text-ink-soft">Bạn đã dùng hết số lượt làm bài.</p>
         )}
       </div>
 
@@ -126,9 +126,9 @@ export default function QuizView() {
 
 function Fact({ label, value }: { label: string; value: string }) {
   return (
-    <div className="bg-surface-2 p-4">
+    <div className="rounded-(--radius-card) bg-surface-2 p-4">
       <dt className="text-sm text-ink-soft">{label}</dt>
-      <dd className="mt-1 text-xl font-extrabold">{value}</dd>
+      <dd className="mt-1 text-xl font-bold">{value}</dd>
     </div>
   )
 }
@@ -248,7 +248,7 @@ function ResultView({ result, canRetry, onRetry, retrying }: { result: AttemptRe
           {result.isPassed ? <CheckCircle2 className="size-5" aria-hidden="true" /> : <XCircle className="size-5" aria-hidden="true" />}
           {result.isPassed ? 'Đạt' : 'Chưa đạt'} — lượt {result.attemptNumber}
         </p>
-        <p className="mt-2 text-6xl font-extrabold tabular-nums">{Math.round(result.scorePercent)}%</p>
+        <p className="mt-2 text-6xl font-bold tabular-nums">{Math.round(result.scorePercent)}%</p>
         <p className="mt-2 text-ink-soft">{result.score}/{result.maxScore} điểm · cần {result.passingScore}% để đạt</p>
         {result.courseCompleted && result.isPassed && (
           <p className="mt-4 font-semibold">

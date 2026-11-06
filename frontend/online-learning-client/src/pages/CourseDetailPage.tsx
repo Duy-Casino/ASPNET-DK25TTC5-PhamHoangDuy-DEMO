@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import DOMPurify from 'dompurify'
 import { Check, ChevronDown, FileText, PlayCircle, Star, X } from 'lucide-react'
 import { toast } from 'sonner'
-import { Avatar, ErrorState, Pagination, RatingStars, Skeleton, Spinner, TextArea } from '../components/ui'
+import { Avatar, DecorBlobs, ErrorState, Pagination, RatingStars, Skeleton, Spinner, TextArea } from '../components/ui'
 import { useAsync, useDocumentTitle } from '../hooks/useAsync'
 import { useAuth, useCart } from '../hooks/useAuth'
 import { useReveal } from '../hooks/useReveal'
@@ -39,26 +39,30 @@ export default function CourseDetailPage() {
         </div>
       </div>
 
-      <section className="bg-brand-700 text-white" aria-labelledby="course-title">
+      <section className="relative isolate overflow-hidden border-b border-line/70 bg-surface-2" aria-labelledby="course-title">
+        <DecorBlobs variant="left" />
         <div className="container-page grid gap-10 py-12 md:py-16 lg:grid-cols-[1fr_380px] lg:gap-16">
           <div className="flex flex-col gap-5">
-            <nav aria-label="Đường dẫn" className="text-sm text-brand-100">
-              <Link to="/khoa-hoc" className="hover:text-white">Khóa học</Link>
+            <nav aria-label="Đường dẫn" className="text-sm text-ink-muted">
+              <Link to="/" className="hover:text-brand-700">Trang chủ</Link>
               <span aria-hidden="true"> / </span>
-              <Link to={`/khoa-hoc?category=${course.category.slug}`} className="hover:text-white">{course.category.name}</Link>
+              <Link to="/khoa-hoc" className="hover:text-brand-700">Khóa học</Link>
+              <span aria-hidden="true"> / </span>
+              <Link to={`/khoa-hoc?category=${course.category.slug}`} className="hover:text-brand-700">{course.category.name}</Link>
             </nav>
-            <h1 id="course-title" className="text-[clamp(2rem,1.3rem+2.6vw,3.25rem)] leading-[1.05] font-extrabold tracking-[-0.025em]">{course.title}</h1>
-            <p className="max-w-2xl text-lg text-brand-50">{course.shortDescription}</p>
-            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-brand-50">
-              {course.reviewCount > 0 ? <RatingStars value={course.averageRating} count={course.reviewCount} light /> : <span>Chưa có đánh giá</span>}
+            <span className="chip self-start">{course.category.name}</span>
+            <h1 id="course-title" className="text-[clamp(2rem,1.3rem+2.4vw,3rem)] leading-[1.12] font-semibold tracking-[-0.02em]">{course.title}</h1>
+            <p className="max-w-2xl text-lg text-ink-soft">{course.shortDescription}</p>
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-ink-soft">
+              {course.reviewCount > 0 ? <RatingStars value={course.averageRating} count={course.reviewCount} /> : <span>Chưa có đánh giá</span>}
               <span>{formatNumber(course.enrollmentCount)} học viên</span>
               <span>{courseLevelLabel[course.level]}</span>
               {course.updatedAt && <span>Cập nhật {formatDate(course.updatedAt)}</span>}
             </div>
-            <Link to={`/giang-vien/${course.instructor.id}`} className="flex w-fit items-center gap-3 rounded-(--radius-control) pr-4 hover:bg-brand-800">
+            <Link to={`/giang-vien/${course.instructor.id}`} className="flex w-fit items-center gap-3 rounded-full bg-white py-1.5 pr-5 pl-1.5 shadow-(--shadow-soft) transition-shadow hover:shadow-(--shadow-lift)">
               <Avatar name={course.instructor.fullName} src={course.instructor.avatarUrl} size={44} />
               <span>
-                <span className="block text-sm text-brand-100">Giảng viên</span>
+                <span className="block text-sm text-ink-muted">Giảng viên</span>
                 <span className="font-bold">{course.instructor.fullName}</span>
               </span>
             </Link>
@@ -72,8 +76,8 @@ export default function CourseDetailPage() {
       <div className="container-page grid gap-16 py-16 lg:grid-cols-[1fr_380px]">
         <div className="flex min-w-0 flex-col gap-16">
           {course.outcomes.length > 0 && (
-            <section aria-labelledby="outcomes" className="bg-brand-50 p-6 sm:p-10" data-reveal>
-              <h2 id="outcomes" className="text-2xl font-extrabold">Bạn sẽ học được</h2>
+            <section aria-labelledby="outcomes" className="rounded-(--radius-card) bg-brand-50 p-6 sm:p-10" data-reveal>
+              <h2 id="outcomes" className="text-2xl font-semibold">Bạn sẽ học được</h2>
               <ul className="mt-6 grid gap-4 sm:grid-cols-2">
                 {course.outcomes.map((o) => (
                   <li key={o} className="flex gap-3"><Check className="mt-1 size-5 shrink-0 text-brand-600" aria-hidden="true" />{o}</li>
@@ -86,7 +90,7 @@ export default function CourseDetailPage() {
 
           {course.requirements.length > 0 && (
             <section aria-labelledby="req" data-reveal>
-              <h2 id="req" className="text-2xl font-extrabold">Yêu cầu</h2>
+              <h2 id="req" className="text-2xl font-semibold">Yêu cầu</h2>
               <ul className="mt-4 list-disc space-y-2 pl-6">
                 {course.requirements.map((r) => <li key={r}>{r}</li>)}
               </ul>
@@ -95,7 +99,7 @@ export default function CourseDetailPage() {
 
           {course.description && (
             <section aria-labelledby="desc" data-reveal>
-              <h2 id="desc" className="text-2xl font-extrabold">Mô tả khóa học</h2>
+              <h2 id="desc" className="text-2xl font-semibold">Mô tả khóa học</h2>
               <div
                 className="mt-4 max-w-[70ch] space-y-4 text-lg leading-relaxed [&_a]:text-brand-700 [&_a]:underline [&_li]:ml-6 [&_ul]:list-disc"
                 dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(course.description) }}
@@ -103,12 +107,12 @@ export default function CourseDetailPage() {
             </section>
           )}
 
-          <section aria-labelledby="ins" className="bg-surface-2 p-6 sm:p-10" data-reveal>
-            <h2 id="ins" className="text-2xl font-extrabold">Giảng viên</h2>
+          <section aria-labelledby="ins" className="rounded-(--radius-card) bg-surface-2 p-6 sm:p-10" data-reveal>
+            <h2 id="ins" className="text-2xl font-semibold">Giảng viên</h2>
             <Link to={`/giang-vien/${course.instructor.id}`} className="mt-6 flex items-center gap-4 hover:text-brand-700">
               <Avatar name={course.instructor.fullName} src={course.instructor.avatarUrl} size={72} />
               <span>
-                <span className="block text-xl font-extrabold">{course.instructor.fullName}</span>
+                <span className="block text-xl font-bold">{course.instructor.fullName}</span>
                 <span className="text-ink-soft">{course.instructor.headline}</span>
               </span>
             </Link>
@@ -142,7 +146,7 @@ function PurchaseCard({ course, onPreview }: { course: CourseDetail; onPreview: 
   }
 
   return (
-    <aside className="bg-white text-ink lg:shadow-[0_12px_40px_rgb(11_27_51/0.14)]" aria-label="Mua khóa học">
+    <aside className="card overflow-hidden text-ink lg:shadow-(--shadow-lift)" aria-label="Mua khóa học">
       <button
         type="button"
         disabled={!course.previewVideoUrl}
@@ -160,7 +164,7 @@ function PurchaseCard({ course, onPreview }: { course: CourseDetail; onPreview: 
       </button>
       <div className="flex flex-col gap-4 p-6">
         <div className="flex flex-wrap items-baseline gap-3">
-          <span className="text-3xl font-extrabold">{formatPrice(course.effectivePrice)}</span>
+          <span className="text-3xl font-bold">{formatPrice(course.effectivePrice)}</span>
           {off !== null && (
             <>
               <span className="text-ink-muted line-through">{formatPrice(course.price)}</span>
@@ -171,7 +175,7 @@ function PurchaseCard({ course, onPreview }: { course: CourseDetail; onPreview: 
 
         {course.isOwner ? (
           <div className="flex flex-col gap-2">
-            <p className="bg-brand-50 p-4 text-sm">Đây là khóa học của bạn.</p>
+            <p className="rounded-(--radius-card) bg-brand-50 p-4 text-sm">Đây là khóa học của bạn.</p>
             <Link to={`/giang-day/khoa-hoc/${course.id}`} className="btn-primary min-h-12 w-full text-base">Soạn nội dung</Link>
           </div>
         ) : course.isEnrolled ? (
@@ -220,7 +224,7 @@ function Curriculum({ course, onPreview }: { course: CourseDetail; onPreview: (p
     <section aria-labelledby="curriculum" data-reveal>
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h2 id="curriculum" className="text-2xl font-extrabold">Nội dung khóa học</h2>
+          <h2 id="curriculum" className="text-2xl font-semibold">Nội dung khóa học</h2>
           <p className="mt-1 text-ink-soft">
             {course.sections.length} chương · {course.totalLessons} bài · {formatDuration(course.totalDurationSeconds)}
           </p>
@@ -231,7 +235,7 @@ function Curriculum({ course, onPreview }: { course: CourseDetail; onPreview: (p
       </div>
       <div className="mt-6 flex flex-col gap-2">
         {course.sections.map((s, i) => (
-          <details key={`${s.id}-${openAll}`} open={openAll || i === 0} className="group bg-surface-2">
+          <details key={`${s.id}-${openAll}`} open={openAll || i === 0} className="group overflow-hidden rounded-xl border border-line/70 bg-surface-2">
             <summary className="flex cursor-pointer list-none items-center gap-3 p-4 font-bold hover:bg-surface-3 [&::-webkit-details-marker]:hidden">
               <ChevronDown className="size-5 shrink-0 transition-transform duration-200 group-open:rotate-180" aria-hidden="true" />
               <span className="flex-1">{s.title}</span>
@@ -267,10 +271,10 @@ function Reviews({ course, onChanged }: { course: CourseDetail; onChanged: () =>
 
   return (
     <section aria-labelledby="reviews" data-reveal>
-      <h2 id="reviews" className="text-2xl font-extrabold">Đánh giá của học viên</h2>
+      <h2 id="reviews" className="text-2xl font-semibold">Đánh giá của học viên</h2>
       <div className="mt-6 grid gap-8 sm:grid-cols-[auto_1fr] sm:items-center">
         <div className="text-center">
-          <p className="text-6xl font-extrabold tabular-nums">{course.averageRating.toFixed(1)}</p>
+          <p className="text-6xl font-bold tabular-nums">{course.averageRating.toFixed(1)}</p>
           <RatingStars value={course.averageRating} showValue={false} />
           <p className="mt-1 text-sm text-ink-soft">{course.reviewCount} đánh giá</p>
         </div>
@@ -307,7 +311,7 @@ function Reviews({ course, onChanged }: { course: CourseDetail; onChanged: () =>
               </div>
               {r.comment && <p className="mt-2">{r.comment}</p>}
               {r.instructorReply && (
-                <div className="mt-3 bg-surface-2 p-4">
+                <div className="mt-3 rounded-(--radius-card) bg-surface-2 p-4">
                   <p className="text-sm font-bold">Phản hồi của giảng viên</p>
                   <p className="mt-1">{r.instructorReply}</p>
                 </div>
@@ -356,7 +360,7 @@ function ReviewForm({ courseId, onSaved }: { courseId: string; onSaved: () => vo
   }
 
   return (
-    <form onSubmit={submit} className="mt-8 flex flex-col gap-4 bg-brand-50 p-6">
+    <form onSubmit={submit} className="mt-8 flex flex-col gap-4 rounded-(--radius-card) bg-brand-50 p-6">
       <fieldset>
         <legend className="font-bold">{existing ? 'Sửa đánh giá của bạn' : 'Đánh giá khóa học'}</legend>
         <div className="mt-2 flex gap-1" role="radiogroup" aria-label="Số sao">
@@ -405,14 +409,14 @@ function PreviewDialog({ title, url, onClose }: { title: string; url: string; on
 function DetailSkeleton() {
   return (
     <div>
-      <div className="bg-brand-700">
+      <div className="border-b border-line/70 bg-surface-2">
         <div className="container-page grid gap-10 py-16 lg:grid-cols-[1fr_380px]">
           <div className="flex flex-col gap-4">
-            <Skeleton className="h-12 w-3/4 bg-brand-600" />
-            <Skeleton className="h-6 w-1/2 bg-brand-600" />
-            <Skeleton className="h-6 w-1/3 bg-brand-600" />
+            <Skeleton className="h-12 w-3/4 " />
+            <Skeleton className="h-6 w-1/2 " />
+            <Skeleton className="h-6 w-1/3 " />
           </div>
-          <Skeleton className="h-96 bg-brand-600" />
+          <Skeleton className="h-96 " />
         </div>
       </div>
     </div>

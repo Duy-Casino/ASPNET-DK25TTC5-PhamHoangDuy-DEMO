@@ -1,14 +1,29 @@
 @import 'tailwindcss';
 
 /* =====================================================================
-   EduViet design tokens
-   Màu tươi trẻ, lấy cảm hứng từ cổng tuyển sinh VHU: xanh dương rực (#005CF8),
-   xanh đậm (#004DC1), điểm nhấn cam (#EF8000) và vàng nắng (#FFDC7C), nền xanh rất nhạt.
-   Quy tắc: không gradient, không shadow khi tĩnh, tách mặt phẳng bằng bậc tông màu.
+   EduViet design system — phong cách "technology platform"
+   Giữ thương hiệu EduViet: xanh dương #005CF8 (chính), cam #EF8000 (giá, đánh giá).
+   Ngôn ngữ thiết kế: nền sáng thoáng, thẻ trắng bo 16px có bóng rất nhẹ, tiêu đề
+   hình học độ đậm vừa (Lexend), màu mint làm điểm nhấn trang trí (gạch chân, khối nền).
+   Breakpoints: Tailwind mặc định — sm 640 · md 768 (tablet) · lg 1024 · xl 1280.
+   Khoảng cách: thang 4px của Tailwind; section dọc 80–112px, gap thẻ 24px.
    ===================================================================== */
 @theme {
-  /* Typeface: một họ chữ, hỗ trợ đầy đủ dấu tiếng Việt */
+  /* Typeface: thân bài Be Vietnam Pro, tiêu đề Lexend — cả hai hỗ trợ đầy đủ tiếng Việt */
   --font-sans: 'Be Vietnam Pro', ui-sans-serif, system-ui, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Lexend', 'Be Vietnam Pro', ui-sans-serif, system-ui, sans-serif;
+
+  /* Mint — điểm nhấn trang trí: gạch chân từ khóa, khối tròn nền, sóng cuối hero */
+  --color-mint-50: #e9fbf4;
+  --color-mint-100: #c9f5e4;
+  --color-mint-300: #7fe6c2;
+  --color-mint-500: #2fcf9a;
+  --color-mint-700: #0e7f5c;
+
+  /* Đổ bóng: chỉ hai bậc, rất nhẹ */
+  --shadow-soft: 0 1px 2px rgb(16 24 40 / 0.04), 0 6px 20px rgb(16 24 40 / 0.06);
+  --shadow-lift: 0 2px 6px rgb(16 24 40 / 0.06), 0 16px 36px rgb(16 24 40 / 0.1);
+  --shadow-brand: 0 8px 20px rgb(0 92 248 / 0.25);
 
   /* Brand blue — 600 là màu chính (chữ trắng trên 600 đạt 5.4:1) */
   --color-brand-50: #eff6ff;
@@ -41,9 +56,9 @@
   --color-ink-soft: #3d4a5c;
   --color-ink-muted: #6b7686;
   --color-surface: #ffffff;
-  --color-surface-2: #f3f6fb;
-  --color-surface-3: #e8eef7;
-  --color-line: #dfe5ee;
+  --color-surface-2: #f6f8fc;
+  --color-surface-3: #e9eef6;
+  --color-line: #e4e9f1;
 
   /* Trạng thái */
   --color-success: #12924f;
@@ -53,17 +68,19 @@
   --color-danger: #d92d20;
   --color-danger-50: #fdecea;
 
-  /* Bo góc: thẻ 12px, nút dạng pill (quyết định một lần cho toàn hệ thống) */
-  --radius-card: 12px;
-  --radius-control: 9999px;
+  /* Bo góc: thẻ 16px, nút/ô nhập 10px */
+  --radius-card: 16px;
+  --radius-control: 10px;
 
-  /* Thang chữ: hai cỡ làm việc chính + cỡ hiển thị lớn */
-  --text-display: clamp(2.5rem, 1.2rem + 5.2vw, 5.5rem);
-  --text-display--line-height: 1;
-  --text-display--letter-spacing: -0.035em;
-  --text-title: clamp(1.75rem, 1.2rem + 2vw, 2.75rem);
-  --text-title--line-height: 1.1;
-  --text-title--letter-spacing: -0.02em;
+  /* Thang chữ: display (hero) · title (h1 trang, h2 section) · heading (h3) */
+  --text-display: clamp(2.25rem, 1.4rem + 3.2vw, 3.6rem);
+  --text-display--line-height: 1.12;
+  --text-display--letter-spacing: -0.02em;
+  --text-title: clamp(1.7rem, 1.25rem + 1.6vw, 2.4rem);
+  --text-title--line-height: 1.2;
+  --text-title--letter-spacing: -0.015em;
+  --text-heading: 1.25rem;
+  --text-heading--line-height: 1.35;
 
   /* Chuyển động */
   --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
@@ -80,6 +97,10 @@
 
   body {
     @apply bg-surface font-sans text-base leading-relaxed text-ink antialiased;
+  }
+
+  h1, h2, h3, .font-display {
+    font-family: var(--font-display);
   }
 
   ::selection {
@@ -106,33 +127,66 @@
   @apply mx-auto w-full max-w-[1280px] px-4 sm:px-6 lg:px-8;
 }
 
-/* Nút: phẳng, một màu nền, pill; nhấn co 0.97 */
+/* ---------- Nút ----------
+   Trạng thái: hover nhấc nhẹ 1px (nút đặc có bóng màu), active co 0.97, disabled mờ 50%. */
 @utility btn {
   @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-(--radius-control) px-5 text-sm font-semibold
-    transition-[background-color,color,scale] duration-(--duration-fast) ease-(--ease-out-strong)
+    transition-[background-color,color,box-shadow,translate,scale,border-color] duration-(--duration-base) ease-(--ease-out-strong)
     active:scale-[0.97] disabled:pointer-events-none disabled:opacity-50;
 }
 @utility btn-primary {
-  @apply btn bg-brand-600 text-white hover:bg-brand-700;
+  @apply btn bg-brand-600 text-white hover:-translate-y-px hover:bg-brand-700 hover:shadow-(--shadow-brand);
 }
 @utility btn-accent {
-  @apply btn bg-accent-500 text-ink hover:bg-accent-400;
+  @apply btn bg-accent-500 text-ink hover:-translate-y-px hover:bg-accent-400 hover:shadow-(--shadow-soft);
 }
+/* Nút tông nhạt (CTA phụ trên header, hành động thứ cấp) */
 @utility btn-soft {
   @apply btn bg-brand-50 text-brand-700 hover:bg-brand-100;
+}
+/* Nút viền trắng — cặp với btn-primary trong hero/CTA */
+@utility btn-outline {
+  @apply btn border border-line bg-white text-ink hover:-translate-y-px hover:border-brand-300 hover:text-brand-700 hover:shadow-(--shadow-soft);
 }
 @utility btn-ghost {
   @apply btn bg-transparent text-ink hover:bg-surface-2;
 }
 @utility btn-light {
-  @apply btn bg-white text-brand-700 hover:bg-brand-50;
+  @apply btn bg-white text-brand-700 hover:-translate-y-px hover:bg-brand-50;
 }
 
-/* Ô nhập: trường biểu mẫu là nơi duy nhất dùng viền */
+/* ---------- Thẻ ---------- */
+@utility card {
+  @apply rounded-(--radius-card) border border-line/70 bg-white shadow-(--shadow-soft);
+}
+/* Thẻ bấm được: nhấc lên khi hover */
+@utility card-hover {
+  @apply transition-[box-shadow,translate,border-color] duration-300 ease-(--ease-out-strong) hover:-translate-y-1 hover:border-brand-200 hover:shadow-(--shadow-lift);
+}
+
+/* Nhãn nhỏ phía trên tiêu đề section */
+@utility eyebrow {
+  @apply inline-flex items-center gap-2 text-sm font-semibold text-brand-600;
+}
+/* Nhãn dạng viên thuốc (pill) */
+@utility chip {
+  @apply inline-flex items-center gap-1.5 rounded-full bg-brand-50 px-3 py-1 text-xs font-semibold text-brand-700;
+}
+/* Gạch chân từ khóa bằng dải mint */
+@utility mark-mint {
+  background-image: linear-gradient(transparent 62%, var(--color-mint-300) 62%, var(--color-mint-300) 88%, transparent 88%);
+  background-repeat: no-repeat;
+  padding-inline: 0.08em;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+
+/* ---------- Ô nhập ---------- */
 @utility input {
-  @apply min-h-12 w-full rounded-xl border border-line bg-white px-4 text-base text-ink placeholder:text-ink-muted
+  @apply min-h-12 w-full rounded-(--radius-control) border border-line bg-white px-4 text-base text-ink placeholder:text-ink-muted
     transition-[border-color,box-shadow] duration-(--duration-fast)
-    focus:border-brand-500 focus:ring-4 focus:ring-brand-100 focus:outline-none
+    hover:border-brand-200 focus:border-brand-500 focus:ring-4 focus:ring-brand-100 focus:outline-none
+    disabled:bg-surface-2 disabled:text-ink-muted
     aria-[invalid=true]:border-danger aria-[invalid=true]:ring-danger-50;
 }
 
@@ -200,9 +254,21 @@
   animation: rise-in 700ms var(--ease-out-strong) both;
 }
 
+/* Trôi nhẹ lên xuống cho các nhãn nổi trong hero */
+@keyframes float-y {
+  from { transform: translateY(0); }
+  to { transform: translateY(-8px); }
+}
+.float-slow {
+  animation: float-y 3.6s ease-in-out infinite alternate;
+}
+.float-slow-delay {
+  animation: float-y 4.2s ease-in-out 0.8s infinite alternate;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .reveal { opacity: 1; transform: none; }
-  .drift, .rise-in { animation: none; }
+  .drift, .rise-in, .float-slow, .float-slow-delay { animation: none; }
 }
 
 /* Hàng cuộn ngang kiểu "sàn": ẩn thanh cuộn nhưng vẫn vuốt/cuộn được */

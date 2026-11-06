@@ -1,13 +1,30 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent, type ReactNode, type RefObject } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
-import { BookOpen, LogOut, Menu, Search, ShoppingCart, User as UserIcon, X } from 'lucide-react'
+import {
+  ArrowRight, BookOpen, ChevronDown, GraduationCap, Home, LogOut, Mail, MapPin, Menu, Phone, Search, ShieldCheck, ShoppingCart, X,
+} from 'lucide-react'
 import { toast } from 'sonner'
-import { Avatar, Logo } from '../components/ui'
+import { Avatar, DecorBlobs, Logo } from '../components/ui'
 import { useAsync } from '../hooks/useAsync'
 import { useAuth, useCart } from '../hooks/useAuth'
 import { catalogService } from '../services/api'
 
-function SearchBox({ onDone }: { onDone?: () => void }) {
+/** Đóng một vùng nổi khi bấm ra ngoài hoặc nhấn Escape. */
+function useDismiss(open: boolean, close: () => void, ref: RefObject<HTMLElement | null>) {
+  useEffect(() => {
+    if (!open) return
+    const onDown = (e: MouseEvent) => { if (!ref.current?.contains(e.target as Node)) close() }
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') close() }
+    document.addEventListener('mousedown', onDown)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onDown)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [open, close, ref])
+}
+
+function SearchBox({ onDone, autoFocus = false }: { onDone?: () => void; autoFocus?: boolean }) {
   const navigate = useNavigate()
   const [params] = useSearchParams()
   const [q, setQ] = useState(params.get('keyword') ?? '')
@@ -20,20 +37,21 @@ function SearchBox({ onDone }: { onDone?: () => void }) {
   }
 
   return (
-    <form role="search" onSubmit={submit} className="flex w-full overflow-hidden rounded-xl bg-white">
+    <form role="search" onSubmit={submit} className="flex w-full items-center gap-2">
       <label htmlFor="site-search" className="sr-only">Tìm khóa học</label>
-      <Search className="ml-4 size-5 shrink-0 self-center text-ink-muted" aria-hidden="true" />
-      <input
-        id="site-search"
-        type="search"
-        value={q}
-        onChange={(e) => setQ(e.target.value)}
-        placeholder="Bạn muốn học gì hôm nay?"
-        className="min-h-11 min-w-0 flex-1 bg-transparent px-3 text-base text-ink placeholder:text-ink-muted focus:outline-none"
-      />
-      <button type="submit" className="border-l border-line px-4 text-sm font-bold text-ink transition-colors hover:bg-surface-2 sm:px-5">
-        Tìm kiếm
-      </button>
+      <div className="relative flex-1">
+        <Search className="pointer-events-none absolute top-1/2 left-4 size-5 -translate-y-1/2 text-ink-muted" aria-hidden="true" />
+        <input
+          id="site-search"
+          type="search"
+          value={q}
+          autoFocus={autoFocus}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Tìm khóa học, giảng viên, kỹ năng…"
+          className="input pl-12"
+        />
+      </div>
+      <button type="submit" className="btn-primary min-h-12 px-6">Tìm kiếm</button>
     </form>
   )
 }
@@ -43,19 +61,7 @@ function UserMenu() {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   const navigate = useNavigate()
-
-  useEffect(() => {
-    if (!open) return
-    const close = (e: MouseEvent | KeyboardEvent) => {
-      if (e instanceof KeyboardEvent ? e.key === 'Escape' : !ref.current?.contains(e.target as Node)) setOpen(false)
-    }
-    document.addEventListener('mousedown', close)
-    document.addEventListener('keydown', close)
-    return () => {
-      document.removeEventListener('mousedown', close)
-      document.removeEventListener('keydown', close)
-    }
-  }, [open])
+  useDismiss(open, () => setOpen(false), ref)
 
   if (!user) return null
 
@@ -73,17 +79,13 @@ function UserMenu() {
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
-        className="flex items-center gap-2 rounded-(--radius-control) p-1 transition-transform active:scale-95"
+        className="flex items-center gap-2 rounded-full p-1 transition-transform active:scale-95"
       >
         <Avatar name={user.fullName} src={user.avatarUrl} size={38} />
         <span className="sr-only">Tài khoản của {user.fullName}</span>
       </button>
       {open && (
-        <div
-          role="menu"
-          className="rise-in absolute right-0 z-50 mt-2 w-64 origin-top-right rounded-(--radius-card) bg-white p-2 shadow-[0_12px_40px_rgb(11_27_51/0.16)]"
-          style={{ animationDuration: '180ms' }}
-        >
+        <div role="menu" className="rise-in card absolute right-0 z-50 mt-2 w-64 origin-top-right p-2 shadow-(--shadow-lift)" style={{ animationDuration: '180ms' }}>
           <div className="px-3 py-2">
             <p className="font-semibold">{user.fullName}</p>
             <p className="truncate text-sm text-ink-muted">{user.email}</p>
@@ -112,147 +114,246 @@ function MenuLink({ to, children, onClick }: { to: string; children: string; onC
   )
 }
 
+/** Mục điều hướng: biểu tượng + chữ, mục đang mở có gạch chân mint. */
+const navItem = (active: boolean) =>
+  `relative inline-flex min-h-11 items-center gap-2 px-3 text-[15px] font-medium transition-colors after:absolute after:inset-x-3 after:bottom-1 after:h-[3px] after:rounded-full after:transition-colors ${
+    active ? 'text-brand-700 after:bg-mint-500' : 'text-ink-soft hover:text-ink after:bg-transparent'
+  }`
+
+function CoursesMenu() {
+  const { data } = useAsync(() => catalogService.categories(), [])
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+  const hoverAt = useRef(0)
+  const { pathname } = useLocation()
+  useDismiss(open, () => setOpen(false), ref)
+  useEffect(() => setOpen(false), [pathname])
+
+  const categories = (data ?? []).filter((c) => c.parentId === null && c.isActive)
+  return (
+    <div ref={ref} className="relative" onMouseLeave={() => setOpen(false)}>
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls="courses-menu"
+        onClick={() => {
+          // Vừa mở bằng hover thì cú click ngay sau đó giữ menu mở thay vì đóng lại
+          if (Date.now() - hoverAt.current < 400) return
+          setOpen((o) => !o)
+        }}
+        onMouseEnter={() => { if (!open) hoverAt.current = Date.now(); setOpen(true) }}
+        className={navItem(pathname.startsWith('/khoa-hoc'))}
+      >
+        <GraduationCap className="size-[18px]" aria-hidden="true" /> Khóa học
+        <ChevronDown className={`size-4 transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden="true" />
+      </button>
+      {open && (
+        <div id="courses-menu" className="absolute top-full left-0 z-50 pt-2">
+          <div className="rise-in card w-[520px] p-3 shadow-(--shadow-lift)" style={{ animationDuration: '180ms' }}>
+            <div className="grid grid-cols-2 gap-1">
+              {categories.map((c) => (
+                <Link key={c.id} to={`/khoa-hoc?category=${c.slug}`} className="flex items-center justify-between gap-3 rounded-lg px-3 py-2.5 hover:bg-surface-2">
+                  <span className="font-medium">{c.name}</span>
+                  <span className="text-xs text-ink-muted tabular-nums">{c.courseCount} khóa</span>
+                </Link>
+              ))}
+            </div>
+            <div className="mt-2 flex gap-2 border-t border-line/70 pt-3">
+              <Link to="/khoa-hoc" className="btn-soft flex-1">Tất cả khóa học</Link>
+              <Link to="/khoa-hoc?free=true" className="btn-outline flex-1">Khóa miễn phí</Link>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function Header() {
   const { isAuthenticated, initializing } = useAuth()
   const { cart } = useCart()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [searchOpen, setSearchOpen] = useState(false)
+  const [scrolled, setScrolled] = useState(false)
   const location = useLocation()
+  const { data: categories } = useAsync(() => catalogService.categories(), [])
 
   useEffect(() => {
     setMobileOpen(false)
-  }, [location.pathname])
+    setSearchOpen(false)
+  }, [location.pathname, location.search])
 
-  const topLink = 'inline-flex min-h-11 items-center gap-2 rounded-(--radius-control) px-3 text-sm font-semibold text-white transition-colors hover:bg-white/15'
-  const myCourses = isAuthenticated ? '/hoc-vien' : '/dang-nhap'
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8)
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  useEffect(() => {
+    if (!searchOpen) return
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setSearchOpen(false) }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [searchOpen])
+
+  const iconBtn = 'relative flex size-11 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-surface-2 hover:text-ink active:scale-95'
+  const mobileLink = ({ isActive }: { isActive: boolean }) =>
+    `flex min-h-12 items-center gap-3 rounded-xl px-3 font-medium ${isActive ? 'bg-brand-50 text-brand-700' : 'text-ink hover:bg-surface-2'}`
 
   return (
-    <header className="sticky top-0 z-40 bg-brand-600 text-white">
-      <div className="container-page flex flex-wrap items-center gap-x-4 gap-y-3 py-3">
-        <Logo inverted />
-        {/* Ô tìm kiếm luôn hiện — xuống hàng riêng trên điện thoại */}
-        <div className="order-last w-full md:order-none md:w-auto md:max-w-xl md:flex-1">
-          <SearchBox />
-        </div>
-        <div className="ml-auto flex items-center gap-1">
-          <Link to="/xac-minh" className="hidden min-h-11 items-center rounded-(--radius-control) border-[1.5px] border-white px-4 text-sm font-bold text-white transition-colors hover:bg-white hover:text-brand-700 xl:inline-flex">
-            Xác minh chứng chỉ
-          </Link>
-          <Link to={myCourses} className="hidden min-h-11 items-center gap-2 rounded-(--radius-control) px-3 text-sm font-semibold text-white transition-colors hover:bg-white/15 lg:inline-flex">
-            <BookOpen className="size-5" aria-hidden="true" /> Khóa học của tôi
-          </Link>
-          <Link to="/gio-hang" className="relative rounded-(--radius-control) p-2.5 text-white transition-colors hover:bg-white/15 active:scale-95" aria-label={`Giỏ hàng, ${cart.count} khóa học`}>
-            <ShoppingCart className="size-6" aria-hidden="true" />
+    <header className={`sticky top-0 z-40 bg-white/90 backdrop-blur-md transition-shadow duration-300 ${scrolled ? 'shadow-(--shadow-soft)' : 'border-b border-line/70'}`}>
+      <div className="container-page flex h-[72px] items-center gap-6">
+        <Logo />
+        <nav className="hidden items-center gap-1 lg:flex" aria-label="Chính">
+          <NavLink to="/" end className={({ isActive }) => navItem(isActive)}>
+            <Home className="size-[18px]" aria-hidden="true" /> Trang chủ
+          </NavLink>
+          <CoursesMenu />
+          <NavLink to="/xac-minh" className={({ isActive }) => navItem(isActive)}>
+            <ShieldCheck className="size-[18px]" aria-hidden="true" /> Xác minh chứng chỉ
+          </NavLink>
+          {isAuthenticated && (
+            <NavLink to="/hoc-vien" className={({ isActive }) => navItem(isActive)}>
+              <BookOpen className="size-[18px]" aria-hidden="true" /> Khóa học của tôi
+            </NavLink>
+          )}
+        </nav>
+
+        <div className="ml-auto flex items-center gap-1 sm:gap-2">
+          <button type="button" className={iconBtn} aria-label={searchOpen ? 'Đóng tìm kiếm' : 'Mở tìm kiếm'} aria-expanded={searchOpen} aria-controls="search-panel"
+            onClick={() => setSearchOpen((o) => !o)}>
+            {searchOpen ? <X className="size-5" aria-hidden="true" /> : <Search className="size-5" aria-hidden="true" />}
+          </button>
+          <Link to="/gio-hang" className={iconBtn} aria-label={`Giỏ hàng, ${cart.count} khóa học`}>
+            <ShoppingCart className="size-5" aria-hidden="true" />
             {cart.count > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 flex size-5 items-center justify-center rounded-full bg-sun-300 text-xs font-bold text-ink">
-                {cart.count}
-              </span>
+              <span className="absolute top-0.5 right-0.5 flex size-5 items-center justify-center rounded-full bg-accent-500 text-xs font-bold text-ink">{cart.count}</span>
             )}
           </Link>
           {!initializing && (isAuthenticated ? (
             <UserMenu />
           ) : (
-            <span className="hidden items-center text-sm font-semibold sm:inline-flex">
-              <Link to="/dang-nhap" className={topLink}>Đăng nhập</Link>
-              <span aria-hidden="true" className="text-white/60">|</span>
-              <Link to="/dang-ky" className={topLink}>Đăng ký</Link>
-            </span>
+            <div className="hidden items-center gap-2 sm:flex">
+              <Link to="/dang-nhap" className="btn-ghost">Đăng nhập</Link>
+              <Link to="/dang-ky" className="btn-primary">Đăng ký học</Link>
+            </div>
           ))}
-          <button
-            type="button"
-            className="rounded-(--radius-control) p-2.5 text-white hover:bg-white/15 lg:hidden"
-            aria-label={mobileOpen ? 'Đóng menu' : 'Mở menu'}
-            aria-expanded={mobileOpen}
-            onClick={() => setMobileOpen((o) => !o)}
-          >
+          <button type="button" className={`${iconBtn} lg:hidden`} aria-label={mobileOpen ? 'Đóng menu' : 'Mở menu'} aria-expanded={mobileOpen}
+            onClick={() => setMobileOpen((o) => !o)}>
             {mobileOpen ? <X className="size-6" /> : <Menu className="size-6" />}
           </button>
         </div>
       </div>
+
+      {searchOpen && (
+        <div id="search-panel" className="rise-in border-t border-line/70 bg-white" style={{ animationDuration: '200ms' }}>
+          <div className="container-page py-4"><SearchBox autoFocus onDone={() => setSearchOpen(false)} /></div>
+        </div>
+      )}
+
       {mobileOpen && (
-        <nav className="container-page flex flex-col gap-1 pb-4 lg:hidden" aria-label="Menu điện thoại">
-          <NavLink to="/khoa-hoc" className={topLink}>Tất cả khóa học</NavLink>
-          <NavLink to={myCourses} className={topLink}>Khóa học của tôi</NavLink>
-          <NavLink to="/xac-minh" className={topLink}>Xác minh chứng chỉ</NavLink>
-          {!isAuthenticated && (
-            <div className="mt-2 flex gap-2">
-              <Link to="/dang-nhap" className="btn flex-1 border-[1.5px] border-white text-white"><UserIcon className="size-4" aria-hidden="true" />Đăng nhập</Link>
-              <Link to="/dang-ky" className="btn flex-1 bg-white text-brand-700">Đăng ký</Link>
-            </div>
-          )}
+        <nav className="max-h-[calc(100svh-72px)] overflow-y-auto border-t border-line/70 bg-white lg:hidden" aria-label="Menu điện thoại">
+          <div className="container-page flex flex-col gap-1 py-4">
+            <NavLink to="/" end className={mobileLink}><Home className="size-5" aria-hidden="true" />Trang chủ</NavLink>
+            <NavLink to="/khoa-hoc" end className={mobileLink}><GraduationCap className="size-5" aria-hidden="true" />Tất cả khóa học</NavLink>
+            <NavLink to="/xac-minh" className={mobileLink}><ShieldCheck className="size-5" aria-hidden="true" />Xác minh chứng chỉ</NavLink>
+            {isAuthenticated && <NavLink to="/hoc-vien" className={mobileLink}><BookOpen className="size-5" aria-hidden="true" />Khóa học của tôi</NavLink>}
+            {categories && categories.length > 0 && (
+              <>
+                <p className="mt-3 px-3 text-sm font-semibold text-ink-muted">Lĩnh vực</p>
+                <div className="flex flex-wrap gap-2 px-3 pt-1">
+                  {categories.filter((c) => c.parentId === null && c.isActive).map((c) => (
+                    <Link key={c.id} to={`/khoa-hoc?category=${c.slug}`} className="chip min-h-9 px-3.5 text-sm">{c.name}</Link>
+                  ))}
+                </div>
+              </>
+            )}
+            {!isAuthenticated && !initializing && (
+              <div className="mt-4 flex gap-2">
+                <Link to="/dang-nhap" className="btn-outline flex-1">Đăng nhập</Link>
+                <Link to="/dang-ky" className="btn-primary flex-1">Đăng ký học</Link>
+              </div>
+            )}
+          </div>
         </nav>
       )}
     </header>
   )
 }
 
-/** Thanh lĩnh vực bên dưới header, giống thanh danh mục của một sàn: cuộn ngang trên điện thoại. */
-function CategoryBar() {
-  const { data } = useAsync(() => catalogService.categories(), [])
-  const { pathname } = useLocation()
-  const [params] = useSearchParams()
-  const onCourses = pathname === '/khoa-hoc'
-  const current = onCourses ? (params.get('free') === 'true' ? '__free' : params.get('category') ?? '__all') : null
-
-  const items = [
-    { key: '__all', label: 'Tất cả', to: '/khoa-hoc' },
-    ...(data ?? []).filter((c) => c.parentId === null && c.isActive).map((c) => ({ key: c.slug, label: c.name, to: `/khoa-hoc?category=${c.slug}` })),
-    { key: '__free', label: 'Miễn phí', to: '/khoa-hoc?free=true' },
-  ]
-
+/** Dải mời hành động phía trên chân trang (ẩn ở các bước giỏ hàng/thanh toán để không làm rối). */
+function CtaBand() {
+  const { isAuthenticated, initializing } = useAuth()
   return (
-    <nav className="border-b border-line bg-white" aria-label="Lĩnh vực">
-      <ul className="container-page no-scrollbar flex gap-7 overflow-x-auto">
-        {items.map((it) => {
-          const active = current === it.key
-          return (
-            <li key={it.key} className="shrink-0">
-              <Link
-                to={it.to}
-                aria-current={active ? 'page' : undefined}
-                className={`flex min-h-12 items-center border-b-[3px] text-[15px] font-semibold whitespace-nowrap transition-colors ${active ? 'border-brand-600 text-brand-700' : 'border-transparent text-ink hover:text-brand-700'}`}
-              >
-                {it.label}
-              </Link>
-            </li>
-          )
-        })}
-      </ul>
-    </nav>
+    <section className="container-page pt-20" aria-labelledby="cta-band-title">
+      <div className="relative isolate flex flex-col gap-6 overflow-hidden rounded-[24px] bg-surface-2 px-6 py-10 sm:px-12 md:flex-row md:items-center md:justify-between">
+        <DecorBlobs variant="left" />
+        <div className="max-w-xl">
+          <h2 id="cta-band-title" className="text-2xl font-semibold sm:text-3xl">EduViet đồng hành cùng bạn trên hành trình học tập</h2>
+          <p className="mt-3 text-ink-soft">Học theo tốc độ của bạn, làm bài kiểm tra và nhận chứng chỉ có mã xác minh khi hoàn thành.</p>
+        </div>
+        <div className="flex flex-wrap gap-3">
+          <Link to="/khoa-hoc" className="btn-primary min-h-12 px-6">Khám phá khóa học <ArrowRight className="size-4" aria-hidden="true" /></Link>
+          {!initializing && !isAuthenticated && <Link to="/dang-ky" className="btn-outline min-h-12 px-6">Đăng ký miễn phí</Link>}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function FooterCol({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <div>
+      <p className="font-display font-semibold">{title}</p>
+      <ul className="mt-4 flex flex-col gap-3 text-ink-soft">{children}</ul>
+    </div>
   )
 }
 
 function Footer() {
-  const col = 'flex flex-col gap-3'
-  const lnk = 'text-ink-soft hover:text-brand-700'
+  const { pathname } = useLocation()
+  const hideCta = ['/gio-hang', '/thanh-toan', '/don-hang'].some((p) => pathname.startsWith(p))
+  const lnk = 'transition-colors hover:text-brand-700'
   return (
-    <footer className="mt-auto border-t border-line bg-white">
-      <div className="container-page grid gap-10 py-12 sm:grid-cols-2 lg:grid-cols-4">
-        <div className={col}>
+    <footer className="mt-auto">
+      {!hideCta && <CtaBand />}
+      <div className="container-page grid gap-10 py-14 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
+        <div className="flex flex-col gap-4">
           <Logo />
-          <p className="max-w-xs text-ink-soft">Nền tảng khóa học trực tuyến của giảng viên Việt. Mỗi chứng chỉ có mã riêng để nhà tuyển dụng tự kiểm tra.</p>
+          <p className="max-w-sm text-ink-soft">
+            Nền tảng khóa học trực tuyến của giảng viên Việt. Mỗi chứng chỉ có mã riêng để nhà tuyển dụng tự kiểm tra.
+          </p>
+          <ul className="flex flex-col gap-2.5 text-ink-soft">
+            <li><a className={`inline-flex items-center gap-2 ${lnk}`} href="mailto:hotro@eduviet.local"><Mail className="size-4 text-brand-600" aria-hidden="true" />hotro@eduviet.local</a></li>
+            <li><a className={`inline-flex items-center gap-2 ${lnk}`} href="tel:19001234"><Phone className="size-4 text-brand-600" aria-hidden="true" />1900 1234</a></li>
+            <li className="inline-flex items-center gap-2"><MapPin className="size-4 text-brand-600" aria-hidden="true" />TP. Hồ Chí Minh</li>
+          </ul>
         </div>
-        <ul className={col}>
-          <li className="font-bold">Khám phá</li>
+        <FooterCol title="Khám phá">
           <li><Link className={lnk} to="/khoa-hoc">Tất cả khóa học</Link></li>
           <li><Link className={lnk} to="/khoa-hoc?sort=popular">Bán chạy</Link></li>
-          <li><Link className={lnk} to="/khoa-hoc?free=true">Miễn phí</Link></li>
-        </ul>
-        <ul className={col}>
-          <li className="font-bold">Dành cho học viên</li>
+          <li><Link className={lnk} to="/khoa-hoc?sort=newest">Mới xuất bản</Link></li>
+          <li><Link className={lnk} to="/khoa-hoc?free=true">Khóa miễn phí</Link></li>
+        </FooterCol>
+        <FooterCol title="Học viên">
           <li><Link className={lnk} to="/hoc-vien">Khóa học của tôi</Link></li>
+          <li><Link className={lnk} to="/hoc-vien/chung-chi">Chứng chỉ của tôi</Link></li>
           <li><Link className={lnk} to="/tai-khoan/don-hang">Lịch sử mua hàng</Link></li>
+          <li><Link className={lnk} to="/tai-khoan">Hồ sơ cá nhân</Link></li>
+        </FooterCol>
+        <FooterCol title="Hỗ trợ">
           <li><Link className={lnk} to="/xac-minh">Xác minh chứng chỉ</Link></li>
-        </ul>
-        <ul className={col}>
-          <li className="font-bold">Liên hệ</li>
-          <li><a className={lnk} href="mailto:hotro@eduviet.local">hotro@eduviet.local</a></li>
-          <li><a className={lnk} href="tel:19001234">1900 1234</a></li>
-          <li className="text-ink-soft">Thanh toán VNPay · MoMo</li>
-        </ul>
+          <li><Link className={lnk} to="/quen-mat-khau">Quên mật khẩu</Link></li>
+          <li>Thanh toán VNPay · MoMo</li>
+        </FooterCol>
       </div>
-      <p className="border-t border-line py-5 text-center text-sm text-ink-muted">
-        © {new Date().getFullYear()} EduViet. Ảnh minh họa: Unsplash qua picsum.photos.
-      </p>
+      <div className="border-t border-line/70">
+        <div className="container-page flex flex-col gap-2 py-5 text-sm text-ink-muted sm:flex-row sm:items-center sm:justify-between">
+          <p>© {new Date().getFullYear()} EduViet. Bảo lưu mọi quyền.</p>
+          <p>Ảnh minh họa: Unsplash qua picsum.photos</p>
+        </div>
+      </div>
     </footer>
   )
 }
@@ -269,7 +370,6 @@ export default function MainLayout() {
         Bỏ qua tới nội dung
       </a>
       <Header />
-      <CategoryBar />
       <main id="main" className="flex-1">
         <Outlet />
       </main>

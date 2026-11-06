@@ -160,13 +160,13 @@ function CertificateCard({ cert: c }: { cert: CertificateItem }) {
   }
 
   return (
-    <li className="bg-white">
+    <li className="card overflow-hidden">
       <div className="flex items-center justify-between bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white">
         <span>EduViet</span><span>Chứng chỉ hoàn thành</span>
       </div>
       <div className="p-6">
         <Award className="size-8 text-accent-500" aria-hidden="true" />
-        <p className="mt-3 text-xl font-extrabold">{c.courseTitle}</p>
+        <p className="mt-3 text-xl font-bold">{c.courseTitle}</p>
         <p className="mt-2 text-sm text-ink-soft">Cấp ngày {formatDate(c.issuedAt)}{c.finalScore !== null && ` · Điểm ${Math.round(c.finalScore)}%`}</p>
         <p className="mt-1 font-bold tabular-nums tracking-wide">{c.certificateCode}</p>
         <div className="mt-5 flex flex-wrap gap-2">
