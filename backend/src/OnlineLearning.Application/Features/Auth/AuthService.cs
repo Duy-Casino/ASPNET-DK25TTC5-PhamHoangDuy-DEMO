@@ -36,6 +36,7 @@ public sealed class AuthService(
     ICurrentUser currentUser,
     IOptions<JwtOptions> jwtOptions,
     IOptions<AppOptions> appOptions,
+    Rewards.IRewardService rewards,
     ILogger<AuthService> logger) : IAuthService
 {
     private static readonly Error InvalidCredentials =
@@ -59,6 +60,9 @@ public sealed class AuthService(
 
         var created = await userManager.CreateAsync(user, request.Password);
         if (!created.Succeeded) return IdentityError(created);
+
+        // Mã giới thiệu sai/tự giới thiệu thì bỏ qua, không làm hỏng việc đăng ký
+        await rewards.AttachReferralAsync(user.Id, request.ReferralCode, ct);
 
         await userManager.AddToRoleAsync(user, Roles.Student);
         await SendConfirmationEmailAsync(user, ct);

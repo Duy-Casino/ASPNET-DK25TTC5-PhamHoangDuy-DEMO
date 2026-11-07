@@ -51,6 +51,9 @@ public sealed class PricingService(IAppDbContext db, IDateTimeProvider clock) : 
             var now = clock.UtcNow;
             if (coupon is null || !coupon.IsUsable(now))
                 return Error.Validation("Mã giảm giá không hợp lệ hoặc đã hết hạn.");
+            // Mã cá nhân (đổi từ điểm thưởng) chỉ chủ sở hữu dùng được
+            if (coupon.RestrictedToUserId is { } owner && owner != userId)
+                return Error.Validation("Mã giảm giá không hợp lệ hoặc đã hết hạn.");
 
             var usedByUser = await db.Orders.CountAsync(o => o.UserId == userId && o.CouponId == coupon.Id && o.Status == OrderStatus.Paid, ct);
             if (usedByUser >= coupon.PerUserLimit)

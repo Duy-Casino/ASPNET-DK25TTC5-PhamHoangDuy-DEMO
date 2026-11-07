@@ -2,7 +2,7 @@ using FluentValidation;
 
 namespace OnlineLearning.Application.Features.Auth;
 
-public sealed record RegisterRequest(string FullName, string Email, string Password);
+public sealed record RegisterRequest(string FullName, string Email, string Password, string? ReferralCode = null);
 public sealed record LoginRequest(string Email, string Password);
 public sealed record ForgotPasswordRequest(string Email);
 public sealed record ResetPasswordRequest(string Email, string Token, string NewPassword);
@@ -37,6 +37,7 @@ public sealed class RegisterRequestValidator : AbstractValidator<RegisterRequest
         RuleFor(x => x.FullName).NotEmpty().WithMessage("Vui lòng nhập họ tên.").MaximumLength(150);
         RuleFor(x => x.Email).NotEmpty().EmailAddress().WithMessage("Email không hợp lệ.").MaximumLength(256);
         RuleFor(x => x.Password).StrongPassword();
+        RuleFor(x => x.ReferralCode).MaximumLength(16);
     }
 }
 

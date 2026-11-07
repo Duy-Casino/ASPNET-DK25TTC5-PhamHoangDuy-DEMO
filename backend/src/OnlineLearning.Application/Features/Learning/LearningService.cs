@@ -58,7 +58,7 @@ public interface ILearningService
 /// </summary>
 public sealed class LearningService(
     IAppDbContext db, ICurrentUser currentUser, IDateTimeProvider clock, IFileStorage storage,
-    Certificates.ICertificateService certificates) : ILearningService
+    Certificates.ICertificateService certificates, Rewards.IRewardService rewards) : ILearningService
 {
     private static readonly Error NotEnrolled = Error.Forbidden("Bạn chưa sở hữu khóa học này.");
 
@@ -234,7 +234,11 @@ public sealed class LearningService(
         // FR-CERT-02: hoàn thành thì cấp chứng chỉ ngay (idempotent)
         string? certificateCode = null;
         if (completed)
+        {
             certificateCode = (await certificates.IssueIfEligibleAsync(enrollment.Id, ct))?.CertificateCode;
+            // Thưởng hoàn thành khóa học: chỉ backend quyết định (từ tiến độ thật), mỗi khóa một lần
+            await rewards.AwardCourseCompletionAsync(enrollment.Id, ct);
+        }
 
         return new ProgressDto(enrollment.ProgressPercent, done, requiredIds.Count, enrollment.Status, completed, certificateCode);
     }

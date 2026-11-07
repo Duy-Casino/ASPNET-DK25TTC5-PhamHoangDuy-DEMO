@@ -1,10 +1,12 @@
 import { useState, type FormEvent } from 'react'
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
+import { Gift } from 'lucide-react'
 import { toast } from 'sonner'
 import { Field, Spinner } from '../../components/ui'
 import { useDocumentTitle } from '../../hooks/useAsync'
 import { useAuth } from '../../hooks/useAuth'
 import { getErrorMessage, getFieldErrors } from '../../services/apiClient'
+import { clearReferral, rememberReferral, storedReferral } from '../../services/rewardApi'
 import { safeNext } from './LoginPage'
 
 export const PASSWORD_HINT = 'Tối thiểu 8 ký tự, có chữ hoa, chữ thường và chữ số.'
@@ -24,6 +26,13 @@ export default function RegisterPage() {
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [formError, setFormError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  // Mã giới thiệu: từ ?ref= trên URL hoặc đã ghi nhớ khi khách mở liên kết chia sẻ
+  const [referral] = useState(() => {
+    const fromUrl = params.get('ref')?.trim().toUpperCase()
+    if (fromUrl && /^[A-Z0-9]{4,16}$/.test(fromUrl)) { rememberReferral(fromUrl); return fromUrl }
+    return storedReferral()
+  })
+
 
   if (isAuthenticated && !loading) return <Navigate to={next} replace />
 
@@ -43,7 +52,8 @@ export default function RegisterPage() {
 
     setLoading(true)
     try {
-      await register(form.fullName.trim(), form.email.trim(), form.password)
+      await register(form.fullName.trim(), form.email.trim(), form.password, referral)
+      clearReferral()
       toast.success('Tạo tài khoản thành công!')
       navigate(next, { replace: true })
     } catch (err) {
@@ -58,6 +68,11 @@ export default function RegisterPage() {
     <>
       <h1 className="text-title font-semibold">Tạo tài khoản</h1>
       <p className="mt-3 text-lg text-ink-soft">Miễn phí, chỉ mất một phút.</p>
+      {referral && (
+        <p className="mt-4 flex items-center gap-2 rounded-(--radius-control) bg-mint-50 px-4 py-3 text-sm text-mint-700" role="status">
+          <Gift className="size-4 shrink-0" aria-hidden="true" /> Bạn được giới thiệu bằng mã <b className="tracking-wide">{referral}</b>.
+        </p>
+      )}
       <form onSubmit={submit} className="mt-10 flex flex-col gap-5" noValidate>
         {formError && <p role="alert" className="bg-danger-50 p-4 font-medium text-danger">{formError}</p>}
         <Field label="Họ và tên" autoComplete="name" value={form.fullName} onChange={set('fullName')} error={errors.fullName} />

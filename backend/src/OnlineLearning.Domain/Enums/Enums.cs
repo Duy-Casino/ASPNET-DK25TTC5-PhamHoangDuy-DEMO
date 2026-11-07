@@ -20,7 +20,12 @@ public enum DiscountType { Percentage, FixedAmount }
 
 public enum QuestionType { SingleChoice, MultipleChoice, TrueFalse }
 
-public enum NotificationType { System, Order, Course, Certificate, Review, Message }
+public enum NotificationType { System, Order, Course, Certificate, Review, Message, Points }
+
+/// <summary>Loại giao dịch điểm.</summary>
+public enum PointTransactionType { Earn, Spend, Revoke, Adjust }
+
+public enum ShareChannel { Facebook, Zalo, CopyLink, Other }
 
 /// <summary>Loại mục trong hồ sơ giảng viên.</summary>
 public enum ExperienceType { Work, Education, Certification }

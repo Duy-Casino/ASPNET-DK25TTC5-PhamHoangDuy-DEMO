@@ -11,7 +11,7 @@ export interface AuthContextValue {
   isAuthenticated: boolean
   hasRole: (...roles: UserRole[]) => boolean
   login: (email: string, password: string) => Promise<User>
-  register: (fullName: string, email: string, password: string) => Promise<User>
+  register: (fullName: string, email: string, password: string, referralCode?: string | null) => Promise<User>
   logout: () => Promise<void>
   setUser: (user: User) => void
 }
@@ -49,8 +49,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return auth.user
   }, [apply])
 
-  const register = useCallback(async (fullName: string, email: string, password: string) => {
-    const auth = await authService.register(fullName, email, password)
+  const register = useCallback(async (fullName: string, email: string, password: string, referralCode?: string | null) => {
+    const auth = await authService.register(fullName, email, password, referralCode)
     apply(auth)
     return auth.user
   }, [apply])

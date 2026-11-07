@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -45,6 +46,9 @@ public sealed class TestApp : WebApplicationFactory<Program>, IAsyncLifetime
         builder.ConfigureServices(services =>
         {
             services.AddDbContext<AppDbContext>(o => o.UseSqlite(_connection));
+            // Đồng hồ điều chỉnh được để test các nghiệp vụ theo ngày (điểm danh liên tục)
+            services.RemoveAll<OnlineLearning.Application.Common.Interfaces.IDateTimeProvider>();
+            services.AddSingleton<OnlineLearning.Application.Common.Interfaces.IDateTimeProvider>(Clock);
             // Không gọi MoMo thật: trả về payUrl giả lập
             services.AddHttpClient<OnlineLearning.Infrastructure.Payments.MoMoGateway>()
                 .ConfigurePrimaryHttpMessageHandler(() => new FakeMoMoHandler());
@@ -82,6 +86,9 @@ public sealed class TestApp : WebApplicationFactory<Program>, IAsyncLifetime
         await base.DisposeAsync();
     }
 
+    /// <summary>Lệch giờ hệ thống trong test. Nhớ đặt lại TimeSpan.Zero sau khi dùng.</summary>
+    public TestClock Clock { get; } = new();
+
     public HttpClient Anonymous() => CreateClient(new WebApplicationFactoryClientOptions { HandleCookies = true });
 
     public async Task<HttpClient> LoginAsync(string email, string password = Password)
@@ -99,6 +106,12 @@ public sealed class TestApp : WebApplicationFactory<Program>, IAsyncLifetime
         using var scope = Services.CreateScope();
         return query(scope.ServiceProvider.GetRequiredService<AppDbContext>());
     }
+}
+
+public sealed class TestClock : OnlineLearning.Application.Common.Interfaces.IDateTimeProvider
+{
+    public TimeSpan Offset { get; set; }
+    public DateTime UtcNow => DateTime.UtcNow + Offset;
 }
 
 [CollectionDefinition(nameof(ApiCollection))]

@@ -4,6 +4,7 @@ import DOMPurify from 'dompurify'
 import { Check, ChevronDown, FileText, PlayCircle, Star, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { MessageInstructorButton } from '../components/messaging/MessageInstructorButton'
+import { ShareCourseButton } from '../components/rewards/ShareCourseButton'
 import { ResponsiveImg, Avatar, DecorBlobs, ErrorState, Pagination, RatingStars, Skeleton, Spinner, TextArea, VerifiedBadge } from '../components/ui'
 import { site } from '../config/site'
 import { useAsync } from '../hooks/useAsync'
@@ -101,13 +102,16 @@ export default function CourseDetailPage() {
               <span>{courseLevelLabel[course.level]}</span>
               {course.updatedAt && <span>Cập nhật {formatDate(course.updatedAt)}</span>}
             </div>
-            <Link to={`/giang-vien/${course.instructor.id}`} className="flex w-fit items-center gap-3 rounded-full bg-white py-1.5 pr-5 pl-1.5 shadow-(--shadow-soft) transition-shadow hover:shadow-(--shadow-lift)">
+            <div className="flex flex-wrap items-center gap-3">
+              <Link to={`/giang-vien/${course.instructor.id}`} className="flex w-fit items-center gap-3 rounded-full bg-white py-1.5 pr-5 pl-1.5 shadow-(--shadow-soft) transition-shadow hover:shadow-(--shadow-lift)">
               <Avatar name={course.instructor.fullName} src={course.instructor.avatarUrl} size={44} />
               <span>
                 <span className="block text-sm text-ink-muted">Giảng viên</span>
                 <span className="inline-flex items-center gap-1 font-bold">{course.instructor.fullName}{course.instructor.isVerified && <VerifiedBadge compact />}</span>
               </span>
             </Link>
+              <ShareCourseButton course={{ id: course.id, title: course.title }} label="Chia sẻ khóa học" className="btn-outline min-h-12" />
+            </div>
           </div>
           <div className="lg:hidden">
             <PurchaseCard course={course} onPreview={setPreview} />

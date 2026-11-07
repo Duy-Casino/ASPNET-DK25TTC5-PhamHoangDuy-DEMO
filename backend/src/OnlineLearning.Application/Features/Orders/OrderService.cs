@@ -163,10 +163,17 @@ public interface IOrderFulfillmentService
     /// chữ ký + số tiền từ cổng thanh toán (IPN, Giai đoạn 5). Idempotent.
     /// </summary>
     Task<Result> MarkPaidAsync(Guid orderId, PaymentConfirmation confirmation, CancellationToken ct = default);
+
+    /// <summary>
+    /// Admin xác nhận đã hoàn tiền (tiền được hoàn ngoài hệ thống qua VNPay/MoMo): đơn → Refunded,
+    /// thu hồi quyền học của đơn và thu hồi điểm thưởng tương ứng. Không hoàn đơn đã cấp chứng chỉ.
+    /// </summary>
+    Task<Result> RefundAsync(Guid orderId, Guid adminId, string reason, CancellationToken ct = default);
 }
 
 public sealed class OrderFulfillmentService(
-    IAppDbContext db, IDateTimeProvider clock, INotificationService notifications, ILogger<OrderFulfillmentService> logger)
+    IAppDbContext db, IDateTimeProvider clock, INotificationService notifications, Rewards.IRewardService rewards,
+    ILogger<OrderFulfillmentService> logger)
     : IOrderFulfillmentService
 {
     public Task<Result> CompleteFreeOrderAsync(Guid orderId, CancellationToken ct = default) =>
@@ -251,10 +258,54 @@ public sealed class OrderFulfillmentService(
             $"Đơn hàng {order.OrderCode} đã được thanh toán. Bạn có thể bắt đầu học ngay.", NotificationType.Order,
             "/hoc-vien/khoa-hoc");
 
+        // Điểm thưởng mua hàng + giới thiệu: cùng transaction với việc xác nhận thanh toán,
+        // nên IPN gửi lặp (đơn đã Paid ở trên) không bao giờ cộng điểm lần hai
+        await rewards.StagePurchaseRewardsAsync(order, ct);
+
         await db.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
 
         logger.LogInformation("Đơn {OrderCode} thanh toán thành công qua {Provider}", order.OrderCode, confirmation.Provider);
+        return Result.Success();
+    }
+
+    public async Task<Result> RefundAsync(Guid orderId, Guid adminId, string reason, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(reason) || reason.Trim().Length < 5)
+            return Result.Failure(Error.Validation("Bắt buộc ghi lý do hoàn tiền (ít nhất 5 ký tự)."));
+
+        await using var tx = await db.Database.BeginTransactionAsync(ct);
+        var order = await db.Orders.FirstOrDefaultAsync(o => o.Id == orderId, ct);
+        if (order is null) return Result.Failure(Error.NotFound("Không tìm thấy đơn hàng."));
+        if (order.Status == OrderStatus.Refunded) return Result.Failure(Error.Conflict("Đơn hàng đã được hoàn tiền trước đó."));
+        if (order.Status != OrderStatus.Paid) return Result.Failure(Error.Conflict("Chỉ hoàn tiền được đơn đã thanh toán."));
+
+        var enrollments = await db.Enrollments.Where(e => e.OrderId == order.Id).ToListAsync(ct);
+        var enrolledCourseIds = enrollments.Select(e => e.CourseId).ToList();
+        if (await db.Certificates.AnyAsync(c => c.UserId == order.UserId && enrolledCourseIds.Contains(c.CourseId) && !c.IsRevoked, ct))
+            return Result.Failure(Error.Conflict("Không hoàn tiền được: học viên đã được cấp chứng chỉ cho khóa học trong đơn."));
+
+        var now = clock.UtcNow;
+        order.Status = OrderStatus.Refunded;
+        order.RefundedAt = now;
+        order.RefundReason = reason.Trim();
+
+        var courses = await db.Courses.Where(c => enrolledCourseIds.Contains(c.Id)).ToListAsync(ct);
+        foreach (var e in enrollments.Where(e => e.Status != EnrollmentStatus.Revoked))
+        {
+            e.Status = EnrollmentStatus.Revoked;
+            var course = courses.First(c => c.Id == e.CourseId);
+            course.EnrollmentCount = Math.Max(0, course.EnrollmentCount - 1);
+        }
+
+        await rewards.StageRefundRevocationAsync(order, adminId, ct);
+        notifications.Add(order.UserId, "Đơn hàng đã được hoàn tiền",
+            $"Đơn {order.OrderCode} đã được hoàn tiền. Quyền học các khóa trong đơn đã được thu hồi.", NotificationType.Order,
+            $"/don-hang/{order.Id}");
+
+        await db.SaveChangesAsync(ct);
+        await tx.CommitAsync(ct);
+        logger.LogInformation("Admin {AdminId} hoàn tiền đơn {OrderCode}", adminId, order.OrderCode);
         return Result.Success();
     }
 }

@@ -33,8 +33,19 @@ public interface IAppDbContext
     DbSet<InstructorExperience> InstructorExperiences { get; }
     DbSet<Conversation> Conversations { get; }
     DbSet<Message> Messages { get; }
+    DbSet<UserPoints> UserPoints { get; }
+    DbSet<PointTransaction> PointTransactions { get; }
+    DbSet<PointRule> PointRules { get; }
+    DbSet<DailyCheckIn> DailyCheckIns { get; }
+    DbSet<CourseShare> CourseShares { get; }
+    DbSet<CourseShareOpen> CourseShareOpens { get; }
+    DbSet<PointRedemption> PointRedemptions { get; }
+    DbSet<ReferralCode> ReferralCodes { get; }
+    DbSet<Referral> Referrals { get; }
 
     DatabaseFacade Database { get; }
+
+    Microsoft.EntityFrameworkCore.ChangeTracking.ChangeTracker ChangeTracker { get; }
 
     DbSet<TEntity> Set<TEntity>() where TEntity : class;
 

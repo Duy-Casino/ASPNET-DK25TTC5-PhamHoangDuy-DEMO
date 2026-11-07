@@ -13,8 +13,8 @@ const del = <T,>(url: string) => apiClient.delete<T>(url).then((r) => r.data)
 
 export const authService = {
   login: (email: string, password: string) => post<AuthResponse>('/api/auth/login', { email, password }),
-  register: (fullName: string, email: string, password: string) =>
-    post<AuthResponse>('/api/auth/register', { fullName, email, password }),
+  register: (fullName: string, email: string, password: string, referralCode?: string | null) =>
+    post<AuthResponse>('/api/auth/register', { fullName, email, password, referralCode: referralCode || null }),
   logout: () => post<void>('/api/auth/logout'),
   forgotPassword: (email: string) => post<void>('/api/auth/forgot-password', { email }),
   resetPassword: (email: string, token: string, newPassword: string) =>

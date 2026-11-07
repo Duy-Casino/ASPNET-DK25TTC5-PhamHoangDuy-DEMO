@@ -36,6 +36,15 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<InstructorExperience> InstructorExperiences => Set<InstructorExperience>();
     public DbSet<Conversation> Conversations => Set<Conversation>();
     public DbSet<Message> Messages => Set<Message>();
+    public DbSet<UserPoints> UserPoints => Set<UserPoints>();
+    public DbSet<PointTransaction> PointTransactions => Set<PointTransaction>();
+    public DbSet<PointRule> PointRules => Set<PointRule>();
+    public DbSet<DailyCheckIn> DailyCheckIns => Set<DailyCheckIn>();
+    public DbSet<CourseShare> CourseShares => Set<CourseShare>();
+    public DbSet<CourseShareOpen> CourseShareOpens => Set<CourseShareOpen>();
+    public DbSet<PointRedemption> PointRedemptions => Set<PointRedemption>();
+    public DbSet<ReferralCode> ReferralCodes => Set<ReferralCode>();
+    public DbSet<Referral> Referrals => Set<Referral>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

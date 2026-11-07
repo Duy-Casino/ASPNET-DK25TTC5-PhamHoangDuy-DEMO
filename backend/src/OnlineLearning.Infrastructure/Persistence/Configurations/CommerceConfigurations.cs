@@ -44,6 +44,7 @@ public class OrderConfiguration : IEntityTypeConfiguration<Order>
         b.Property(x => x.OrderCode).HasMaxLength(20).IsUnicode(false).IsRequired();
         b.Property(x => x.CouponCode).HasMaxLength(50);
         b.Property(x => x.Note).HasMaxLength(500);
+        b.Property(x => x.RefundReason).HasMaxLength(500);
         b.Property(x => x.Status).HasDefaultValue(OrderStatus.Pending).HasSentinel(OrderStatus.Pending);
         b.Property(x => x.RowVersion).IsRowVersion();
 
@@ -111,6 +112,7 @@ public class CouponConfiguration : IEntityTypeConfiguration<Coupon>
         b.Property(x => x.Description).HasMaxLength(500);
         b.Property(x => x.RowVersion).IsRowVersion();
         b.HasIndex(x => x.Code).IsUnique();
+        b.HasIndex(x => x.RestrictedToUserId);
 
         b.HasOne(x => x.Course).WithMany()
             .HasForeignKey(x => x.CourseId).OnDelete(DeleteBehavior.NoAction);

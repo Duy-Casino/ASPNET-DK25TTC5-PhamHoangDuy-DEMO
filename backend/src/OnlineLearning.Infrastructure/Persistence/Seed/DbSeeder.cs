@@ -30,6 +30,7 @@ public static class DbSeeder
 
         await SeedRolesAsync(sp.GetRequiredService<RoleManager<AppRole>>());
         await SeedCategoriesAsync(db, ct);
+        await SeedPointRulesAsync(db, ct);
 
         var demoPassword = config["Seed:DemoPassword"];
         if (string.IsNullOrWhiteSpace(demoPassword))
@@ -76,6 +77,33 @@ public static class DbSeeder
         }
 
         logger.LogInformation("Seed dữ liệu hoàn tất.");
+    }
+
+    /// <summary>
+    /// Quy tắc điểm thưởng mặc định. Chỉ thêm quy tắc còn thiếu — không ghi đè cấu hình Admin đã chỉnh.
+    /// </summary>
+    internal static async Task SeedPointRulesAsync(AppDbContext db, CancellationToken ct)
+    {
+        var defaults = new[]
+        {
+            new PointRule { Key = PointRuleKeys.Purchase, Name = "Mua khóa học", Description = "Cộng điểm theo giá trị đơn hàng sau khi thanh toán thành công.", Points = 10, AmountUnit = 100_000, SortOrder = 1 },
+            new PointRule { Key = PointRuleKeys.CourseCompletion, Name = "Hoàn thành khóa học", Description = "Học hết nội dung bắt buộc và đạt bài kiểm tra bắt buộc.", Points = 100, SortOrder = 2 },
+            new PointRule { Key = PointRuleKeys.DailyCheckIn, Name = "Điểm danh hằng ngày", Description = "Ghé EduViet và điểm danh mỗi ngày.", Points = 5, SortOrder = 3 },
+            new PointRule { Key = PointRuleKeys.CheckInStreak, Name = "Điểm danh liên tục 7 ngày", Description = "Thưởng thêm mỗi khi đủ chuỗi điểm danh liên tục.", Points = 30, Threshold = 7, SortOrder = 4 },
+            new PointRule { Key = PointRuleKeys.CourseShare, Name = "Chia sẻ khóa học", Description = "Chia sẻ liên kết khóa học qua Facebook, Zalo hoặc sao chép liên kết.", Points = 5, SortOrder = 5 },
+            new PointRule { Key = PointRuleKeys.Referral, Name = "Giới thiệu bạn bè", Description = "Bạn bè đăng ký bằng mã của bạn và mua khóa học thành công.", Points = 50, SortOrder = 6 },
+            new PointRule { Key = PointRuleKeys.RedeemVoucher, Name = "Đổi điểm lấy mã giảm giá", Description = "Mã giảm giá cá nhân, dùng một lần trong 90 ngày.", Points = 100, AmountUnit = 10_000, Threshold = 100, SortOrder = 7 },
+        };
+        var existing = await db.PointRules.Select(r => r.Key).ToListAsync(ct);
+        var missing = defaults.Where(d => !existing.Contains(d.Key)).ToList();
+        if (missing.Count == 0) return;
+        foreach (var r in missing)
+        {
+            r.IsSystem = true;
+            r.IsActive = true;
+            db.PointRules.Add(r);
+        }
+        await db.SaveChangesAsync(ct);
     }
 
     /// <summary>
@@ -227,6 +255,7 @@ public static class DbSeeder
         var sp = scope.ServiceProvider;
         await SeedRolesAsync(sp.GetRequiredService<RoleManager<AppRole>>());
         await SeedCategoriesAsync(sp.GetRequiredService<AppDbContext>(), ct);
+        await SeedPointRulesAsync(sp.GetRequiredService<AppDbContext>(), ct);
 
         var config = sp.GetRequiredService<IConfiguration>();
         var adminEmail = config["Seed:AdminEmail"];

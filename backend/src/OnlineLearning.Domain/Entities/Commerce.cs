@@ -43,6 +43,8 @@ public class Order : AuditableEntity
     public DateTime ExpiresAt { get; set; }
     public DateTime? PaidAt { get; set; }
     public DateTime? CancelledAt { get; set; }
+    public DateTime? RefundedAt { get; set; }
+    public string? RefundReason { get; set; }
     public byte[] RowVersion { get; set; } = [];
 
     public ICollection<OrderItem> Items { get; set; } = [];
@@ -105,6 +107,8 @@ public class Coupon : AuditableEntity
     public DateTime StartsAt { get; set; }
     public DateTime ExpiresAt { get; set; }
     public bool IsActive { get; set; } = true;
+    /// <summary>Null = ai cũng dùng được; có giá trị = mã cá nhân (ví dụ mã đổi từ điểm thưởng).</summary>
+    public Guid? RestrictedToUserId { get; set; }
     public byte[] RowVersion { get; set; } = [];
 
     public bool IsUsable(DateTime utcNow) =>

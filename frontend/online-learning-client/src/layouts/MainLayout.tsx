@@ -11,6 +11,7 @@ import { useAsync } from '../hooks/useAsync'
 import { useAuth, useCart } from '../hooks/useAuth'
 import { site } from '../config/site'
 import { catalogService, notificationService } from '../services/api'
+import { rememberReferral, rewardService } from '../services/rewardApi'
 
 /** Đóng một vùng nổi khi bấm ra ngoài hoặc nhấn Escape. */
 function useDismiss(open: boolean, close: () => void, ref: RefObject<HTMLElement | null>) {
@@ -95,6 +96,7 @@ function UserMenu() {
           </div>
           <MenuLink to="/hoc-vien" onClick={() => setOpen(false)}>Khóa học của tôi</MenuLink>
           <MenuLink to="/hoc-vien/tin-nhan" onClick={() => setOpen(false)}>Tin nhắn với giảng viên</MenuLink>
+          <MenuLink to="/hoc-vien/diem-thuong" onClick={() => setOpen(false)}>Điểm thưởng của tôi</MenuLink>
           {(user.roles.includes('Instructor') || user.roles.includes('Admin')) && (
             <>
               <MenuLink to="/giang-day" onClick={() => setOpen(false)}>Khu vực giảng dạy</MenuLink>
@@ -479,6 +481,30 @@ function Footer() {
   )
 }
 
+/**
+ * Ghi nhận liên kết chia sẻ/giới thiệu: ?s=token → báo backend một lượt mở (mỗi token một lần mỗi phiên),
+ * ?ref=CODE → nhớ mã giới thiệu để dùng khi khách đăng ký.
+ */
+function ShareTracker() {
+  const { search } = useLocation()
+  const { isAuthenticated, initializing } = useAuth()
+  useEffect(() => {
+    if (initializing) return
+    const params = new URLSearchParams(search)
+    const ref = params.get('ref')?.trim().toUpperCase()
+    if (ref && /^[A-Z0-9]{4,16}$/.test(ref) && !isAuthenticated) rememberReferral(ref)
+    const token = params.get('s')
+    if (!token || !/^[A-Z0-9]{6,32}$/i.test(token)) return
+    const key = `eduviet_share_${token}`
+    try {
+      if (sessionStorage.getItem(key)) return
+      sessionStorage.setItem(key, '1')
+    } catch { /* bỏ qua */ }
+    rewardService.openShare(token).catch(() => { /* lượt mở không thành công không ảnh hưởng trang */ })
+  }, [search, isAuthenticated, initializing])
+  return null
+}
+
 export default function MainLayout() {
   const { pathname } = useLocation()
   useEffect(() => {
@@ -491,6 +517,7 @@ export default function MainLayout() {
         Bỏ qua tới nội dung
       </a>
       <Header />
+      <ShareTracker />
       <main id="main" className="flex-1">
         <Outlet />
       </main>

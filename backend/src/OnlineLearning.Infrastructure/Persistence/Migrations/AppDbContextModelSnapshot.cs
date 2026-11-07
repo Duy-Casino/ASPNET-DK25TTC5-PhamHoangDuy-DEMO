@@ -565,6 +565,9 @@ namespace OnlineLearning.Infrastructure.Persistence.Migrations
                     b.Property<int>("PerUserLimit")
                         .HasColumnType("int");
 
+                    b.Property<Guid?>("RestrictedToUserId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<byte[]>("RowVersion")
                         .IsConcurrencyToken()
                         .IsRequired()
@@ -589,6 +592,8 @@ namespace OnlineLearning.Infrastructure.Persistence.Migrations
                         .IsUnique();
 
                     b.HasIndex("CourseId");
+
+                    b.HasIndex("RestrictedToUserId");
 
                     b.ToTable("Coupons", null, t =>
                         {
@@ -771,6 +776,117 @@ namespace OnlineLearning.Infrastructure.Persistence.Migrations
                     b.HasIndex("CourseId", "SortOrder");
 
                     b.ToTable("CourseSections", (string)null);
+                });
+
+            modelBuilder.Entity("OnlineLearning.Domain.Entities.CourseShare", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Channel")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("CourseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatorKey")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<DateTime?>("FirstOpenedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("OpenCount")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("RewardedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Token")
+                        .IsUnique();
+
+                    b.HasIndex("CourseId", "CreatedAt");
+
+                    b.HasIndex("UserId", "CreatedAt");
+
+                    b.ToTable("CourseShares", (string)null);
+                });
+
+            modelBuilder.Entity("OnlineLearning.Domain.Entities.CourseShareOpen", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CourseShareId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsValid")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("VisitorKey")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<Guid?>("VisitorUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CourseShareId", "VisitorKey")
+                        .IsUnique();
+
+                    b.ToTable("CourseShareOpens", (string)null);
+                });
+
+            modelBuilder.Entity("OnlineLearning.Domain.Entities.DailyCheckIn", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateOnly>("CheckInDate")
+                        .HasColumnType("date");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("PointsAwarded")
+                        .HasColumnType("int");
+
+                    b.Property<int>("StreakBonusAwarded")
+                        .HasColumnType("int");
+
+                    b.Property<int>("StreakCount")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "CheckInDate")
+                        .IsUnique();
+
+                    b.ToTable("DailyCheckIns", (string)null);
                 });
 
             modelBuilder.Entity("OnlineLearning.Domain.Entities.Enrollment", b =>
@@ -1125,6 +1241,13 @@ namespace OnlineLearning.Infrastructure.Persistence.Migrations
                     b.Property<DateTime?>("PaidAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("RefundReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime?>("RefundedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<byte[]>("RowVersion")
                         .IsConcurrencyToken()
                         .IsRequired()
@@ -1291,6 +1414,154 @@ namespace OnlineLearning.Infrastructure.Persistence.Migrations
                         .HasFilter("[ProviderTransactionId] IS NOT NULL");
 
                     b.ToTable("Payments", (string)null);
+                });
+
+            modelBuilder.Entity("OnlineLearning.Domain.Entities.PointRedemption", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CouponCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<Guid>("CouponId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Points")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("VoucherValue")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CouponId")
+                        .IsUnique();
+
+                    b.HasIndex("UserId", "CreatedAt");
+
+                    b.ToTable("PointRedemptions", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_PointRedemptions_Points", "[Points] > 0");
+                        });
+                });
+
+            modelBuilder.Entity("OnlineLearning.Domain.Entities.PointRule", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal?>("AmountUnit")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsSystem")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<int>("Points")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("Threshold")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Key")
+                        .IsUnique();
+
+                    b.ToTable("PointRules", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_PointRules_Points", "[Points] >= 0");
+                        });
+                });
+
+            modelBuilder.Entity("OnlineLearning.Domain.Entities.PointTransaction", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("BalanceAfter")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int>("Points")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ReferenceKey")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<string>("RuleKey")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("RuleKey", "CreatedAt");
+
+                    b.HasIndex("UserId", "CreatedAt");
+
+                    b.HasIndex("UserId", "ReferenceKey")
+                        .IsUnique();
+
+                    b.ToTable("PointTransactions", (string)null);
                 });
 
             modelBuilder.Entity("OnlineLearning.Domain.Entities.Question", b =>
@@ -1478,6 +1749,65 @@ namespace OnlineLearning.Infrastructure.Persistence.Migrations
                     b.ToTable("QuizAttempts", (string)null);
                 });
 
+            modelBuilder.Entity("OnlineLearning.Domain.Entities.Referral", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("ReferredUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ReferrerId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("RewardOrderId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("RewardedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ReferredUserId")
+                        .IsUnique();
+
+                    b.HasIndex("ReferrerId");
+
+                    b.ToTable("Referrals", (string)null);
+                });
+
+            modelBuilder.Entity("OnlineLearning.Domain.Entities.ReferralCode", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
+                    b.ToTable("ReferralCodes", (string)null);
+                });
+
             modelBuilder.Entity("OnlineLearning.Domain.Entities.RefreshToken", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1570,6 +1900,45 @@ namespace OnlineLearning.Infrastructure.Persistence.Migrations
                     b.ToTable("Reviews", null, t =>
                         {
                             t.HasCheckConstraint("CK_Reviews_Rating", "[Rating] BETWEEN 1 AND 5");
+                        });
+                });
+
+            modelBuilder.Entity("OnlineLearning.Domain.Entities.UserPoints", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Balance")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("TotalEarned")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TotalSpent")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Balance");
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
+                    b.ToTable("UserPoints", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_UserPoints_Balance", "[Balance] >= 0");
+
+                            t.HasCheckConstraint("CK_UserPoints_Totals", "[TotalEarned] >= 0 AND [TotalSpent] >= 0");
                         });
                 });
 
@@ -1768,6 +2137,47 @@ namespace OnlineLearning.Infrastructure.Persistence.Migrations
                     b.Navigation("Course");
                 });
 
+            modelBuilder.Entity("OnlineLearning.Domain.Entities.CourseShare", b =>
+                {
+                    b.HasOne("OnlineLearning.Domain.Entities.Course", "Course")
+                        .WithMany()
+                        .HasForeignKey("CourseId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("OnlineLearning.Domain.Entities.AppUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Course");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("OnlineLearning.Domain.Entities.CourseShareOpen", b =>
+                {
+                    b.HasOne("OnlineLearning.Domain.Entities.CourseShare", "CourseShare")
+                        .WithMany("Opens")
+                        .HasForeignKey("CourseShareId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CourseShare");
+                });
+
+            modelBuilder.Entity("OnlineLearning.Domain.Entities.DailyCheckIn", b =>
+                {
+                    b.HasOne("OnlineLearning.Domain.Entities.AppUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("OnlineLearning.Domain.Entities.Enrollment", b =>
                 {
                     b.HasOne("OnlineLearning.Domain.Entities.Course", "Course")
@@ -1931,6 +2341,36 @@ namespace OnlineLearning.Infrastructure.Persistence.Migrations
                     b.Navigation("Order");
                 });
 
+            modelBuilder.Entity("OnlineLearning.Domain.Entities.PointRedemption", b =>
+                {
+                    b.HasOne("OnlineLearning.Domain.Entities.Coupon", "Coupon")
+                        .WithMany()
+                        .HasForeignKey("CouponId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("OnlineLearning.Domain.Entities.AppUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Coupon");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("OnlineLearning.Domain.Entities.PointTransaction", b =>
+                {
+                    b.HasOne("OnlineLearning.Domain.Entities.AppUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("OnlineLearning.Domain.Entities.Question", b =>
                 {
                     b.HasOne("OnlineLearning.Domain.Entities.Quiz", "Quiz")
@@ -2006,6 +2446,36 @@ namespace OnlineLearning.Infrastructure.Persistence.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("OnlineLearning.Domain.Entities.Referral", b =>
+                {
+                    b.HasOne("OnlineLearning.Domain.Entities.AppUser", "ReferredUser")
+                        .WithMany()
+                        .HasForeignKey("ReferredUserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("OnlineLearning.Domain.Entities.AppUser", "Referrer")
+                        .WithMany()
+                        .HasForeignKey("ReferrerId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("ReferredUser");
+
+                    b.Navigation("Referrer");
+                });
+
+            modelBuilder.Entity("OnlineLearning.Domain.Entities.ReferralCode", b =>
+                {
+                    b.HasOne("OnlineLearning.Domain.Entities.AppUser", "User")
+                        .WithOne()
+                        .HasForeignKey("OnlineLearning.Domain.Entities.ReferralCode", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("OnlineLearning.Domain.Entities.RefreshToken", b =>
                 {
                     b.HasOne("OnlineLearning.Domain.Entities.AppUser", "User")
@@ -2032,6 +2502,17 @@ namespace OnlineLearning.Infrastructure.Persistence.Migrations
                         .IsRequired();
 
                     b.Navigation("Course");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("OnlineLearning.Domain.Entities.UserPoints", b =>
+                {
+                    b.HasOne("OnlineLearning.Domain.Entities.AppUser", "User")
+                        .WithOne()
+                        .HasForeignKey("OnlineLearning.Domain.Entities.UserPoints", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("User");
                 });
@@ -2090,6 +2571,11 @@ namespace OnlineLearning.Infrastructure.Persistence.Migrations
                     b.Navigation("Lessons");
 
                     b.Navigation("Quizzes");
+                });
+
+            modelBuilder.Entity("OnlineLearning.Domain.Entities.CourseShare", b =>
+                {
+                    b.Navigation("Opens");
                 });
 
             modelBuilder.Entity("OnlineLearning.Domain.Entities.Enrollment", b =>

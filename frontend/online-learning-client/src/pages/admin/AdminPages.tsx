@@ -8,6 +8,7 @@ import { useAsync, useDebounce, useDocumentTitle } from '../../hooks/useAsync'
 import { useAuth } from '../../hooks/useAuth'
 import { getErrorMessage, getFieldErrors } from '../../services/apiClient'
 import { adminService } from '../../services/dashboardApi'
+import { adminRewardService } from '../../services/rewardApi'
 import type { Category } from '../../types/api'
 import type { CourseStatus, OrderStatus } from '../../types/common'
 import { courseStatusLabel } from '../../types/common'
@@ -325,7 +326,9 @@ export function AdminOrdersPage() {
   const { data, loading, error, reload } = useAsync(() => adminService.orders({ status: status || undefined, keyword: q || undefined, page }), [status, q, page])
   const statuses: { v: OrderStatus | ''; l: string }[] = [
     { v: '', l: 'Tất cả' }, { v: 'Paid', l: 'Đã thanh toán' }, { v: 'Pending', l: 'Chờ thanh toán' }, { v: 'Cancelled', l: 'Đã hủy' }, { v: 'Expired', l: 'Hết hạn' },
+    { v: 'Refunded', l: 'Đã hoàn tiền' },
   ]
+  const [refunding, setRefunding] = useState<{ id: string; orderCode: string } | null>(null)
   return (
     <div className="flex flex-col gap-8">
       <PageHeader title="Đơn hàng" description="Giao dịch qua cổng thanh toán được bổ sung ở Giai đoạn 5." />
@@ -340,7 +343,7 @@ export function AdminOrdersPage() {
           <Field label="Tìm kiếm" type="search" value={keyword} onChange={(e) => { setKeyword(e.target.value); setPage(1) }} placeholder="Mã đơn, email, tên" className="ml-auto min-w-64" />
         </div>
         {error ? <ErrorState message={error} onRetry={reload} /> : loading ? <Skeleton className="h-48" /> : data?.items.length === 0 ? <EmptyState title="Không có đơn hàng" /> : (
-          <DataTable minWidth={900} head={<><th>Mã đơn</th><th>Khách hàng</th><th className="text-right">Số khóa</th><th className="text-right">Giảm</th><th className="text-right">Tổng</th><th>Trạng thái</th><th>Ngày đặt</th></>}>
+          <DataTable minWidth={900} head={<><th>Mã đơn</th><th>Khách hàng</th><th className="text-right">Số khóa</th><th className="text-right">Giảm</th><th className="text-right">Tổng</th><th>Trạng thái</th><th>Ngày đặt</th><th /></>}>
             {data?.items.map((o) => (
               <tr key={o.id}>
                 <td className="font-semibold"><Link to={`/don-hang/${o.id}`} className="text-brand-700 hover:underline">{o.orderCode}</Link></td>
@@ -350,12 +353,16 @@ export function AdminOrdersPage() {
                 <td className="text-right font-semibold tabular-nums">{formatPrice(o.totalAmount, '0đ')}</td>
                 <td><OrderStatusBadge status={o.status} /></td>
                 <td className="text-ink-soft">{formatDateTime(o.createdAt)}</td>
+                <td>{o.status === 'Paid' && o.totalAmount > 0 && (
+                  <button type="button" className="btn-ghost min-h-9 px-3 text-danger" onClick={() => setRefunding({ id: o.id, orderCode: o.orderCode })}>Hoàn tiền</button>
+                )}</td>
               </tr>
             ))}
           </DataTable>
         )}
         <div className="mt-6"><Pagination page={page} totalPages={data?.totalPages ?? 1} onChange={setPage} /></div>
       </Panel>
+      {refunding && <RefundModal order={refunding} onClose={() => setRefunding(null)} onDone={() => { setRefunding(null); reload() }} />}
     </div>
   )
 }
@@ -458,6 +465,41 @@ function CouponModal({ coupon, onClose, onSaved }: { coupon: Coupon | null; onCl
         <div className="sm:col-span-2"><Toggle checked={f.isActive} onChange={(v) => setF({ ...f, isActive: v })} label="Đang kích hoạt" /></div>
         <button type="submit" className="btn-primary sm:col-span-2" disabled={saving || !f.code.trim()}>{saving && <Spinner className="size-4" />}Lưu mã</button>
       </form>
+    </Modal>
+  )
+}
+
+/** Xác nhận đã hoàn tiền: thu hồi quyền học của đơn và điểm thưởng tương ứng. */
+function RefundModal({ order, onClose, onDone }: { order: { id: string; orderCode: string }; onClose: () => void; onDone: () => void }) {
+  const [reason, setReason] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
+  const submit = async () => {
+    if (reason.trim().length < 5) { setError('Bắt buộc ghi lý do hoàn tiền (ít nhất 5 ký tự).'); return }
+    setSaving(true)
+    setError(null)
+    try {
+      await adminRewardService.refundOrder(order.id, reason.trim())
+      toast.success(`Đã hoàn tiền đơn ${order.orderCode}`)
+      onDone()
+    } catch (err) {
+      setError(getErrorMessage(err))
+    } finally {
+      setSaving(false)
+    }
+  }
+  return (
+    <Modal title={`Hoàn tiền đơn ${order.orderCode}`} onClose={onClose}>
+      <div className="flex flex-col gap-4">
+        <p className="rounded-(--radius-control) bg-warning-50 px-4 py-3 text-sm text-warning">
+          Chỉ xác nhận sau khi đã hoàn tiền cho khách qua cổng thanh toán. Hệ thống sẽ thu hồi quyền học các khóa trong đơn
+          và thu hồi điểm thưởng của đơn (kể cả thưởng giới thiệu). Không hoàn được đơn đã cấp chứng chỉ.
+        </p>
+        <TextArea label="Lý do hoàn tiền" value={reason} rows={3} maxLength={500} onChange={(e) => setReason(e.target.value)} error={error ?? undefined} />
+        <button type="button" className="btn bg-danger text-white hover:bg-danger/90" onClick={submit} disabled={saving}>
+          {saving && <Spinner className="size-4" />} Xác nhận đã hoàn tiền
+        </button>
+      </div>
     </Modal>
   )
 }

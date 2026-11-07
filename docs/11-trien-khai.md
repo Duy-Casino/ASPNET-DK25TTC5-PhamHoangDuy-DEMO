@@ -100,6 +100,8 @@ App Service Linux chưa có sẵn font tiếng Việt. Muốn PDF chứng chỉ 
 **Cơ sở dữ liệu**
 - [ ] Migration `InstructorProfileAndMessaging` (hồ sơ giảng viên, tin nhắn) được áp dụng tự động khi `Database__MigrateOnStartup=true`; DBA chạy tay thì dùng `database/migration-InstructorProfileAndMessaging.sql` (idempotent)
 
+- [ ] Migration `RewardPoints` (điểm thưởng) được áp dụng tự động; chạy tay thì dùng `database/migration-RewardPoints.sql`. Rà lại số điểm từng nhiệm vụ tại Quản trị › Điểm thưởng trước khi mở cho học viên
+
 **Nội dung & SEO**
 - [x] Điều khoản hoàn tiền đã xác nhận (06/11/2026): yêu cầu trong 7 ngày, đã học tối đa 20%, chưa cấp chứng chỉ; phản hồi trong 7 ngày làm việc
 - [ ] Thay email, điện thoại, địa chỉ mẫu bằng thông tin thật trong `frontend/online-learning-client/src/config/site.ts` (mục "CẦN THAY")

@@ -23,6 +23,8 @@ const ProfilePage = lazy(() => import('./pages/account/ProfilePage'))
 const OrdersPage = lazy(() => import('./pages/account/OrdersPage'))
 const VerifyCertificatePage = lazy(() => import('./pages/VerifyCertificatePage'))
 const AdminCertificatesPage = lazy(() => import('./pages/admin/AdminCertificatesPage'))
+const AdminRewardsPage = lazy(() => import('./pages/admin/AdminRewardsPage').then((m) => ({ default: m.AdminRewardsPage })))
+const RewardsPage = lazy(() => import('./pages/student/RewardsPage').then((m) => ({ default: m.RewardsPage })))
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'))
 const info = () => import('./pages/info/InfoPages')
 const AboutPage = lazy(() => info().then((m) => ({ default: m.AboutPage })))
@@ -109,6 +111,7 @@ export default function App() {
           <Route index element={<MyCoursesPage />} />
           <Route path="ket-qua" element={<QuizResultsPage />} />
           <Route path="chung-chi" element={<CertificatesPage />} />
+          <Route path="diem-thuong" element={<RewardsPage />} />
           <Route path="tin-nhan" element={<MessagesPage area="student" />} />
           <Route path="tin-nhan/:id" element={<MessagesPage area="student" />} />
         </Route>
@@ -133,6 +136,7 @@ export default function App() {
           <Route path="ma-giam-gia" element={<AdminCouponsPage />} />
           <Route path="giao-dich" element={<AdminPaymentsPage />} />
           <Route path="chung-chi" element={<AdminCertificatesPage />} />
+          <Route path="diem-thuong" element={<AdminRewardsPage />} />
         </Route>
       </Routes>
     </Suspense>
