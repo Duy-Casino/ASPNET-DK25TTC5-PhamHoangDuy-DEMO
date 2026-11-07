@@ -172,7 +172,7 @@ export function AdminUsersPage() {
         {error ? <ErrorState message={error} onRetry={reload} />
           : loading ? <Skeleton className="h-48" />
           : (
-            <DataTable minWidth={860} head={<><th>Người dùng</th><th>Vai trò</th><th className="text-right">Khóa đã mua</th><th className="text-right">Khóa giảng dạy</th><th>Tham gia</th><th>Trạng thái</th><th /></>}>
+            <DataTable minWidth={980} head={<><th>Người dùng</th><th>Vai trò</th><th className="text-right">Khóa đã mua</th><th className="text-right">Khóa giảng dạy</th><th>Tham gia</th><th>Trạng thái</th><th>Xác minh GV</th><th /></>}>
               {data?.items.map((u) => (
                 <tr key={u.id}>
                   <td>
@@ -189,6 +189,13 @@ export function AdminUsersPage() {
                     <Toggle checked={u.isActive} label={u.isActive ? 'Hoạt động' : 'Đã khóa'}
                       onChange={(v) => u.id === me?.id ? toast.error('Không thể tự khóa tài khoản của mình') :
                         act(async () => replace(await adminService.setActive(u.id, v)), v ? 'Đã mở khóa tài khoản' : 'Đã khóa tài khoản')} />
+                  </td>
+                  <td>
+                    {u.roles.includes('Instructor') ? (
+                      <Toggle checked={u.isVerifiedInstructor} label={u.isVerifiedInstructor ? 'Đã xác minh' : 'Chưa xác minh'}
+                        onChange={(v) => act(async () => replace(await adminService.setInstructorVerified(u.id, v)),
+                          v ? `Đã xác minh giảng viên ${u.fullName}` : `Đã bỏ xác minh ${u.fullName}`)} />
+                    ) : <span className="text-ink-muted">—</span>}
                   </td>
                   <td><button type="button" className="btn-soft min-h-9 px-3" onClick={() => setEditing(u)}>Phân quyền</button></td>
                 </tr>

@@ -185,7 +185,7 @@ export interface AdminOverview {
   totalEnrollments: number; totalCertificates: number
   monthly: { month: string; revenue: number; orders: number; newUsers: number }[]
 }
-export interface AdminUser { id: string; email: string; fullName: string; avatarUrl: string | null; phoneNumber: string | null; isActive: boolean; emailConfirmed: boolean; roles: string[]; enrollmentCount: number; courseCount: number; createdAt: string }
+export interface AdminUser { id: string; email: string; fullName: string; avatarUrl: string | null; phoneNumber: string | null; isActive: boolean; emailConfirmed: boolean; roles: string[]; enrollmentCount: number; courseCount: number; createdAt: string; isVerifiedInstructor: boolean }
 export interface AdminCourse { id: string; title: string; slug: string; thumbnailUrl: string | null; status: CourseStatus; instructorName: string; categoryName: string; price: number; discountPrice: number | null; isFeatured: boolean; isDeleted: boolean; enrollmentCount: number; totalLessons: number; createdAt: string; submittedAt: string | null; publishedAt: string | null }
 export interface AdminOrder { id: string; orderCode: string; status: OrderStatus; userFullName: string; userEmail: string; subTotal: number; discountAmount: number; totalAmount: number; couponCode: string | null; itemCount: number; createdAt: string; paidAt: string | null }
 export interface Coupon {

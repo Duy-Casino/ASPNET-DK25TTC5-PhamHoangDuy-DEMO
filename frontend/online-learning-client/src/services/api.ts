@@ -1,6 +1,7 @@
 import { apiClient } from './apiClient'
 import type {
-  AuthResponse, Cart, Category, CourseDetail, CourseSummary, HomeData, InstructorProfile, Notification, Order,
+  AuthResponse, Cart, Category, ChatMessage, ConversationDetail, ConversationListItem, CourseDetail, CourseSummary, HomeData,
+  InstructorDetail, Notification, Order,
   OrderListItem, PriceQuote, Review, User,
 } from '../types/api'
 import type { CourseLevel, OrderStatus, PagedResult } from '../types/common'
@@ -50,7 +51,7 @@ export const catalogService = {
   detail: (slug: string) => get<CourseDetail>(`/api/courses/${encodeURIComponent(slug)}`),
   reviews: (courseId: string, page = 1, pageSize = 6) =>
     get<PagedResult<Review>>(`/api/courses/${courseId}/reviews`, { page, pageSize }),
-  instructor: (id: string) => get<InstructorProfile>(`/api/instructors/${id}`),
+  instructor: (id: string) => get<InstructorDetail>(`/api/instructors/${id}`),
 }
 
 export const reviewService = {
@@ -80,6 +81,15 @@ export const orderService = {
   mine: (page = 1, status?: OrderStatus) => get<PagedResult<OrderListItem>>('/api/orders', { page, pageSize: 10, status }),
   get: (id: string) => get<Order>(`/api/orders/${id}`),
   cancel: (id: string) => post<void>(`/api/orders/${id}/cancel`),
+}
+
+export const messagingService = {
+  list: (page = 1) => get<PagedResult<ConversationListItem>>('/api/conversations', { page, pageSize: 30 }),
+  unreadCount: () => get<{ count: number }>('/api/conversations/unread-count'),
+  start: (instructorId: string, message: string, courseId?: string | null) =>
+    post<ConversationDetail>('/api/conversations', { instructorId, courseId: courseId ?? null, message }),
+  get: (id: string, before?: string) => get<ConversationDetail>(`/api/conversations/${id}`, before ? { before } : undefined),
+  send: (id: string, body: string) => post<ChatMessage>(`/api/conversations/${id}/messages`, { body }),
 }
 
 export const notificationService = {

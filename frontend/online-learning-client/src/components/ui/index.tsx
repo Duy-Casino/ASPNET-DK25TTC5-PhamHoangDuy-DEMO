@@ -1,6 +1,6 @@
 import { useId, type ImgHTMLAttributes, type InputHTMLAttributes, type ReactNode, type TextareaHTMLAttributes } from 'react'
 import { Link } from 'react-router-dom'
-import { Loader2, Star } from 'lucide-react'
+import { BadgeCheck, Loader2, Star } from 'lucide-react'
 import { initials } from '../../utils/format'
 import { responsiveImage } from '../../utils/image'
 
@@ -74,6 +74,24 @@ export function ResponsiveImg({ url, sizes, maxWidth = 960, ratio, eager = false
   const img = responsiveImage(url, maxWidth, ratio)
   if (!img) return null
   return <img src={img.src} srcSet={img.srcSet} sizes={img.srcSet ? sizes : undefined} alt={alt} loading={eager ? 'eager' : 'lazy'} decoding="async" {...rest} />
+}
+
+/** Huy hiệu "Đã xác minh": Admin EduViet đã đối chiếu danh tính và kinh nghiệm giảng viên. */
+export function VerifiedBadge({ compact = false, className = '' }: { compact?: boolean; className?: string }) {
+  const tip = 'EduViet đã đối chiếu danh tính và kinh nghiệm của giảng viên'
+  if (compact) {
+    return (
+      <span className={`inline-flex shrink-0 text-brand-600 ${className}`} title={tip}>
+        <BadgeCheck className="size-[1.1em] fill-brand-50" aria-hidden="true" />
+        <span className="sr-only">Giảng viên đã xác minh</span>
+      </span>
+    )
+  }
+  return (
+    <span className={`chip gap-1 bg-brand-50 text-brand-700 ${className}`} title={tip}>
+      <BadgeCheck className="size-3.5" aria-hidden="true" /> Đã xác minh
+    </span>
+  )
 }
 
 /** Khối tròn mờ trang trí phía sau nội dung (mint + xanh), không nhận sự kiện chuột. */

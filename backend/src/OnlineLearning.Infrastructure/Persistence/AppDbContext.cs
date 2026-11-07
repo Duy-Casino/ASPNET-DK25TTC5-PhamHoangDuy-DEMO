@@ -33,6 +33,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<Certificate> Certificates => Set<Certificate>();
     public DbSet<Review> Reviews => Set<Review>();
     public DbSet<Notification> Notifications => Set<Notification>();
+    public DbSet<InstructorExperience> InstructorExperiences => Set<InstructorExperience>();
+    public DbSet<Conversation> Conversations => Set<Conversation>();
+    public DbSet<Message> Messages => Set<Message>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

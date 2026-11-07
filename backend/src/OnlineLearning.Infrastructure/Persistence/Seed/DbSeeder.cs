@@ -67,7 +67,61 @@ public static class DbSeeder
             logger.LogInformation("Đã tạo bài kiểm tra và tiến độ học mẫu.");
         }
 
+        if (!await db.InstructorExperiences.AnyAsync(ct))
+        {
+            await SeedInstructorProfilesAsync(db, ct);
+            logger.LogInformation("Đã tạo hồ sơ giảng viên và tin nhắn mẫu.");
+        }
+
         logger.LogInformation("Seed dữ liệu hoàn tất.");
+    }
+
+    /// <summary>Hồ sơ giảng viên (kinh nghiệm, chuyên môn, xác minh) và một cuộc trao đổi mẫu học viên ↔ giảng viên.</summary>
+    private static async Task SeedInstructorProfilesAsync(AppDbContext db, CancellationToken ct)
+    {
+        var now = DateTime.UtcNow;
+        foreach (var p in SampleData.InstructorProfiles)
+        {
+            var user = await db.Users.FirstOrDefaultAsync(u => u.Email == p.Email, ct);
+            if (user is null) continue;
+            user.YearsOfExperience = p.Years;
+            user.Expertise = string.Join(';', p.Expertise);
+            user.IsVerifiedInstructor = p.Verified;
+            user.InstructorVerifiedAt = p.Verified ? now.AddDays(-30) : null;
+            var order = 0;
+            foreach (var e in p.Experiences)
+                db.InstructorExperiences.Add(new InstructorExperience
+                {
+                    UserId = user.Id, Type = e.Type, Title = e.Title, Organization = e.Organization,
+                    StartYear = e.StartYear, EndYear = e.EndYear, Description = e.Description, SortOrder = order++,
+                });
+        }
+
+        var student = await db.Users.FirstOrDefaultAsync(u => u.Email == "hocvien@eduviet.local", ct);
+        var instructor = await db.Users.FirstOrDefaultAsync(u => u.Email == "giangvien@eduviet.local", ct);
+        var course = instructor is null ? null : await db.Courses.FirstOrDefaultAsync(c => c.InstructorId == instructor.Id, ct);
+        if (student is not null && instructor is not null && !await db.Conversations.AnyAsync(ct))
+        {
+            var asked = now.AddDays(-3);
+            var conversation = new Conversation
+            {
+                StudentId = student.Id, InstructorId = instructor.Id, CourseId = course?.Id,
+                CreatedAt = asked, LastMessageAt = asked.AddHours(2), StudentLastReadAt = asked.AddHours(3), InstructorLastReadAt = asked.AddHours(2),
+            };
+            conversation.Messages.Add(new Message
+            {
+                SenderId = student.Id, CreatedAt = asked,
+                Body = "Chào thầy, em mới học lập trình được 2 tháng. Em nên học khóa C# cơ bản trước hay vào thẳng ASP.NET Core Web API ạ?",
+            });
+            conversation.Messages.Add(new Message
+            {
+                SenderId = instructor.Id, CreatedAt = asked.AddHours(2),
+                Body = "Chào em! Em nên học khóa C# cơ bản trước, đặc biệt các phần lập trình hướng đối tượng và async/await. " +
+                       "Khi làm được bài kiểm tra cuối khóa C# thì chuyển sang Web API sẽ nhẹ nhàng hơn nhiều.",
+            });
+            db.Conversations.Add(conversation);
+        }
+        await db.SaveChangesAsync(ct);
     }
 
     /// <summary>Mỗi khóa học có một bài kiểm tra cuối khóa; học viên mẫu đã học một phần để dashboard có dữ liệu.</summary>

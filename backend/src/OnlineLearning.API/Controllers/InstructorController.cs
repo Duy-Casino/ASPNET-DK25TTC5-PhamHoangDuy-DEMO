@@ -12,8 +12,17 @@ namespace OnlineLearning.API.Controllers;
 /// <summary>Khu vực giảng viên: quản lý khóa học, chương, bài học, tài liệu, đánh giá.</summary>
 [Route("api/instructor")]
 [Authorize(Roles = $"{Roles.Instructor},{Roles.Admin}")]
-public sealed class InstructorController(IInstructorCourseService courses, IReviewService reviews) : ApiControllerBase
+public sealed class InstructorController(IInstructorCourseService courses, IReviewService reviews,
+    Application.Features.Instructors.IInstructorProfileService profiles) : ApiControllerBase
 {
+    // ---------- Hồ sơ giảng viên ----------
+    [HttpGet("profile")]
+    public async Task<IActionResult> GetProfile(CancellationToken ct) => FromResult(await profiles.GetMineAsync(User.GetUserId(), ct));
+
+    [HttpPut("profile")]
+    public async Task<IActionResult> UpdateProfile(Application.Features.Instructors.UpdateInstructorProfileRequest request, CancellationToken ct) =>
+        FromResult(await profiles.UpdateMineAsync(User.GetUserId(), request, ct));
+
     // ---------- Courses ----------
     [HttpGet("courses")]
     public async Task<ActionResult<PagedResult<InstructorCourseListItemDto>>> MyCourses(

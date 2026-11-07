@@ -76,6 +76,103 @@ export interface InstructorProfile {
   totalStudents: number
   totalReviews: number
   averageRating: number
+  isVerified: boolean
+}
+
+export type ExperienceType = 'Work' | 'Education' | 'Certification'
+
+export interface InstructorExperience {
+  id: string
+  type: ExperienceType
+  title: string
+  organization: string | null
+  startYear: number | null
+  endYear: number | null
+  description: string | null
+  credentialUrl: string | null
+}
+
+export interface InstructorLinks {
+  website: string | null
+  linkedIn: string | null
+  youtube: string | null
+  facebook: string | null
+}
+
+export interface InstructorReview {
+  id: string
+  userFullName: string
+  userAvatarUrl: string | null
+  rating: number
+  comment: string | null
+  createdAt: string
+  courseTitle: string
+  courseSlug: string
+  instructorReply: string | null
+}
+
+/** Hồ sơ công khai đầy đủ của giảng viên (GET /api/instructors/{id}). */
+export interface InstructorDetail extends InstructorProfile {
+  verifiedAt: string | null
+  memberSince: string
+  yearsOfExperience: number | null
+  expertise: string[]
+  links: InstructorLinks
+  experiences: InstructorExperience[]
+  certificatesIssued: number
+  ratingDistribution: Record<string, number>
+  recentReviews: InstructorReview[]
+  /** null khi chưa đủ số cuộc trao đổi để công bố */
+  response: { conversations: number; replyRatePercent: number; medianReplyHours: number | null } | null
+}
+
+export interface InstructorProfileEdit {
+  fullName: string
+  avatarUrl: string | null
+  headline: string | null
+  bio: string | null
+  yearsOfExperience: number | null
+  expertise: string[]
+  links: InstructorLinks
+  experiences: InstructorExperience[]
+  isVerified: boolean
+  verifiedAt: string | null
+}
+
+export interface SaveInstructorProfileInput {
+  avatarUrl: string | null
+  headline: string | null
+  bio: string | null
+  yearsOfExperience: number | null
+  expertise: string[]
+  websiteUrl: string | null
+  linkedInUrl: string | null
+  youtubeUrl: string | null
+  facebookUrl: string | null
+  experiences: Omit<InstructorExperience, 'id'>[]
+}
+
+export interface Participant { id: string; fullName: string; avatarUrl: string | null; headline: string | null; isVerified: boolean }
+export interface ConversationCourse { id: string; title: string; slug: string }
+export interface ConversationListItem {
+  id: string
+  other: Participant
+  iAmInstructor: boolean
+  course: ConversationCourse | null
+  lastMessagePreview: string | null
+  lastMessageIsMine: boolean
+  lastMessageAt: string
+  hasUnread: boolean
+}
+export interface ChatMessage { id: string; senderId: string; body: string; createdAt: string }
+export interface ConversationDetail {
+  id: string
+  other: Participant
+  iAmInstructor: boolean
+  course: ConversationCourse | null
+  messages: ChatMessage[]
+  hasMore: boolean
+  otherLastReadAt: string | null
 }
 
 export interface Testimonial {

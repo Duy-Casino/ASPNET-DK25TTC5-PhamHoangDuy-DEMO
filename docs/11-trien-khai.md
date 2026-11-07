@@ -97,6 +97,9 @@ App Service Linux chưa có sẵn font tiếng Việt. Muốn PDF chứng chỉ 
 - [ ] Đã khai báo URL IPN `https://<tên miền>/api/payments/vnpay/ipn` trong trang merchant VNPay; MoMo dùng `…/momo/ipn`
 - [ ] Đã thử một giao dịch thật số tiền nhỏ và đối chiếu trang Admin → Giao dịch
 
+**Cơ sở dữ liệu**
+- [ ] Migration `InstructorProfileAndMessaging` (hồ sơ giảng viên, tin nhắn) được áp dụng tự động khi `Database__MigrateOnStartup=true`; DBA chạy tay thì dùng `database/migration-InstructorProfileAndMessaging.sql` (idempotent)
+
 **Nội dung & SEO**
 - [x] Điều khoản hoàn tiền đã xác nhận (06/11/2026): yêu cầu trong 7 ngày, đã học tối đa 20%, chưa cấp chứng chỉ; phản hồi trong 7 ngày làm việc
 - [ ] Thay email, điện thoại, địa chỉ mẫu bằng thông tin thật trong `frontend/online-learning-client/src/config/site.ts` (mục "CẦN THAY")

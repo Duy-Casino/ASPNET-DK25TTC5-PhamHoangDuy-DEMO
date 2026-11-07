@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
-  Award, BarChart3, CreditCard, BookOpen, ClipboardList, FolderTree, LayoutDashboard, LogOut, Menu, MessageSquare, Receipt, ShieldCheck,
+  Award, BarChart3, CreditCard, BookOpen, ClipboardList, FolderTree, IdCard, LayoutDashboard, LogOut, Menu, MessageSquare, MessagesSquare, Receipt, ShieldCheck,
   Tag, User, Users, X, type LucideIcon,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Avatar, Logo } from '../components/ui'
 import { useAuth } from '../hooks/useAuth'
+import { messagingService } from '../services/api'
 
-interface NavItem { to: string; label: string; icon: LucideIcon; end?: boolean }
+interface NavItem { to: string; label: string; icon: LucideIcon; end?: boolean; badge?: 'messages' }
 
 const areas: Record<'student' | 'instructor' | 'admin', { title: string; items: NavItem[] }> = {
   student: {
@@ -17,6 +18,7 @@ const areas: Record<'student' | 'instructor' | 'admin', { title: string; items: 
       { to: '/hoc-vien', label: 'Khóa học của tôi', icon: BookOpen, end: true },
       { to: '/hoc-vien/ket-qua', label: 'Kết quả kiểm tra', icon: ClipboardList },
       { to: '/hoc-vien/chung-chi', label: 'Chứng chỉ', icon: Award },
+      { to: '/hoc-vien/tin-nhan', label: 'Tin nhắn', icon: MessagesSquare, badge: 'messages' },
       { to: '/tai-khoan/don-hang', label: 'Lịch sử thanh toán', icon: Receipt },
       { to: '/tai-khoan', label: 'Hồ sơ cá nhân', icon: User, end: true },
     ],
@@ -28,6 +30,8 @@ const areas: Record<'student' | 'instructor' | 'admin', { title: string; items: 
       { to: '/giang-day/khoa-hoc', label: 'Khóa học', icon: BookOpen },
       { to: '/giang-day/hoc-vien', label: 'Học viên', icon: Users },
       { to: '/giang-day/danh-gia', label: 'Đánh giá', icon: MessageSquare },
+      { to: '/giang-day/tin-nhan', label: 'Tin nhắn', icon: MessagesSquare, badge: 'messages' },
+      { to: '/giang-day/ho-so', label: 'Hồ sơ giảng viên', icon: IdCard },
     ],
   },
   admin: {
@@ -57,6 +61,15 @@ export default function DashboardLayout({ area }: { area: keyof typeof areas }) 
     window.scrollTo(0, 0)
   }, [pathname])
 
+  // Số cuộc trao đổi chưa đọc cho mục "Tin nhắn" (cập nhật khi đổi trang và mỗi phút)
+  const [unread, setUnread] = useState(0)
+  useEffect(() => {
+    const load = () => messagingService.unreadCount().then((r) => setUnread(r.count)).catch(() => {})
+    load()
+    const id = window.setInterval(load, 60_000)
+    return () => window.clearInterval(id)
+  }, [pathname])
+
   const switchers = [
     { key: 'student', to: '/hoc-vien', label: 'Học viên', show: true },
     { key: 'instructor', to: '/giang-day', label: 'Giảng dạy', show: hasRole('Instructor', 'Admin') },
@@ -77,10 +90,15 @@ export default function DashboardLayout({ area }: { area: keyof typeof areas }) 
         </div>
       )}
       <nav aria-label={areas[area].title} className="flex flex-col gap-1">
-        {areas[area].items.map(({ to, label, icon: Icon, end }) => (
+        {areas[area].items.map(({ to, label, icon: Icon, end, badge }) => (
           <NavLink key={to} to={to} end={end}
             className={({ isActive }) => `flex items-center gap-3 rounded-xl px-3 py-2.5 font-medium transition-colors ${isActive ? 'bg-brand-50 font-semibold text-brand-700' : 'text-ink-soft hover:bg-surface-2 hover:text-ink'}`}>
             <Icon className="size-5" aria-hidden="true" />{label}
+            {badge === 'messages' && unread > 0 && (
+              <span className="ml-auto min-w-6 rounded-full bg-brand-600 px-1.5 text-center text-xs leading-6 font-bold text-white tabular-nums">
+                {unread > 99 ? '99+' : unread}<span className="sr-only"> cuộc trao đổi chưa đọc</span>
+              </span>
+            )}
           </NavLink>
         ))}
       </nav>

@@ -3,7 +3,8 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import DOMPurify from 'dompurify'
 import { Check, ChevronDown, FileText, PlayCircle, Star, X } from 'lucide-react'
 import { toast } from 'sonner'
-import { ResponsiveImg, Avatar, DecorBlobs, ErrorState, Pagination, RatingStars, Skeleton, Spinner, TextArea } from '../components/ui'
+import { MessageInstructorButton } from '../components/messaging/MessageInstructorButton'
+import { ResponsiveImg, Avatar, DecorBlobs, ErrorState, Pagination, RatingStars, Skeleton, Spinner, TextArea, VerifiedBadge } from '../components/ui'
 import { site } from '../config/site'
 import { useAsync } from '../hooks/useAsync'
 import { useSeo } from '../hooks/useSeo'
@@ -104,7 +105,7 @@ export default function CourseDetailPage() {
               <Avatar name={course.instructor.fullName} src={course.instructor.avatarUrl} size={44} />
               <span>
                 <span className="block text-sm text-ink-muted">Giảng viên</span>
-                <span className="font-bold">{course.instructor.fullName}</span>
+                <span className="inline-flex items-center gap-1 font-bold">{course.instructor.fullName}{course.instructor.isVerified && <VerifiedBadge compact />}</span>
               </span>
             </Link>
           </div>
@@ -148,19 +149,29 @@ export default function CourseDetailPage() {
             </section>
           )}
 
-          <section aria-labelledby="ins" className="rounded-(--radius-card) bg-surface-2 p-6 sm:p-10" data-reveal>
+          <section aria-labelledby="ins" className="card p-6 sm:p-8" data-reveal>
             <h2 id="ins" className="text-2xl font-semibold">Giảng viên</h2>
-            <Link to={`/giang-vien/${course.instructor.id}`} className="mt-6 flex items-center gap-4 hover:text-brand-700">
-              <Avatar name={course.instructor.fullName} src={course.instructor.avatarUrl} size={72} />
-              <span>
-                <span className="block text-xl font-bold">{course.instructor.fullName}</span>
-                <span className="text-ink-soft">{course.instructor.headline}</span>
-              </span>
-            </Link>
-            <p className="mt-4 text-sm text-ink-soft">
-              {course.instructor.totalCourses} khóa học · {formatNumber(course.instructor.totalStudents)} học viên · {course.instructor.totalReviews} đánh giá
-            </p>
-            {course.instructor.bio && <p className="mt-4 max-w-[70ch]">{course.instructor.bio}</p>}
+            <div className="mt-6 flex flex-col gap-5 sm:flex-row sm:items-start">
+              <Link to={`/giang-vien/${course.instructor.id}`} className="shrink-0 self-start rounded-full">
+                <Avatar name={course.instructor.fullName} src={course.instructor.avatarUrl} size={88} />
+              </Link>
+              <div className="flex min-w-0 flex-col gap-2">
+                <Link to={`/giang-vien/${course.instructor.id}`} className="flex flex-wrap items-center gap-2 text-xl font-semibold hover:text-brand-700">
+                  {course.instructor.fullName} {course.instructor.isVerified && <VerifiedBadge />}
+                </Link>
+                {course.instructor.headline && <p className="text-ink-soft">{course.instructor.headline}</p>}
+                <p className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-ink-soft">
+                  <span>{course.instructor.totalCourses} khóa học</span>
+                  <span>{formatNumber(course.instructor.totalStudents)} học viên</span>
+                  {course.instructor.totalReviews > 0 && <span>★ {course.instructor.averageRating.toFixed(1)} ({course.instructor.totalReviews} đánh giá)</span>}
+                </p>
+                {course.instructor.bio && <p className="mt-1 line-clamp-4 max-w-[70ch] leading-relaxed">{course.instructor.bio}</p>}
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <MessageInstructorButton instructor={course.instructor} course={{ id: course.id, title: course.title }} label="Hỏi giảng viên về khóa học" />
+                  <Link to={`/giang-vien/${course.instructor.id}`} className="btn-ghost">Xem hồ sơ đầy đủ</Link>
+                </div>
+              </div>
+            </div>
           </section>
 
           <Reviews course={course} onChanged={reload} />

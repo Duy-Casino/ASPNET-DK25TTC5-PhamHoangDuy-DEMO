@@ -94,8 +94,12 @@ function UserMenu() {
             <p className="truncate text-sm text-ink-muted">{user.email}</p>
           </div>
           <MenuLink to="/hoc-vien" onClick={() => setOpen(false)}>Khóa học của tôi</MenuLink>
+          <MenuLink to="/hoc-vien/tin-nhan" onClick={() => setOpen(false)}>Tin nhắn với giảng viên</MenuLink>
           {(user.roles.includes('Instructor') || user.roles.includes('Admin')) && (
-            <MenuLink to="/giang-day" onClick={() => setOpen(false)}>Khu vực giảng dạy</MenuLink>
+            <>
+              <MenuLink to="/giang-day" onClick={() => setOpen(false)}>Khu vực giảng dạy</MenuLink>
+              <MenuLink to="/giang-day/tin-nhan" onClick={() => setOpen(false)}>Tin nhắn từ học viên</MenuLink>
+            </>
           )}
           {user.roles.includes('Admin') && <MenuLink to="/quan-tri" onClick={() => setOpen(false)}>Quản trị hệ thống</MenuLink>}
           <MenuLink to="/tai-khoan" onClick={() => setOpen(false)}>Hồ sơ cá nhân</MenuLink>

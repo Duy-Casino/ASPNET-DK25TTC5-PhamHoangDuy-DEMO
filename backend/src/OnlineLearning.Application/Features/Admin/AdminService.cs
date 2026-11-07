@@ -24,10 +24,12 @@ public sealed class AdminUserQuery : PagedQuery
 }
 
 public sealed record AdminUserDto(Guid Id, string Email, string FullName, string? AvatarUrl, string? PhoneNumber,
-    bool IsActive, bool EmailConfirmed, IReadOnlyList<string> Roles, int EnrollmentCount, int CourseCount, DateTime CreatedAt);
+    bool IsActive, bool EmailConfirmed, IReadOnlyList<string> Roles, int EnrollmentCount, int CourseCount, DateTime CreatedAt,
+    bool IsVerifiedInstructor);
 
 public sealed record SetRolesRequest(IReadOnlyList<string> Roles);
 public sealed record SetActiveRequest(bool IsActive);
+public sealed record SetInstructorVerifiedRequest(bool IsVerified);
 
 public sealed class SetRolesRequestValidator : AbstractValidator<SetRolesRequest>
 {
@@ -42,9 +44,12 @@ public interface IAdminService
     Task<PagedResult<AdminUserDto>> ListUsersAsync(AdminUserQuery query, CancellationToken ct = default);
     Task<Result<AdminUserDto>> SetRolesAsync(Guid actorId, Guid userId, SetRolesRequest request, CancellationToken ct = default);
     Task<Result<AdminUserDto>> SetActiveAsync(Guid actorId, Guid userId, bool isActive, CancellationToken ct = default);
+    /// <summary>Đánh dấu giảng viên đã xác minh (Admin đã đối chiếu danh tính, kinh nghiệm).</summary>
+    Task<Result<AdminUserDto>> SetInstructorVerifiedAsync(Guid userId, bool isVerified, CancellationToken ct = default);
 }
 
-public sealed class AdminService(IAppDbContext db, UserManager<AppUser> userManager, IDateTimeProvider clock) : IAdminService
+public sealed class AdminService(IAppDbContext db, UserManager<AppUser> userManager, IDateTimeProvider clock,
+    Notifications.INotificationService notifications) : IAdminService
 {
     public async Task<AdminOverviewDto> GetOverviewAsync(CancellationToken ct = default)
     {
@@ -110,7 +115,7 @@ public sealed class AdminService(IAppDbContext db, UserManager<AppUser> userMana
             .Select(u => new
             {
                 u.Id, Email = u.Email!, u.FullName, u.AvatarUrl, u.PhoneNumber, u.IsActive, u.EmailConfirmed, u.CreatedAt,
-                Enrollments = u.Enrollments.Count, Courses = u.TaughtCourses.Count(c => !c.IsDeleted),
+                u.IsVerifiedInstructor, Enrollments = u.Enrollments.Count, Courses = u.TaughtCourses.Count(c => !c.IsDeleted),
             })
             .ToPagedResultAsync(q.Page, q.PageSize, ct);
 
@@ -122,7 +127,7 @@ public sealed class AdminService(IAppDbContext db, UserManager<AppUser> userMana
 
         var items = page.Items.Select(u => new AdminUserDto(u.Id, u.Email, u.FullName, u.AvatarUrl, u.PhoneNumber, u.IsActive,
             u.EmailConfirmed, roles.Where(r => r.UserId == u.Id).Select(r => r.Name!).OrderBy(n => n).ToList(),
-            u.Enrollments, u.Courses, u.CreatedAt)).ToList();
+            u.Enrollments, u.Courses, u.CreatedAt, u.IsVerifiedInstructor)).ToList();
 
         return new PagedResult<AdminUserDto>(items, page.Page, page.PageSize, page.TotalCount);
     }
@@ -172,13 +177,34 @@ public sealed class AdminService(IAppDbContext db, UserManager<AppUser> userMana
     {
         var u = await db.Users.AsNoTracking().Where(x => x.Id == userId)
             .Select(x => new { x.Id, Email = x.Email!, x.FullName, x.AvatarUrl, x.PhoneNumber, x.IsActive, x.EmailConfirmed, x.CreatedAt,
-                Enrollments = x.Enrollments.Count, Courses = x.TaughtCourses.Count(c => !c.IsDeleted) })
+                x.IsVerifiedInstructor, Enrollments = x.Enrollments.Count, Courses = x.TaughtCourses.Count(c => !c.IsDeleted) })
             .FirstAsync(ct);
         var roles = await (from ur in db.Set<IdentityUserRole<Guid>>()
                            join r in db.Set<AppRole>() on ur.RoleId equals r.Id
                            where ur.UserId == userId
                            select r.Name!).ToListAsync(ct);
         return new AdminUserDto(u.Id, u.Email, u.FullName, u.AvatarUrl, u.PhoneNumber, u.IsActive, u.EmailConfirmed,
-            roles.OrderBy(r => r).ToList(), u.Enrollments, u.Courses, u.CreatedAt);
+            roles.OrderBy(r => r).ToList(), u.Enrollments, u.Courses, u.CreatedAt, u.IsVerifiedInstructor);
+    }
+
+    public async Task<Result<AdminUserDto>> SetInstructorVerifiedAsync(Guid userId, bool isVerified, CancellationToken ct = default)
+    {
+        var user = await userManager.FindByIdAsync(userId.ToString());
+        if (user is null) return Error.NotFound("Không tìm thấy người dùng.");
+        if (isVerified && !await userManager.IsInRoleAsync(user, Roles.Instructor))
+            return Error.Conflict("Chỉ xác minh được tài khoản có vai trò Giảng viên.");
+
+        if (user.IsVerifiedInstructor != isVerified)
+        {
+            user.IsVerifiedInstructor = isVerified;
+            user.InstructorVerifiedAt = isVerified ? clock.UtcNow : null;
+            user.UpdatedAt = clock.UtcNow;
+            if (isVerified)
+                notifications.Add(user.Id, "Hồ sơ giảng viên đã được xác minh",
+                    "EduViet đã xác minh hồ sơ của bạn. Huy hiệu “Đã xác minh” hiện trên trang giảng viên và các khóa học của bạn.",
+                    Domain.Enums.NotificationType.System, $"/giang-vien/{user.Id}");
+            await db.SaveChangesAsync(ct);
+        }
+        return await LoadUserAsync(userId, ct);
     }
 }

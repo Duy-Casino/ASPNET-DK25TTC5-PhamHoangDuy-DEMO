@@ -71,13 +71,14 @@ public sealed class CoursesController(ICatalogService catalog, IReviewService re
 }
 
 [Route("api/instructors")]
-public sealed class InstructorsController(ICatalogService catalog) : ApiControllerBase
+public sealed class InstructorsController(ICatalogService catalog, Application.Features.Instructors.IInstructorProfileService profiles) : ApiControllerBase
 {
     [HttpGet("featured")]
     public async Task<ActionResult<IReadOnlyList<InstructorProfileDto>>> Featured([FromQuery] int take = 8, CancellationToken ct = default) =>
         Ok(await catalog.GetFeaturedInstructorsAsync(Math.Clamp(take, 1, 24), ct));
 
+    /// <summary>Hồ sơ công khai: kinh nghiệm, chứng nhận, thống kê, đánh giá gần đây, mức độ phản hồi tin nhắn.</summary>
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> Get(Guid id, CancellationToken ct) =>
-        FromResult(await catalog.GetInstructorAsync(id, ct));
+        FromResult(await profiles.GetPublicAsync(id, ct));
 }

@@ -2,8 +2,8 @@
 
 | Tầng | Công cụ | Số kịch bản | Kết quả |
 | --- | --- | --- | --- |
-| Backend tích hợp | xUnit + WebApplicationFactory + SQLite in-memory | 31 | **31/31 đạt** |
-| End-to-end | Playwright (Chrome) + API demo + Vite | 19 (12 desktop, 7 điện thoại) | **19/19 đạt** |
+| Backend tích hợp | xUnit + WebApplicationFactory + SQLite in-memory | 35 | **35/35 đạt** |
+| End-to-end | Playwright (Chrome) + API demo + Vite | 23 (16 desktop, 7 điện thoại) | **23/23 đạt** |
 | Giao diện | taste-skill `inspect.mjs` (1440 / 768 / 390 px) | Trang chủ, chi tiết khóa, xác minh | Trang chủ 0 FAIL; các trang khác đã sửa lỗi tương phản/bố cục |
 | Thủ công trên trình duyệt | Claude Browser | Mọi luồng chính của 3 vai trò | Đạt |
 
@@ -18,6 +18,7 @@
 | Học tập & quiz | Nội dung chặn khi chưa mua; tiến độ; tiếp tục học; giới hạn lượt; nộp lặp; hoàn thành khóa; người khác không nộp hộ được |
 | Thanh toán | Kênh test qua IPN có chữ ký + chống phát lại; VNPay sai chữ ký (97) / sai số tiền (04) / không tồn tại (01) / hợp lệ (00) / lặp (02) / thất bại; trang return không cấp quyền; MoMo đúng/sai chữ ký; Admin xem giao dịch |
 | Tệp | Ảnh hợp lệ / giả định dạng / đuôi cấm; học viên không tải video được; video riêng tư chỉ phát qua URL có chữ ký |
+| Giảng viên & tin nhắn | Hồ sơ công khai (kinh nghiệm, xác minh, thống kê); giảng viên sửa hồ sơ + validation (URL https, năm, gộp chuyên môn trùng); học viên không gọi được API hồ sơ; nhắn tin: không tự nhắn, chỉ nhắn giảng viên, chưa đọc/đã đọc, thông báo, người ngoài không đọc được, cùng một cuộc trao đổi; Admin chỉ xác minh được giảng viên |
 | Chứng chỉ | Cấp đúng một lần; PDF hợp lệ; người khác không tải được; xác minh công khai; thu hồi/khôi phục; cấp bù |
 
 ## 2. End-to-end (`frontend/online-learning-client/e2e`)
@@ -27,6 +28,7 @@
 | `public.spec.ts` | Trang chủ: đủ các section, tab lĩnh vực đổi nội dung, menu "Khóa học" trên header lọc đúng, ô xác minh chứng chỉ; trang Giới thiệu/Liên hệ/Chính sách, canonical, JSON-LD Course, robots.txt, sitemap.xml; mở ô tìm kiếm → tìm kiếm → chi tiết; lọc + sắp xếp lưu trên URL; mua khi chưa đăng nhập → chuyển tới đăng nhập; xác minh mã không tồn tại; `/quan-tri` yêu cầu đăng nhập |
 | `student.spec.ts` | Đăng ký → thêm giỏ → mã sai/đúng → kênh test (có thông báo "chưa thu tiền thật") → kết quả thành công → vào học (có video). Đăng ký khóa miễn phí → học hết bài → làm quiz đạt → nhận mã chứng chỉ → tải PDF → chuông thông báo có "Bạn đã nhận chứng chỉ" → người lạ xác minh hợp lệ. Dashboard học viên mẫu → "Học tiếp" |
 | `staff.spec.ts` | Giảng viên: biểu đồ tổng quan, tạo khóa, chương, bài, bài kiểm tra, gửi duyệt bị chặn vì thiếu thông tin. Admin: duyệt khóa chờ duyệt → khóa xuất hiện công khai; trang giao dịch. Học viên bị chặn khỏi `/quan-tri` và `/giang-day` |
+| `instructor.spec.ts` | Hồ sơ giảng viên có huy hiệu xác minh, kinh nghiệm, chứng nhận, JSON-LD Person; khách bấm nhắn tin → đăng nhập; học viên hỏi về khóa học → giảng viên nhận thông báo, trả lời → học viên thấy; giảng viên sửa hồ sơ (lỗi báo đúng ô, trang công khai cập nhật); Admin xác minh → huy hiệu hiện trên trang khóa học |
 | `mobile.spec.ts` | Không tràn ngang trên 6 trang; menu điện thoại; bộ lọc dạng sheet |
 
 Mỗi lần chạy E2E dùng một DB SQLite mới với dữ liệu mẫu. API chạy trên cổng 5081, Vite trên cổng 5174, nên không ảnh hưởng server đang dùng để phát triển.

@@ -16,7 +16,6 @@ public interface ICatalogService
     Task<Result<CourseDetailDto>> GetDetailAsync(string slug, Guid? userId, bool isAdmin, CancellationToken ct = default);
     Task<Result<PagedResult<ReviewDto>>> GetReviewsAsync(Guid courseId, PagedQuery query, CancellationToken ct = default);
     Task<IReadOnlyList<InstructorProfileDto>> GetFeaturedInstructorsAsync(int take, CancellationToken ct = default);
-    Task<Result<InstructorProfileDto>> GetInstructorAsync(Guid instructorId, CancellationToken ct = default);
     /// <summary>Đường dẫn công khai cho sitemap.xml: khóa học đã xuất bản và giảng viên có khóa đã xuất bản.</summary>
     Task<IReadOnlyList<SitemapEntryDto>> GetSitemapEntriesAsync(CancellationToken ct = default);
 }
@@ -187,24 +186,11 @@ public sealed class CatalogService(IAppDbContext db, IFileStorage storage) : ICa
         return profiles.OrderByDescending(p => p.TotalStudents).ThenByDescending(p => p.AverageRating).Take(take).ToList();
     }
 
-    public async Task<Result<InstructorProfileDto>> GetInstructorAsync(Guid instructorId, CancellationToken ct = default)
-    {
-        var instructorRole = Roles.Instructor.ToUpperInvariant();
-        var isInstructor = await (from ur in db.Set<Microsoft.AspNetCore.Identity.IdentityUserRole<Guid>>()
-                                  join r in db.Set<AppRole>() on ur.RoleId equals r.Id
-                                  where ur.UserId == instructorId && r.NormalizedName == instructorRole
-                                  select ur).AnyAsync(ct);
-        if (!isInstructor) return Error.NotFound("Không tìm thấy giảng viên.");
-
-        var profile = (await LoadInstructorProfilesAsync(db.Users.Where(u => u.Id == instructorId && u.IsActive), ct)).FirstOrDefault();
-        return profile is null ? Error.NotFound("Không tìm thấy giảng viên.") : profile;
-    }
-
     internal static async Task<List<InstructorProfileDto>> LoadInstructorProfilesAsync(IQueryable<AppUser> users, CancellationToken ct)
     {
         var rows = await users.AsNoTracking().Select(u => new
         {
-            u.Id, u.FullName, u.AvatarUrl, u.Headline, u.Bio,
+            u.Id, u.FullName, u.AvatarUrl, u.Headline, u.Bio, u.IsVerifiedInstructor,
             Courses = u.TaughtCourses.Count(c => c.Status == CourseStatus.Published && !c.IsDeleted),
             Students = u.TaughtCourses.Where(c => !c.IsDeleted).Sum(c => c.EnrollmentCount),
             Reviews = u.TaughtCourses.Where(c => !c.IsDeleted).Sum(c => c.ReviewCount),
@@ -216,7 +202,7 @@ public sealed class CatalogService(IAppDbContext db, IFileStorage storage) : ICa
         {
             var reviewTotal = r.Ratings.Sum(x => x.ReviewCount);
             var avg = reviewTotal == 0 ? 0 : Math.Round(r.Ratings.Sum(x => x.AverageRating * x.ReviewCount) / reviewTotal, 2);
-            return new InstructorProfileDto(r.Id, r.FullName, r.AvatarUrl, r.Headline, r.Bio, r.Courses, r.Students, r.Reviews, avg);
+            return new InstructorProfileDto(r.Id, r.FullName, r.AvatarUrl, r.Headline, r.Bio, r.Courses, r.Students, r.Reviews, avg, r.IsVerifiedInstructor);
         }).ToList();
     }
 }

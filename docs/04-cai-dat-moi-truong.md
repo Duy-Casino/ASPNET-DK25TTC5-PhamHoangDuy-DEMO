@@ -54,6 +54,8 @@ npm run dev
 
 Muốn tạo lại dữ liệu mẫu từ đầu: dừng API, xóa `eduviet-demo.db`, chạy lại.
 
+> Chế độ demo tạo DB bằng `EnsureCreated` nên **không tự cập nhật khi schema đổi**. Sau khi kéo code có migration mới (ví dụ `InstructorProfileAndMessaging`), hãy dừng API rồi đổi tên/xóa `eduviet-demo.db` để DB được tạo lại kèm dữ liệu mẫu.
+
 ## 4. Cách B — SQL Server
 
 ```powershell

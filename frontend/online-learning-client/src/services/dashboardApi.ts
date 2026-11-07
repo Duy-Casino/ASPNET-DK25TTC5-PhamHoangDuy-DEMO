@@ -1,5 +1,5 @@
 import { apiClient } from './apiClient'
-import type { Category } from '../types/api'
+import type { Category, InstructorProfileEdit, SaveInstructorProfileInput } from '../types/api'
 import type { CourseStatus, OrderStatus, PagedResult } from '../types/common'
 import type {
   AdminCourse, AdminOrder, AdminOverview, AdminUser, AttemptResult, AttemptTake, CertificateItem, Coupon, CourseEdit,
@@ -31,6 +31,8 @@ export const learningService = {
 }
 
 export const instructorService = {
+  profile: () => get<InstructorProfileEdit>('/api/instructor/profile'),
+  updateProfile: (data: SaveInstructorProfileInput) => put<InstructorProfileEdit>('/api/instructor/profile', data),
   overview: () => get<InstructorOverview>('/api/instructor/overview'),
   students: (params: { courseId?: string; keyword?: string; page?: number }) =>
     get<PagedResult<InstructorStudent>>('/api/instructor/students', { ...params, pageSize: 15 }),
@@ -66,6 +68,7 @@ export const adminService = {
   users: (params: { keyword?: string; role?: string; page?: number }) => get<PagedResult<AdminUser>>('/api/admin/users', { ...params, pageSize: 15 }),
   setRoles: (id: string, roles: string[]) => put<AdminUser>(`/api/admin/users/${id}/roles`, { roles }),
   setActive: (id: string, isActive: boolean) => put<AdminUser>(`/api/admin/users/${id}/active`, { isActive }),
+  setInstructorVerified: (id: string, isVerified: boolean) => put<AdminUser>(`/api/admin/users/${id}/instructor-verified`, { isVerified }),
   courses: (params: { status?: CourseStatus; keyword?: string; page?: number }) => get<PagedResult<AdminCourse>>('/api/admin/courses', { ...params, pageSize: 15 }),
   approve: (id: string) => post<void>(`/api/admin/courses/${id}/approve`),
   reject: (id: string, reason: string) => post<void>(`/api/admin/courses/${id}/reject`, { reason }),

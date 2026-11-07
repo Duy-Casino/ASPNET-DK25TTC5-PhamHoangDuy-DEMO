@@ -38,6 +38,10 @@ public sealed class AdminController(
     public async Task<IActionResult> SetActive(Guid id, SetActiveRequest request, CancellationToken ct) =>
         FromResult(await admin.SetActiveAsync(User.GetUserId(), id, request.IsActive, ct));
 
+    [HttpPut("users/{id:guid}/instructor-verified")]
+    public async Task<IActionResult> SetInstructorVerified(Guid id, SetInstructorVerifiedRequest request, CancellationToken ct) =>
+        FromResult(await admin.SetInstructorVerifiedAsync(id, request.IsVerified, ct));
+
     // ---------- Khóa học ----------
     [HttpGet("courses")]
     public async Task<ActionResult<PagedResult<AdminCourseListItemDto>>> Courses([FromQuery] AdminCourseQuery query, CancellationToken ct) =>

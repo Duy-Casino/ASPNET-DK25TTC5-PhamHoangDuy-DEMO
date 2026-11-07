@@ -34,7 +34,7 @@ public sealed record CurriculumSectionDto(Guid Id, string Title, string? Descrip
 
 public sealed record InstructorProfileDto(
     Guid Id, string FullName, string? AvatarUrl, string? Headline, string? Bio,
-    int TotalCourses, int TotalStudents, int TotalReviews, decimal AverageRating);
+    int TotalCourses, int TotalStudents, int TotalReviews, decimal AverageRating, bool IsVerified = false);
 
 public sealed record CourseDetailDto(
     Guid Id, string Title, string Slug, string? ShortDescription, string? Description,

@@ -23,6 +23,38 @@ internal static class SampleData
             "Hơn 8 năm phân tích dữ liệu bán lẻ, đào tạo nội bộ cho hơn 2.000 nhân sự văn phòng."),
     ];
 
+    public sealed record ExperienceSeed(ExperienceType Type, string Title, string? Organization, int? StartYear, int? EndYear, string? Description = null);
+    public sealed record InstructorProfileSeed(string Email, int Years, string[] Expertise, bool Verified, ExperienceSeed[] Experiences);
+
+    /// <summary>Hồ sơ giảng viên mẫu (tên đơn vị được để chung chung vì là dữ liệu minh họa).</summary>
+    public static readonly InstructorProfileSeed[] InstructorProfiles =
+    [
+        new("giangvien@eduviet.local", 10, ["C#", "ASP.NET Core", "React", "TypeScript", "SQL Server", "Kiến trúc phần mềm"], true,
+        [
+            new(ExperienceType.Work, "Kiến trúc sư phần mềm", "Công ty phần mềm sản phẩm thương mại điện tử", 2020, null,
+                "Thiết kế hệ thống đặt hàng phục vụ hàng trăm nghìn người dùng, dẫn dắt nhóm 8 kỹ sư."),
+            new(ExperienceType.Work, "Kỹ sư phần mềm cao cấp", "Công ty outsource phần mềm", 2015, 2020,
+                "Phát triển ứng dụng web .NET cho khách hàng Nhật Bản và Singapore."),
+            new(ExperienceType.Education, "Kỹ sư Công nghệ thông tin", "Trường đại học kỹ thuật", 2010, 2015),
+            new(ExperienceType.Certification, "Microsoft Certified: Azure Developer Associate", "Microsoft", 2022, null),
+        ]),
+        new("lethu.design@eduviet.local", 6, ["UI/UX", "Figma", "Design System", "Nghiên cứu người dùng"], false,
+        [
+            new(ExperienceType.Work, "Product Designer", "Công ty công nghệ tài chính", 2021, null,
+                "Thiết kế ứng dụng ví điện tử và hệ thống design system dùng chung cho 5 sản phẩm."),
+            new(ExperienceType.Work, "UI Designer", "Công ty edtech", 2018, 2021),
+            new(ExperienceType.Education, "Cử nhân Thiết kế đồ họa", "Trường đại học mỹ thuật", 2014, 2018),
+        ]),
+        new("phamquang.data@eduviet.local", 8, ["Excel", "Power BI", "SQL", "Phân tích dữ liệu", "Dashboard"], true,
+        [
+            new(ExperienceType.Work, "Trưởng nhóm phân tích dữ liệu", "Chuỗi bán lẻ", 2019, null,
+                "Xây dựng hệ thống báo cáo Power BI cho 300 cửa hàng, đào tạo nội bộ cho nhân sự văn phòng."),
+            new(ExperienceType.Work, "Chuyên viên phân tích kinh doanh", "Công ty phân phối hàng tiêu dùng", 2016, 2019),
+            new(ExperienceType.Education, "Cử nhân Hệ thống thông tin quản lý", "Trường đại học kinh tế", 2012, 2016),
+            new(ExperienceType.Certification, "Microsoft Certified: Power BI Data Analyst Associate", "Microsoft", 2021, null),
+        ]),
+    ];
+
     public static readonly StudentSeed[] Students =
     [
         new("hocvien@eduviet.local", "Trần Thu Hà"),

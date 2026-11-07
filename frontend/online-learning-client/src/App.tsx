@@ -46,6 +46,8 @@ const InstructorOverviewPage = lazy(() => instructor().then((m) => ({ default: m
 const InstructorCoursesPage = lazy(() => instructor().then((m) => ({ default: m.InstructorCoursesPage })))
 const InstructorStudentsPage = lazy(() => instructor().then((m) => ({ default: m.InstructorStudentsPage })))
 const InstructorReviewsPage = lazy(() => instructor().then((m) => ({ default: m.InstructorReviewsPage })))
+const InstructorProfilePage = lazy(() => import('./pages/instructor/InstructorProfilePage').then((m) => ({ default: m.InstructorProfilePage })))
+const MessagesPage = lazy(() => import('./pages/messages/MessagesPage').then((m) => ({ default: m.MessagesPage })))
 const CourseEditorPage = lazy(() => import('./pages/instructor/CourseEditorPage'))
 const admin = () => import('./pages/admin/AdminPages')
 const AdminOverviewPage = lazy(() => admin().then((m) => ({ default: m.AdminOverviewPage })))
@@ -107,6 +109,8 @@ export default function App() {
           <Route index element={<MyCoursesPage />} />
           <Route path="ket-qua" element={<QuizResultsPage />} />
           <Route path="chung-chi" element={<CertificatesPage />} />
+          <Route path="tin-nhan" element={<MessagesPage area="student" />} />
+          <Route path="tin-nhan/:id" element={<MessagesPage area="student" />} />
         </Route>
 
         <Route path="giang-day" element={<ProtectedRoute roles={['Instructor', 'Admin']}><DashboardLayout area="instructor" /></ProtectedRoute>}>
@@ -115,6 +119,9 @@ export default function App() {
           <Route path="khoa-hoc/:id" element={<CourseEditorPage />} />
           <Route path="hoc-vien" element={<InstructorStudentsPage />} />
           <Route path="danh-gia" element={<InstructorReviewsPage />} />
+          <Route path="ho-so" element={<InstructorProfilePage />} />
+          <Route path="tin-nhan" element={<MessagesPage area="instructor" />} />
+          <Route path="tin-nhan/:id" element={<MessagesPage area="instructor" />} />
         </Route>
 
         <Route path="quan-tri" element={<ProtectedRoute roles={['Admin']}><DashboardLayout area="admin" /></ProtectedRoute>}>

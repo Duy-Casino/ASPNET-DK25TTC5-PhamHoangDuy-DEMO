@@ -13,6 +13,21 @@ public class AppUser : IdentityUser<Guid>
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
 
+    // ---------- Hồ sơ giảng viên ----------
+    /// <summary>Số năm kinh nghiệm làm nghề/giảng dạy do giảng viên khai.</summary>
+    public int? YearsOfExperience { get; set; }
+    /// <summary>Chuyên môn, phân tách bằng dấu ";" (ví dụ "C#;ASP.NET Core;SQL Server").</summary>
+    public string? Expertise { get; set; }
+    public string? WebsiteUrl { get; set; }
+    public string? LinkedInUrl { get; set; }
+    public string? YoutubeUrl { get; set; }
+    public string? FacebookUrl { get; set; }
+    /// <summary>Admin đã đối chiếu danh tính và kinh nghiệm của giảng viên.</summary>
+    public bool IsVerifiedInstructor { get; set; }
+    public DateTime? InstructorVerifiedAt { get; set; }
+
+    public ICollection<InstructorExperience> Experiences { get; set; } = [];
+
     public ICollection<RefreshToken> RefreshTokens { get; set; } = [];
     public ICollection<Course> TaughtCourses { get; set; } = [];
     public ICollection<Enrollment> Enrollments { get; set; } = [];

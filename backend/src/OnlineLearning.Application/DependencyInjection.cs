@@ -34,6 +34,8 @@ public static class DependencyInjection
         services.AddScoped<Features.Dashboards.IDashboardService, Features.Dashboards.DashboardService>();
         services.AddScoped<Features.Payments.IPaymentService, Features.Payments.PaymentService>();
         services.AddScoped<Features.Certificates.ICertificateService, Features.Certificates.CertificateService>();
+        services.AddScoped<Features.Instructors.IInstructorProfileService, Features.Instructors.InstructorProfileService>();
+        services.AddScoped<Features.Messaging.IMessagingService, Features.Messaging.MessagingService>();
 
         return services;
     }

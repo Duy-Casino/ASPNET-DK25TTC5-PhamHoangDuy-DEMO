@@ -20,4 +20,7 @@ public enum DiscountType { Percentage, FixedAmount }
 
 public enum QuestionType { SingleChoice, MultipleChoice, TrueFalse }
 
-public enum NotificationType { System, Order, Course, Certificate, Review }
+public enum NotificationType { System, Order, Course, Certificate, Review, Message }
+
+/// <summary>Loại mục trong hồ sơ giảng viên.</summary>
+public enum ExperienceType { Work, Education, Certification }

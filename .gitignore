@@ -36,3 +36,6 @@ backend/src/OnlineLearning.API/App_Data/
 test-results/
 playwright-report/
 blob-report/
+
+# Bản sao lưu DB demo SQLite
+*.db.bak-*

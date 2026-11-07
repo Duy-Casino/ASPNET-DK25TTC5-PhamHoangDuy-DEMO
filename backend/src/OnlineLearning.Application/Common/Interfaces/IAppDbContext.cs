@@ -30,6 +30,9 @@ public interface IAppDbContext
     DbSet<Certificate> Certificates { get; }
     DbSet<Review> Reviews { get; }
     DbSet<Notification> Notifications { get; }
+    DbSet<InstructorExperience> InstructorExperiences { get; }
+    DbSet<Conversation> Conversations { get; }
+    DbSet<Message> Messages { get; }
 
     DatabaseFacade Database { get; }
 
