@@ -67,6 +67,8 @@ public static class DbSeeder
             logger.LogInformation("Đã tạo bài kiểm tra và tiến độ học mẫu.");
         }
 
+        await SeedInstructorAvatarsAsync(db, ct);
+
         if (!await db.InstructorExperiences.AnyAsync(ct))
         {
             await SeedInstructorProfilesAsync(db, ct);
@@ -74,6 +76,23 @@ public static class DbSeeder
         }
 
         logger.LogInformation("Seed dữ liệu hoàn tất.");
+    }
+
+    /// <summary>
+    /// Ảnh đại diện minh họa cho giảng viên demo — chỉ gán khi tài khoản chưa có ảnh,
+    /// nên chạy lại an toàn và không ghi đè ảnh giảng viên đã tự tải lên.
+    /// </summary>
+    private static async Task SeedInstructorAvatarsAsync(AppDbContext db, CancellationToken ct)
+    {
+        var changed = false;
+        foreach (var p in SampleData.InstructorProfiles)
+        {
+            var user = await db.Users.FirstOrDefaultAsync(u => u.Email == p.Email, ct);
+            if (user is null || !string.IsNullOrEmpty(user.AvatarUrl)) continue;
+            user.AvatarUrl = p.AvatarUrl;
+            changed = true;
+        }
+        if (changed) await db.SaveChangesAsync(ct);
     }
 
     /// <summary>Hồ sơ giảng viên (kinh nghiệm, chuyên môn, xác minh) và một cuộc trao đổi mẫu học viên ↔ giảng viên.</summary>

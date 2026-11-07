@@ -24,7 +24,8 @@ internal static class SampleData
     ];
 
     public sealed record ExperienceSeed(ExperienceType Type, string Title, string? Organization, int? StartYear, int? EndYear, string? Description = null);
-    public sealed record InstructorProfileSeed(string Email, int Years, string[] Expertise, bool Verified, ExperienceSeed[] Experiences);
+    /// <param name="AvatarUrl">Ảnh minh họa giảng viên ảo (CC0) trong frontend/public/avatars/demo.</param>
+    public sealed record InstructorProfileSeed(string Email, int Years, string[] Expertise, bool Verified, ExperienceSeed[] Experiences, string AvatarUrl);
 
     /// <summary>Hồ sơ giảng viên mẫu (tên đơn vị được để chung chung vì là dữ liệu minh họa).</summary>
     public static readonly InstructorProfileSeed[] InstructorProfiles =
@@ -37,14 +38,14 @@ internal static class SampleData
                 "Phát triển ứng dụng web .NET cho khách hàng Nhật Bản và Singapore."),
             new(ExperienceType.Education, "Kỹ sư Công nghệ thông tin", "Trường đại học kỹ thuật", 2010, 2015),
             new(ExperienceType.Certification, "Microsoft Certified: Azure Developer Associate", "Microsoft", 2022, null),
-        ]),
+        ], "/avatars/demo/nguyen-minh-khoa.svg"),
         new("lethu.design@eduviet.local", 6, ["UI/UX", "Figma", "Design System", "Nghiên cứu người dùng"], false,
         [
             new(ExperienceType.Work, "Product Designer", "Công ty công nghệ tài chính", 2021, null,
                 "Thiết kế ứng dụng ví điện tử và hệ thống design system dùng chung cho 5 sản phẩm."),
             new(ExperienceType.Work, "UI Designer", "Công ty edtech", 2018, 2021),
             new(ExperienceType.Education, "Cử nhân Thiết kế đồ họa", "Trường đại học mỹ thuật", 2014, 2018),
-        ]),
+        ], "/avatars/demo/le-anh-thu.svg"),
         new("phamquang.data@eduviet.local", 8, ["Excel", "Power BI", "SQL", "Phân tích dữ liệu", "Dashboard"], true,
         [
             new(ExperienceType.Work, "Trưởng nhóm phân tích dữ liệu", "Chuỗi bán lẻ", 2019, null,
@@ -52,7 +53,7 @@ internal static class SampleData
             new(ExperienceType.Work, "Chuyên viên phân tích kinh doanh", "Công ty phân phối hàng tiêu dùng", 2016, 2019),
             new(ExperienceType.Education, "Cử nhân Hệ thống thông tin quản lý", "Trường đại học kinh tế", 2012, 2016),
             new(ExperienceType.Certification, "Microsoft Certified: Power BI Data Analyst Associate", "Microsoft", 2021, null),
-        ]),
+        ], "/avatars/demo/pham-quang-huy.svg"),
     ];
 
     public static readonly StudentSeed[] Students =

@@ -1,8 +1,8 @@
 import { useState, type FormEvent, type KeyboardEvent, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
-  ArrowRight, Award, BarChart3, BookOpen, Briefcase, ChevronRight, Code2, CreditCard, FileSpreadsheet, Languages, Megaphone,
-  MessagesSquare, MonitorSmartphone, Palette, PlayCircle, QrCode, Quote, Search, ShieldCheck, Users, type LucideIcon,
+  ArrowRight, Award, BadgeCheck, BarChart3, BookOpen, Briefcase, CheckCircle2, ChevronRight, Code2, CreditCard, FileSpreadsheet, Languages, Lock,
+  Megaphone, MessagesSquare, Palette, Play, PlayCircle, QrCode, Quote, RefreshCw, Search, ShieldCheck, Users, type LucideIcon,
 } from 'lucide-react'
 import { CourseGrid } from '../components/course/CourseCard'
 import { ResponsiveImg, Avatar, DecorBlobs, ErrorState, RatingStars, SectionHeading, Skeleton } from '../components/ui'
@@ -166,12 +166,167 @@ function Hero({ data }: { data: HomeData | null }) {
 }
 
 /* ------------------------------------------------------------------ */
-function Benefits() {
+/* ---------- Hình minh họa cho 3 lợi ích (trang trí, aria-hidden; nội dung đã có trong chữ bên dưới) ---------- */
+
+/** Học thử: trình phát video với bài 1 mở miễn phí, các bài sau khóa lại. */
+function TrialVisual({ course }: { course?: CourseSummary }) {
+  return (
+    <div className="relative flex h-full items-center justify-center p-5" aria-hidden="true">
+      <div className="w-full max-w-[280px] transition-transform duration-500 ease-(--ease-out-strong) group-hover:-translate-y-1">
+        <div className="overflow-hidden rounded-xl bg-white shadow-(--shadow-lift)">
+          <div className="relative aspect-video bg-ink">
+            {course?.thumbnailUrl && (
+              <ResponsiveImg url={course.thumbnailUrl} sizes="280px" maxWidth={640} width={560} height={315} className="size-full object-cover opacity-70" />
+            )}
+            <span className="absolute top-2 left-2 rounded-full bg-mint-300 px-2 py-0.5 text-[11px] font-bold text-ink">Học thử miễn phí</span>
+            <span className="absolute inset-0 flex items-center justify-center">
+              <span className="relative flex size-12 items-center justify-center rounded-full bg-white text-brand-600 shadow-(--shadow-lift)">
+                <span className="absolute inset-0 animate-ping rounded-full bg-white/60 [animation-duration:2.4s] motion-reduce:hidden" />
+                <Play className="relative ml-0.5 size-5 fill-current" />
+              </span>
+            </span>
+            <span className="absolute inset-x-0 bottom-0 h-1 bg-white/30"><span className="block h-full w-2/5 bg-brand-500" /></span>
+          </div>
+          <ul className="divide-y divide-line/70 text-[12px]">
+            <li className="flex items-center gap-2 px-3 py-2">
+              <PlayCircle className="size-4 shrink-0 text-mint-700" />
+              <span className="truncate font-semibold">Bài 1 · Giới thiệu khóa học</span>
+              <span className="ml-auto shrink-0 rounded bg-mint-50 px-1.5 font-semibold text-mint-700">Mở</span>
+            </li>
+            <li className="flex items-center gap-2 px-3 py-2 text-ink-muted">
+              <Lock className="size-4 shrink-0" />
+              <span className="truncate">Bài 2 · Nội dung chính</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+      <span className="float-slow absolute top-3 right-3 hidden rounded-full bg-white px-3 py-1.5 text-[11px] font-semibold text-brand-700 shadow-(--shadow-lift) sm:block">
+        Xem trước, mua sau
+      </span>
+    </div>
+  )
+}
+
+/** Vòng tròn tiến độ (SVG). */
+function ProgressRing({ percent, size = 44 }: { percent: number; size?: number }) {
+  const r = (size - 6) / 2
+  const c = 2 * Math.PI * r
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="-rotate-90">
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" strokeWidth="5" className="stroke-mint-100" />
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" strokeWidth="5" strokeLinecap="round" className="stroke-mint-500"
+        strokeDasharray={c} strokeDashoffset={c * (1 - percent / 100)} />
+    </svg>
+  )
+}
+
+/** Học mọi lúc: máy tính và điện thoại cùng hiển thị một tiến độ đã đồng bộ. */
+function ProgressVisual({ course }: { course?: CourseSummary }) {
+  const title = course?.title ?? 'Khóa học của bạn'
+  return (
+    <div className="relative flex h-full items-center justify-center p-5" aria-hidden="true">
+      {/* Máy tính */}
+      <div className="w-full max-w-[250px] -translate-x-5 transition-transform duration-500 ease-(--ease-out-strong) group-hover:-translate-x-6">
+        <div className="rounded-t-xl border-[5px] border-b-0 border-ink bg-white p-3">
+          <p className="truncate text-[11px] font-bold">{title}</p>
+          <div className="mt-2 h-1.5 rounded-full bg-mint-100"><div className="h-full w-3/5 rounded-full bg-mint-500" /></div>
+          <ul className="mt-2.5 flex flex-col gap-1.5 text-[10px]">
+            {['Bài 1', 'Bài 2', 'Bài 3'].map((l) => (
+              <li key={l} className="flex items-center gap-1.5 text-ink-soft"><CheckCircle2 className="size-3.5 text-mint-700" />{l} · đã xong</li>
+            ))}
+            <li className="flex items-center gap-1.5 font-semibold text-brand-700"><PlayCircle className="size-3.5" />Bài 4 · đang học</li>
+          </ul>
+        </div>
+        <div className="mx-auto h-2.5 w-[115%] -translate-x-[6.5%] rounded-b-lg bg-ink/85" />
+      </div>
+      {/* Điện thoại */}
+      <div className="absolute right-[12%] bottom-4 w-[92px] rounded-[18px] border-[4px] border-ink bg-white p-2 shadow-(--shadow-lift) transition-transform duration-500 ease-(--ease-out-strong) group-hover:-translate-y-1">
+        <span className="mx-auto mb-1.5 block h-1 w-6 rounded-full bg-ink/20" />
+        <div className="flex flex-col items-center gap-1">
+          <span className="relative flex items-center justify-center">
+            <ProgressRing percent={60} />
+            <span className="absolute text-[10px] font-bold">60%</span>
+          </span>
+          <span className="w-full rounded-md bg-brand-600 py-1 text-center text-[9px] font-semibold text-white">Học tiếp bài 4</span>
+        </div>
+      </div>
+      {/* Đồng bộ */}
+      <span className="float-slow absolute top-4 right-4 flex items-center gap-1.5 rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-mint-700 shadow-(--shadow-soft)">
+        <RefreshCw className="size-3.5" /> Đã đồng bộ
+      </span>
+    </div>
+  )
+}
+
+/** Mã QR minh họa (ô vuông cố định, không mã hóa dữ liệu thật). */
+function QrMock() {
+  const rows = ['1110101', '1010011', '1110110', '0001010', '1101101', '0110001', '1011011']
+  return (
+    <span className="grid size-14 grid-cols-7 gap-px rounded bg-white p-1">
+      {rows.join('').split('').map((b, i) => <span key={i} className={b === '1' ? 'bg-ink' : 'bg-transparent'} />)}
+    </span>
+  )
+}
+
+/** Chứng chỉ: tấm chứng chỉ có mã QR, khung quét và dấu "hợp lệ". */
+function CertVisual({ course }: { course?: CourseSummary }) {
+  return (
+    <div className="relative flex h-full items-center justify-center p-5" aria-hidden="true">
+      <div className="w-full max-w-[260px] rotate-[-3deg] rounded-xl bg-white p-2 shadow-(--shadow-lift) transition-transform duration-500 ease-(--ease-out-strong) group-hover:rotate-0">
+        <div className="rounded-lg border-2 border-accent-200 p-3">
+          <div className="flex items-center justify-between text-[9px] font-bold tracking-wide text-ink-muted uppercase">
+            <span>EduViet</span><span>Chứng nhận</span>
+          </div>
+          <p className="mt-2 text-[10px] text-ink-muted">Trao cho</p>
+          <span className="mt-1 block h-2.5 w-3/4 rounded bg-brand-200" />
+          <p className="mt-2 line-clamp-1 text-[10px] font-semibold">{course?.title ?? 'Tên khóa học'}</p>
+          <div className="mt-2.5 flex items-end justify-between gap-2">
+            <span>
+              <span className="block text-[8px] text-ink-muted">Mã xác minh</span>
+              <span className="text-[10px] font-bold tracking-wide tabular-nums">EDV-2026-•••</span>
+            </span>
+            {/* Khung quét quanh mã QR */}
+            <span className="relative p-1">
+              <QrMock />
+              {['top-0 left-0 border-t-2 border-l-2', 'top-0 right-0 border-t-2 border-r-2', 'bottom-0 left-0 border-b-2 border-l-2', 'right-0 bottom-0 border-r-2 border-b-2'].map((c) => (
+                <span key={c} className={`absolute size-3 border-brand-600 ${c}`} />
+              ))}
+            </span>
+          </div>
+        </div>
+      </div>
+      <span className="float-slow absolute right-4 bottom-4 flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-[11px] font-semibold text-success shadow-(--shadow-lift)">
+        <ShieldCheck className="size-4" /> Hợp lệ · do EduViet cấp
+      </span>
+    </div>
+  )
+}
+
+function Benefits({ data }: { data: HomeData }) {
   const ref = useReveal<HTMLElement>()
-  const items: { icon: LucideIcon; tone: string; title: string; text: string; to: string; cta: string }[] = [
-    { icon: PlayCircle, tone: 'bg-brand-50 text-brand-600', title: 'Học thử trước khi mua', text: 'Mỗi khóa có bài học thử miễn phí để bạn xem cách giảng trước khi quyết định.', to: '/khoa-hoc', cta: 'Xem khóa học' },
-    { icon: MonitorSmartphone, tone: 'bg-mint-50 text-mint-700', title: 'Học mọi lúc, lưu tiến độ', text: 'Video, tài liệu và bài kiểm tra trên điện thoại hay máy tính; hệ thống nhớ bạn đang học tới đâu.', to: '/hoc-vien', cta: 'Vào khu học tập' },
-    { icon: Award, tone: 'bg-accent-50 text-accent-700', title: 'Chứng chỉ có mã xác minh', text: 'Hoàn thành khóa là có chứng chỉ PDF kèm mã QR, ai cũng kiểm tra được trên EduViet.', to: '/xac-minh', cta: 'Xác minh chứng chỉ' },
+  const pool = uniqueCourses(data).filter((c) => c.thumbnailUrl)
+  const items: { visual: ReactNode; tone: string; title: string; text: string; points: string[]; to: string; cta: string }[] = [
+    {
+      visual: <TrialVisual course={pool[0]} />, tone: 'bg-brand-50',
+      title: 'Học thử trước khi mua',
+      text: 'Mỗi khóa có bài học thử miễn phí để bạn xem cách giảng trước khi quyết định.',
+      points: ['Xem video giới thiệu và bài học thử', 'Không cần đăng nhập hay thanh toán'],
+      to: '/khoa-hoc', cta: 'Xem khóa học',
+    },
+    {
+      visual: <ProgressVisual course={pool[1] ?? pool[0]} />, tone: 'bg-mint-50',
+      title: 'Học mọi lúc, lưu tiến độ',
+      text: 'Video, tài liệu và bài kiểm tra trên điện thoại hay máy tính; hệ thống nhớ bạn đang học tới đâu.',
+      points: ['Tiếp tục đúng bài, đúng giây đã dừng', 'Bài kiểm tra cuối chương để chắc kiến thức'],
+      to: '/hoc-vien', cta: 'Vào khu học tập',
+    },
+    {
+      visual: <CertVisual course={pool[2] ?? pool[0]} />, tone: 'bg-accent-50',
+      title: 'Chứng chỉ có mã xác minh',
+      text: 'Hoàn thành khóa là có chứng chỉ PDF kèm mã QR, ai cũng kiểm tra được trên EduViet.',
+      points: ['Mã riêng dạng EDV-YYYY-XXXXXXXX', 'Nhà tuyển dụng quét QR để kiểm tra'],
+      to: '/xac-minh', cta: 'Xác minh chứng chỉ',
+    },
   ]
   return (
     <section ref={ref} className="container-page py-20 md:py-24" aria-labelledby="benefit-title">
@@ -182,18 +337,21 @@ function Benefits() {
         action={<Link to="/khoa-hoc" className="inline-flex items-center gap-1 font-semibold text-brand-700 hover:gap-2 transition-[gap]">Tìm hiểu thêm <ChevronRight className="size-4" aria-hidden="true" /></Link>}
       />
       <div className="grid gap-6 md:grid-cols-3">
-        {items.map(({ icon: Icon, tone, title, text, to, cta }) => (
-          <article key={title} className="card card-hover flex flex-col gap-5 p-4" data-reveal>
-            <div className={`relative flex aspect-[16/9] items-center justify-center overflow-hidden rounded-xl ${tone}`}>
-              <span className="absolute -top-6 -right-6 size-24 rounded-full bg-white/60" aria-hidden="true" />
-              <span className="absolute -bottom-8 -left-4 size-20 rounded-full bg-white/50" aria-hidden="true" />
-              <span className="relative flex size-20 items-center justify-center rounded-2xl bg-white shadow-(--shadow-soft)">
-                <Icon className="size-10" aria-hidden="true" />
-              </span>
+        {items.map(({ visual, tone, title, text, points, to, cta }) => (
+          <article key={title} className="group card card-hover flex flex-col gap-5 p-4" data-reveal>
+            <div className={`relative h-[230px] overflow-hidden rounded-xl ${tone}`}>
+              <span className="absolute -top-8 -left-8 size-28 rounded-full bg-white/50" aria-hidden="true" />
+              <span className="absolute -right-6 -bottom-10 size-32 rounded-full bg-white/40" aria-hidden="true" />
+              {visual}
             </div>
-            <div className="flex flex-1 flex-col gap-2 px-2">
+            <div className="flex flex-1 flex-col gap-3 px-2">
               <h3 className="text-heading font-semibold">{title}</h3>
               <p className="text-ink-soft">{text}</p>
+              <ul className="flex flex-col gap-1.5 text-sm text-ink-soft">
+                {points.map((p) => (
+                  <li key={p} className="flex items-start gap-2"><CheckCircle2 className="mt-0.5 size-4 shrink-0 text-mint-700" aria-hidden="true" />{p}</li>
+                ))}
+              </ul>
             </div>
             <Link to={to} className="btn-soft mx-2 mb-2 self-start">{cta} <ArrowRight className="size-4" aria-hidden="true" /></Link>
           </article>
@@ -378,22 +536,44 @@ function Instructors({ data }: { data: HomeData }) {
     <section ref={ref} className="container-page pb-20 md:pb-24" aria-labelledby="ins-title">
       <SectionHeading id="ins-title" eyebrow="Giảng viên" title="Đội ngũ đứng lớp" lead="Giảng viên đang làm nghề, dạy từ chính dự án họ đã làm." />
       <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {data.featuredInstructors.slice(0, 6).map((ins) => (
-          <li key={ins.id} data-reveal>
-            <Link to={`/giang-vien/${ins.id}`} className="group card card-hover flex h-full items-start gap-4 p-6">
-              <Avatar name={ins.fullName} src={ins.avatarUrl} size={64} />
-              <span className="flex min-w-0 flex-col gap-1">
-                <span className="font-display text-lg font-semibold group-hover:text-brand-700">{ins.fullName}</span>
-                {ins.headline && <span className="text-ink-soft">{ins.headline}</span>}
-                <span className="mt-2 flex flex-wrap gap-2">
-                  <span className="chip">{ins.totalCourses} khóa học</span>
-                  <span className="chip bg-mint-50 text-mint-700">{formatNumber(ins.totalStudents)} học viên</span>
-                  {ins.totalReviews > 0 && <span className="chip bg-accent-50 text-accent-700">{ins.averageRating.toFixed(1)}/5</span>}
+        {data.featuredInstructors.slice(0, 6).map((ins, i) => {
+          const tone = ['bg-brand-50', 'bg-accent-50', 'bg-mint-50'][i % 3]
+          return (
+            <li key={ins.id} data-reveal>
+              <Link to={`/giang-vien/${ins.id}`} className="group card card-hover flex h-full flex-col overflow-hidden text-center">
+                {/* Dải màu phía trên, ảnh đại diện lớn đè lên mép */}
+                <span className={`relative block h-24 overflow-hidden ${tone}`} aria-hidden="true">
+                  <span className="absolute -top-10 -left-6 size-28 rounded-full bg-white/50" />
+                  <span className="absolute -right-8 -bottom-12 size-32 rounded-full bg-white/40" />
                 </span>
-              </span>
-            </Link>
-          </li>
-        ))}
+                <span className="relative mx-auto -mt-16 block">
+                  <span className="block rounded-full bg-white p-1.5 shadow-(--shadow-lift) transition-transform duration-500 ease-(--ease-out-strong) group-hover:scale-[1.04]">
+                    <Avatar name={ins.fullName} src={ins.avatarUrl} size={128} />
+                  </span>
+                  {ins.isVerified && (
+                    <span className="absolute right-1.5 bottom-2 flex size-8 items-center justify-center rounded-full bg-white shadow-(--shadow-soft)" title="Giảng viên đã xác minh">
+                      <BadgeCheck className="size-6 fill-brand-600 text-white" aria-hidden="true" />
+                      <span className="sr-only">Giảng viên đã xác minh</span>
+                    </span>
+                  )}
+                </span>
+                <span className="flex flex-1 flex-col items-center gap-1.5 px-6 pt-4 pb-6">
+                  <span className="font-display text-lg font-semibold group-hover:text-brand-700">{ins.fullName}</span>
+                  {ins.headline && <span className="line-clamp-2 min-h-[3em] text-sm text-ink-soft">{ins.headline}</span>}
+                  <span className="mt-3 grid w-full grid-cols-3 divide-x divide-line rounded-xl bg-surface-2 py-3">
+                    <span className="flex flex-col"><b className="font-display text-lg tabular-nums">{ins.totalCourses}</b><span className="text-xs text-ink-soft">khóa học</span></span>
+                    <span className="flex flex-col"><b className="font-display text-lg tabular-nums">{formatNumber(ins.totalStudents)}</b><span className="text-xs text-ink-soft">học viên</span></span>
+                    <span className="flex flex-col">
+                      <b className="font-display text-lg tabular-nums">{ins.totalReviews > 0 ? ins.averageRating.toFixed(1) : '—'}</b>
+                      <span className="text-xs text-ink-soft">{ins.totalReviews > 0 ? 'đánh giá' : 'chưa có đ.giá'}</span>
+                    </span>
+                  </span>
+                  <span className="btn-soft mt-4 w-full">Xem hồ sơ giảng viên <ArrowRight className="size-4" aria-hidden="true" /></span>
+                </span>
+              </Link>
+            </li>
+          )
+        })}
       </ul>
     </section>
   )
@@ -485,7 +665,7 @@ export default function HomePage() {
       {error && <div className="container-page py-24"><ErrorState message={error} onRetry={reload} /></div>}
       {data && (
         <>
-          <Benefits />
+          <Benefits data={data} />
           <CategoryTabs data={data} />
           <CourseBlock id="featured-title" eyebrow="Nổi bật" title="Khóa học được chọn lọc" lead="Được đội ngũ EduViet chọn vì nội dung thực tế và đánh giá tốt."
             courses={data.featured} link="/khoa-hoc?sort=popular" />

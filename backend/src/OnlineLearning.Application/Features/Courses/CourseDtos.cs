@@ -141,11 +141,15 @@ public sealed class SaveCourseRequestValidator : AbstractValidator<SaveCourseReq
             .When(x => x.DiscountPrice.HasValue);
     }
 
-    /// <summary>URL https tuyệt đối, hoặc đường dẫn ảnh đã tải lên hệ thống (/uploads/...).</summary>
+    /// <summary>
+    /// URL https tuyệt đối, đường dẫn ảnh đã tải lên hệ thống (/uploads/...),
+    /// hoặc ảnh đại diện demo đóng gói sẵn ở frontend (/avatars/demo/...).
+    /// </summary>
     internal static bool BeHttpsOrNull(string? url) =>
         string.IsNullOrWhiteSpace(url) ||
         (url.Length <= 500 && ((Uri.TryCreate(url, UriKind.Absolute, out var u) && u.Scheme == Uri.UriSchemeHttps)
-                               || (url.StartsWith("/uploads/", StringComparison.Ordinal) && !url.Contains("..", StringComparison.Ordinal))));
+                               || ((url.StartsWith("/uploads/", StringComparison.Ordinal) || url.StartsWith("/avatars/demo/", StringComparison.Ordinal))
+                                   && !url.Contains("..", StringComparison.Ordinal))));
 }
 
 public sealed class SaveSectionRequestValidator : AbstractValidator<SaveSectionRequest>

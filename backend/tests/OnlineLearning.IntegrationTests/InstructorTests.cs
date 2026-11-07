@@ -69,6 +69,21 @@ public sealed class InstructorTests(TestApp app)
     }
 
     [Fact]
+    public async Task Demo_instructors_have_avatar_and_avatar_path_is_restricted()
+    {
+        var id = UserId("phamquang.data@eduviet.local");
+        var p = await (await app.Anonymous().GetAsync($"/api/instructors/{id}")).OkJsonAsync();
+        Assert.Equal("/avatars/demo/pham-quang-huy.svg", p.GetProperty("avatarUrl").GetString());
+
+        var client = await app.LoginAsync("phamquang.data@eduviet.local");
+        foreach (var bad in new[] { "/avatars/khac/x.svg", "/avatars/demo/../../secret", "http://example.com/a.png", "javascript:alert(1)" })
+        {
+            var res = await client.PutAsJsonAsync("/api/instructor/profile", new { avatarUrl = bad });
+            Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
+        }
+    }
+
+    [Fact]
     public async Task Student_and_instructor_exchange_messages_with_unread_and_notifications()
     {
         var instructorId = UserId("phamquang.data@eduviet.local");
