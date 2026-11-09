@@ -199,7 +199,7 @@ Danh sách kịch bản và các lỗi phát hiện nhờ kiểm thử: [tài li
 | --- | --- |
 | [`setup/`](setup/README.md) | Cài đặt: script `run-demo.ps1`, script SQL Server (`database/`), mô tả dữ liệu thử khớp kết quả báo cáo (`test-data/`), sơ đồ triển khai |
 | [`src/`](src/) | Mã nguồn và dữ liệu thử nghiệm: `backend/` (ASP.NET Core, kèm test xUnit), `frontend/` (React, kèm kịch bản E2E) |
-| [`progress-report/`](progress-report/README.md) | Báo cáo tiến độ |
+| [`progress-report/`](progress-report/README.md) | Báo cáo tiến độ theo tuần (tính từ 05/11/2026), mẫu báo cáo tuần, báo cáo chi tiết theo đợt (`theo-dot/`) |
 | [`thesis/`](thesis/README.md) | Tài liệu đồ án: `doc/` (Word), `pdf/`, `html/` (tài liệu kỹ thuật 01–14), `abs/` (slide, video), `refs/` (tài liệu tham khảo) |
 | [`soft/`](soft/README.md) | Phần mềm sử dụng và liên kết tải |
 | [`docker/`](docker/README.md) | Triển khai Docker: `docker-compose.yml`, `.env.example` |
@@ -245,7 +245,7 @@ Bản gộp đọc offline: [thesis/html/tai-lieu-ky-thuat.html](thesis/html/tai
 
 ## 9. Nhật ký tiến độ
 
-Mỗi khi hoàn thành một tính năng, thêm một dòng vào bảng này và cập nhật mục 1, 6, 8 nếu có thay đổi. Báo cáo chi tiết theo đợt nằm trong [progress-report/](progress-report/README.md).
+Mỗi khi hoàn thành một tính năng, thêm một dòng vào bảng này và cập nhật mục 1, 6, 8 nếu có thay đổi. Báo cáo theo tuần và theo đợt nằm trong [progress-report/](progress-report/README.md); tuần 1 bắt đầu ngày 05/11/2026.
 
 | Ngày | Nội dung | Kết quả kiểm thử |
 | --- | --- | --- |
@@ -258,6 +258,7 @@ Mỗi khi hoàn thành một tính năng, thêm một dòng vào bảng này và
 | 07/11/2026 | Điểm thưởng: tích điểm, điểm danh, chia sẻ, giới thiệu, đổi điểm, hoàn tiền thu hồi điểm, trang Admin (migration `RewardPoints`, [tài liệu 14](thesis/html/14-diem-thuong.md)) | 43/43 backend, 25/25 E2E |
 | 09/11/2026 | Viết lại README theo trạng thái hiện tại của đồ án; thêm thông tin sinh viên | |
 | 09/11/2026 | Tổ chức lại repository theo quy định: `setup/`, `src/`, `progress-report/`, `thesis/`, `soft/`, `docker/`; script cài đặt; báo cáo tiến độ 01–04; tài liệu kỹ thuật bản HTML/PDF | 43/43 backend, 25/25 E2E |
+| 09/11/2026 | Báo cáo tiến độ theo tuần: lịch báo cáo, báo cáo tuần 01 (05/11–11/11/2026) gồm công việc theo ngày và 10 điều chỉnh trong tuần, mẫu báo cáo tuần | |
 
 ## 10. Hạn chế và việc còn lại
 
