@@ -166,8 +166,8 @@ Thanh toán thử: ở trang thanh toán, chọn **Kênh thử nghiệm**. Đơn
 | Vai trò | Đường dẫn | Việc có thể thử |
 | --- | --- | --- |
 | Khách | `/`, `/khoa-hoc`, `/khoa-hoc/:slug`, `/giang-vien/:id`, `/xac-minh/:mã` | Tìm và lọc khóa học, xem học thử, xem hồ sơ giảng viên, xác minh chứng chỉ |
-| Học viên | `/hoc-vien`, `/hoc/:slug`, `/gio-hang`, `/tin-nhan`, `/hoc-vien/diem-thuong` | Mua khóa học, học, làm bài kiểm tra, nhận chứng chỉ, nhắn giảng viên, điểm danh, đổi điểm |
-| Giảng viên | `/giang-day`, `/giang-day/ho-so` | Tạo khóa học, gửi duyệt, sửa hồ sơ giảng dạy, trả lời tin nhắn và đánh giá |
+| Học viên | `/hoc-vien`, `/hoc/:slug`, `/gio-hang`, `/hoc-vien/tin-nhan`, `/hoc-vien/diem-thuong` | Mua khóa học, học, làm bài kiểm tra, nhận chứng chỉ, nhắn giảng viên, điểm danh, đổi điểm |
+| Giảng viên | `/giang-day`, `/giang-day/ho-so`, `/giang-day/tin-nhan` | Tạo khóa học, gửi duyệt, sửa hồ sơ giảng dạy, trả lời tin nhắn và đánh giá |
 | Quản trị viên | `/quan-tri`, `/quan-tri/diem-thuong` | Duyệt khóa học, quản lý người dùng, đơn hàng, hoàn tiền, mã giảm giá, chứng chỉ, điểm thưởng |
 
 Luồng nên thử: đăng ký học viên → thêm khóa vào giỏ → thanh toán qua kênh thử nghiệm → vào học → hoàn thành bài và bài kiểm tra → tải chứng chỉ → mở trang xác minh. Mỗi bước cũng cộng điểm thưởng tương ứng.
