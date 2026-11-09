@@ -78,7 +78,7 @@ Backend theo **Clean Architecture**, gồm bốn project:
 
 Frontend: React 19 + TypeScript, React Router, Tailwind CSS v4 (design token trong `src/index.css`), Recharts cho biểu đồ.
 
-Chi tiết: [docs/02 Kiến trúc](docs/02-kien-truc.md) · [docs/03 Database](docs/03-thiet-ke-database.md).
+Chi tiết: [tài liệu 02 Kiến trúc](thesis/html/02-kien-truc.md) · [tài liệu 03 Database](thesis/html/03-thiet-ke-database.md).
 
 ## 3. Cài đặt và chạy thử
 
@@ -97,11 +97,21 @@ winget install OpenJS.NodeJS.LTS
 dotnet tool install --global dotnet-ef
 ```
 
+### Cách nhanh nhất: một lệnh
+
+```powershell
+git clone https://github.com/Duy-Casino/ASPNET-DK25TTC5-PhamHoangDuy-DEMO.git
+cd ASPNET-DK25TTC5-PhamHoangDuy-DEMO
+powershell -ExecutionPolicy Bypass -File setup\run-demo.ps1
+```
+
+Script kiểm tra công cụ, hỏi mật khẩu demo ở lần đầu, cài gói npm rồi mở API và web trong hai cửa sổ. Sơ đồ triển khai, cài với SQL Server và xử lý lỗi thường gặp: [setup/README.md](setup/README.md). Các bước 3.2–3.4 dưới đây là cách làm thủ công.
+
 ### 3.2. Lấy mã nguồn và cấu hình bí mật (một lần)
 
 ```powershell
 git clone https://github.com/Duy-Casino/ASPNET-DK25TTC5-PhamHoangDuy-DEMO.git
-cd ASPNET-DK25TTC5-PhamHoangDuy-DEMO\backend\src\OnlineLearning.API
+cd ASPNET-DK25TTC5-PhamHoangDuy-DEMO\src\backend\src\OnlineLearning.API
 dotnet user-secrets set "Jwt:SecretKey" "<chuỗi ngẫu nhiên ≥ 32 ký tự>"
 dotnet user-secrets set "Seed:DemoPassword" "<mật khẩu demo, ≥ 8 ký tự, có hoa/thường/số>"
 ```
@@ -113,11 +123,11 @@ Bí mật được lưu bằng User Secrets, không nằm trong mã nguồn. Sin
 
 ```powershell
 # Terminal 1: API tại http://localhost:5080 (Swagger: /swagger)
-cd backend\src\OnlineLearning.API
+cd src\backend\src\OnlineLearning.API
 dotnet run --launch-profile demo-sqlite
 
 # Terminal 2: Web tại http://localhost:5173
-cd frontend\online-learning-client
+cd src\frontend\online-learning-client
 npm install
 npm run dev
 ```
@@ -131,13 +141,13 @@ Lần chạy đầu, API tự tạo `eduviet-demo.db` cùng dữ liệu mẫu. M
 1. Sửa `ConnectionStrings:DefaultConnection` (hoặc đặt bằng User Secrets) trỏ tới SQL Server của bạn.
 2. Tạo database bằng migration:
    ```powershell
-   cd backend
+   cd src\backend
    dotnet ef database update -p src\OnlineLearning.Infrastructure -s src\OnlineLearning.API
    ```
-   Có thể chạy tay các script trong thư mục `database/` thay cho bước này.
+   Có thể chạy tay các script trong thư mục `setup/database/` (xem [setup/README.md](setup/README.md#3-cài-đặt-với-sql-server)) thay cho bước này.
 3. Chạy API bằng `dotnet run` trong `src\OnlineLearning.API`, rồi chạy frontend như cách A.
 
-Hướng dẫn đầy đủ, kể cả cài .NET không cần quyền Admin: [docs/04](docs/04-cai-dat-moi-truong.md). Triển khai lên máy chủ thật (Docker Compose, IIS, Azure) kèm checklist: [docs/11](docs/11-trien-khai.md).
+Hướng dẫn đầy đủ, kể cả cài .NET không cần quyền Admin: [tài liệu 04](thesis/html/04-cai-dat-moi-truong.md). Triển khai lên máy chủ thật (Docker Compose, IIS, Azure) kèm checklist: [tài liệu 11](thesis/html/11-trien-khai.md).
 
 ## 4. Tài khoản và dữ liệu mẫu
 
@@ -172,70 +182,82 @@ Luồng nên thử: đăng ký học viên → thêm khóa vào giỏ → thanh 
 
 ```powershell
 # Backend (dừng API demo trước để tránh khóa DLL)
-cd backend
+cd src\backend
 dotnet test
 
 # E2E: tự chạy API trên cổng 5081 và Vite trên cổng 5174, dùng DB mới mỗi lần
-cd frontend\online-learning-client
+cd src\frontend\online-learning-client
 npx playwright install chrome
 $env:E2E_CHANNEL="chrome"; npx playwright test
 ```
 
-Danh sách kịch bản và các lỗi phát hiện nhờ kiểm thử: [docs/12](docs/12-bao-cao-kiem-thu.md).
+Danh sách kịch bản và các lỗi phát hiện nhờ kiểm thử: [tài liệu 12](thesis/html/12-bao-cao-kiem-thu.md).
 
 ## 7. Cấu trúc thư mục
 
+| Thư mục | Nội dung |
+| --- | --- |
+| [`setup/`](setup/README.md) | Cài đặt: script `run-demo.ps1`, script SQL Server (`database/`), mô tả dữ liệu thử khớp kết quả báo cáo (`test-data/`), sơ đồ triển khai |
+| [`src/`](src/) | Mã nguồn và dữ liệu thử nghiệm: `backend/` (ASP.NET Core, kèm test xUnit), `frontend/` (React, kèm kịch bản E2E) |
+| [`progress-report/`](progress-report/README.md) | Báo cáo tiến độ |
+| [`thesis/`](thesis/README.md) | Tài liệu đồ án: `doc/` (Word), `pdf/`, `html/` (tài liệu kỹ thuật 01–14), `abs/` (slide, video), `refs/` (tài liệu tham khảo) |
+| [`soft/`](soft/README.md) | Phần mềm sử dụng và liên kết tải |
+| [`docker/`](docker/README.md) | Triển khai Docker: `docker-compose.yml`, `.env.example` |
+| `.github/workflows/` | CI: build, test backend, build frontend, chạy E2E |
+
 ```
-backend/
-  src/OnlineLearning.Domain/          Entity, enum, hằng số
-  src/OnlineLearning.Application/     Service nghiệp vụ theo tính năng (Features/*), DTO, validator
-  src/OnlineLearning.Infrastructure/  DbContext, cấu hình EF, Migrations/, thanh toán, lưu trữ, PDF
-  src/OnlineLearning.API/             Controllers/, Program.cs, appsettings, launch profile demo-sqlite
-  tests/OnlineLearning.IntegrationTests/
-frontend/online-learning-client/
-  src/pages/        Trang theo vai trò: auth, checkout, learn, student, instructor, admin, messages, info
-  src/components/   Component dùng chung (ui, layout, dashboard, rewards…)
-  src/services/     Gọi API
-  e2e/              Kịch bản Playwright
-  public/           Ảnh tĩnh, robots.txt, ảnh đại diện giảng viên demo
-database/           schema.sql và script migration cho DBA
-docs/               Tài liệu phân tích, thiết kế, hướng dẫn, báo cáo kiểm thử
-docker-compose.yml, .env.example, .github/workflows/ci.yml
+src/
+├── backend/
+│   ├── OnlineLearning.sln
+│   ├── src/OnlineLearning.Domain/          Entity, enum, hằng số
+│   ├── src/OnlineLearning.Application/     Service nghiệp vụ theo tính năng (Features/*), DTO, validator
+│   ├── src/OnlineLearning.Infrastructure/  DbContext, cấu hình EF, Migrations/, Seed/ (dữ liệu mẫu), thanh toán, lưu trữ, PDF
+│   ├── src/OnlineLearning.API/             Controllers/, Program.cs, appsettings, launch profile demo-sqlite
+│   └── tests/OnlineLearning.IntegrationTests/
+└── frontend/online-learning-client/
+    ├── src/pages/        Trang theo vai trò: auth, checkout, learn, student, instructor, admin, messages, info
+    ├── src/components/   Component dùng chung (ui, layout, dashboard, rewards…)
+    ├── src/services/     Gọi API
+    ├── e2e/              Kịch bản Playwright
+    └── public/           Ảnh tĩnh, robots.txt, ảnh đại diện giảng viên demo
 ```
 
 ## 8. Tài liệu chi tiết
 
+Bản gộp đọc offline: [thesis/html/tai-lieu-ky-thuat.html](thesis/html/tai-lieu-ky-thuat.html) · [thesis/pdf/tai-lieu-ky-thuat.pdf](thesis/pdf/tai-lieu-ky-thuat.pdf). Báo cáo tiến độ: [progress-report/](progress-report/README.md).
+
 | # | Tài liệu |
 | --- | --- |
-| 01 | [Phân tích yêu cầu, quy tắc nghiệp vụ, Use Case](docs/01-phan-tich-yeu-cau.md) |
-| 02 | [Kiến trúc hệ thống và bảo mật](docs/02-kien-truc.md) |
-| 03 | [Thiết kế database, ERD](docs/03-thiet-ke-database.md) · [schema.sql](database/schema.sql) |
-| 04 | [Cài đặt môi trường, chạy dự án](docs/04-cai-dat-moi-truong.md) |
-| 05 | [Design system (phiên bản đầu)](docs/05-design-system.md) |
-| 06 | [Backend API, dữ liệu mẫu](docs/06-backend-api.md) |
-| 07 | [Frontend: các trang, xác thực phía client](docs/07-frontend.md) |
-| 08 | [Học trực tuyến, bài kiểm tra, dashboard](docs/08-hoc-tap-va-dashboard.md) |
-| 09 | [Thanh toán VNPay/MoMo/kênh thử nghiệm, lưu trữ Cloudinary](docs/09-thanh-toan-va-luu-tru.md) |
-| 10 | [Chứng chỉ PDF, trang xác minh](docs/10-chung-chi.md) |
-| 11 | [Triển khai: Docker Compose, IIS, Azure, checklist production](docs/11-trien-khai.md) |
-| 12 | [Báo cáo kiểm thử](docs/12-bao-cao-kiem-thu.md) |
-| 13 | [Design system giao diện hiện tại](docs/13-design-system.md) |
-| 14 | [Điểm thưởng: quy tắc, thiết kế, API](docs/14-diem-thuong.md) |
+| 01 | [Phân tích yêu cầu, quy tắc nghiệp vụ, Use Case](thesis/html/01-phan-tich-yeu-cau.md) |
+| 02 | [Kiến trúc hệ thống và bảo mật](thesis/html/02-kien-truc.md) |
+| 03 | [Thiết kế database, ERD](thesis/html/03-thiet-ke-database.md) · [schema.sql](setup/database/schema.sql) |
+| 04 | [Cài đặt môi trường, chạy dự án](thesis/html/04-cai-dat-moi-truong.md) |
+| 05 | [Design system (phiên bản đầu)](thesis/html/05-design-system.md) |
+| 06 | [Backend API, dữ liệu mẫu](thesis/html/06-backend-api.md) |
+| 07 | [Frontend: các trang, xác thực phía client](thesis/html/07-frontend.md) |
+| 08 | [Học trực tuyến, bài kiểm tra, dashboard](thesis/html/08-hoc-tap-va-dashboard.md) |
+| 09 | [Thanh toán VNPay/MoMo/kênh thử nghiệm, lưu trữ Cloudinary](thesis/html/09-thanh-toan-va-luu-tru.md) |
+| 10 | [Chứng chỉ PDF, trang xác minh](thesis/html/10-chung-chi.md) |
+| 11 | [Triển khai: Docker Compose, IIS, Azure, checklist production](thesis/html/11-trien-khai.md) |
+| 12 | [Báo cáo kiểm thử](thesis/html/12-bao-cao-kiem-thu.md) |
+| 13 | [Design system giao diện hiện tại](thesis/html/13-design-system.md) |
+| 14 | [Điểm thưởng: quy tắc, thiết kế, API](thesis/html/14-diem-thuong.md) |
 
 ## 9. Nhật ký tiến độ
 
-Mỗi khi hoàn thành một tính năng, thêm một dòng vào bảng này và cập nhật mục 1, 6, 8 nếu có thay đổi.
+Mỗi khi hoàn thành một tính năng, thêm một dòng vào bảng này và cập nhật mục 1, 6, 8 nếu có thay đổi. Báo cáo chi tiết theo đợt nằm trong [progress-report/](progress-report/README.md).
 
 | Ngày | Nội dung | Kết quả kiểm thử |
 | --- | --- | --- |
 | 05/11/2026 | Giai đoạn 1–7: phân tích, thiết kế DB, backend (Auth, khóa học, giỏ hàng, đơn hàng, mã giảm giá, đánh giá, Admin), frontend, học trực tuyến, bài kiểm tra, dashboard, thanh toán VNPay/MoMo, chứng chỉ PDF, kiểm thử, hướng dẫn triển khai | 30/30 backend, 18/18 E2E |
-| 05/11/2026 | Trang chủ dạng sàn khóa học nền sáng; ẩn nút đăng ký khi đã đăng nhập | |
-| 06/11/2026 | Thiết kế lại giao diện theo phong cách nền tảng công nghệ, giữ thương hiệu EduViet ([docs/13](docs/13-design-system.md)) | |
-| 06/11/2026 | Trang chính sách (điều khoản hoàn tiền: 7 ngày, học tối đa 20%), chuông thông báo, SEO (Open Graph, JSON-LD, sitemap), tối ưu ảnh và gói JS | |
+| 05/11/2026 | Trang chủ dạng sàn khóa học nền sáng; ẩn nút đăng ký khi đã đăng nhập | 18/18 E2E |
+| 06/11/2026 | Thiết kế lại giao diện theo phong cách nền tảng công nghệ, giữ thương hiệu EduViet ([tài liệu 13](thesis/html/13-design-system.md)) | 18/18 E2E |
+| 06/11/2026 | Trang chính sách (điều khoản hoàn tiền: 7 ngày, học tối đa 20%), chuông thông báo, SEO (Open Graph, JSON-LD, sitemap), tối ưu ảnh và gói JS | 31/31 backend, 19/19 E2E |
 | 07/11/2026 | Tính năng giảng viên: hồ sơ giảng dạy chi tiết, xác minh, nhắn tin với học viên (migration `InstructorProfileAndMessaging`) | 35/35 backend, 23/23 E2E |
-| 07/11/2026 | Hình minh họa ba lợi ích trên trang chủ; ảnh đại diện giảng viên demo | |
-| 07/11/2026 | Điểm thưởng: tích điểm, điểm danh, chia sẻ, giới thiệu, đổi điểm, hoàn tiền thu hồi điểm, trang Admin (migration `RewardPoints`, [docs/14](docs/14-diem-thuong.md)) | 43/43 backend, 25/25 E2E |
+| 07/11/2026 | Hình minh họa ba lợi ích trên trang chủ; ảnh đại diện giảng viên demo | 36/36 backend, 23/23 E2E |
+| 07/11/2026 | Điểm thưởng: tích điểm, điểm danh, chia sẻ, giới thiệu, đổi điểm, hoàn tiền thu hồi điểm, trang Admin (migration `RewardPoints`, [tài liệu 14](thesis/html/14-diem-thuong.md)) | 43/43 backend, 25/25 E2E |
 | 09/11/2026 | Viết lại README theo trạng thái hiện tại của đồ án; thêm thông tin sinh viên | |
+| 09/11/2026 | Tổ chức lại repository theo quy định: `setup/`, `src/`, `progress-report/`, `thesis/`, `soft/`, `docker/`; script cài đặt; báo cáo tiến độ 01–04; tài liệu kỹ thuật bản HTML/PDF | 43/43 backend, 25/25 E2E |
 
 ## 10. Hạn chế và việc còn lại
 
@@ -246,7 +268,7 @@ Mỗi khi hoàn thành một tính năng, thêm một dòng vào bảng này và
 - Docker Compose: chưa build vì máy không có Docker.
 
 **Cần làm trước khi đưa vào sử dụng thật**
-- Thay email, điện thoại, địa chỉ mẫu trong `frontend/online-learning-client/src/config/site.ts`.
+- Thay email, điện thoại, địa chỉ mẫu trong `src/frontend/online-learning-client/src/config/site.ts`.
 - Tắt kênh thanh toán thử nghiệm (`Payments:TestGateway:Enabled=false`).
 - Thay ảnh đại diện giảng viên minh họa bằng ảnh thật.
-- Xem checklist đầy đủ ở [docs/11](docs/11-trien-khai.md#checklist-trước-khi-mở-cho-người-dùng).
+- Xem checklist đầy đủ ở [tài liệu 11](thesis/html/11-trien-khai.md#checklist-trước-khi-mở-cho-người-dùng).

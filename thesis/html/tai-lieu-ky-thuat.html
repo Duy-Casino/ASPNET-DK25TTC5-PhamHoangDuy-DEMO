@@ -1,0 +1,3011 @@
+<!doctype html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tài liệu kỹ thuật EduViet</title><style>
+body{font-family:"Segoe UI","Be Vietnam Pro",Arial,sans-serif;max-width:960px;margin:0 auto;padding:24px 16px;color:#1b2333;line-height:1.6;background:#fff}
+h1{color:#005CF8;border-bottom:2px solid #e4e9f1;padding-bottom:6px;margin-top:48px}
+h2{margin-top:32px}h1,h2,h3{line-height:1.3}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+th,td{border:1px solid #d5dce8;padding:6px 8px;text-align:left;vertical-align:top}
+th{background:#f6f8fc}
+code{background:#f1f4f9;padding:1px 4px;border-radius:4px;font-size:90%}
+pre{background:#f6f8fc;border:1px solid #e4e9f1;padding:12px;overflow-x:auto;border-radius:6px}
+pre code{background:none;padding:0}
+blockquote{border-left:4px solid #EF8000;margin:12px 0;padding:4px 12px;background:#fff8ef}
+.cover{text-align:center;padding:80px 0 40px}
+.cover h1{border:none;font-size:34px;margin:0}
+.toc a{text-decoration:none}
+section.doc{page-break-before:always}
+@media print{body{max-width:none;padding:0}a{color:inherit}}
+</style></head><body>
+<div class="cover">
+<h1>EduViet: Website bán khóa học trực tuyến</h1>
+<p><strong>Tài liệu kỹ thuật</strong></p>
+<p>Sinh viên thực hiện: Phạm Hoàng Duy · MSSV 170125375 · Lớp DK25TTC5</p>
+<p>Tạo ngày 09/11/2026 từ thesis/html/*.md</p>
+</div>
+<h2>Mục lục</h2><ol class="toc"><li><a href="#doc-01-phan-tich-yeu-cau">01 — Phân tích yêu cầu &amp; đặc tả nghiệp vụ</a></li><li><a href="#doc-02-kien-truc">02 — Kiến trúc hệ thống</a></li><li><a href="#doc-03-thiet-ke-database">03 — Thiết kế cơ sở dữ liệu (SQL Server)</a></li><li><a href="#doc-04-cai-dat-moi-truong">04 — Chạy dự án trên máy tính</a></li><li><a href="#doc-05-design-system">05 — Design system</a></li><li><a href="#doc-06-backend-api">06 — Backend API (Giai đoạn 2)</a></li><li><a href="#doc-07-frontend">07 — Frontend (Giai đoạn 3)</a></li><li><a href="#doc-08-hoc-tap-va-dashboard">08 — Học trực tuyến, kiểm tra và dashboard (Giai đoạn 4)</a></li><li><a href="#doc-09-thanh-toan-va-luu-tru">09 — Thanh toán &amp; lưu trữ tệp (Giai đoạn 5)</a></li><li><a href="#doc-10-chung-chi">10 — Chứng chỉ PDF &amp; trang xác minh (Giai đoạn 6)</a></li><li><a href="#doc-11-trien-khai">11 — Triển khai lên môi trường thực tế</a></li><li><a href="#doc-12-bao-cao-kiem-thu">12 — Báo cáo kiểm thử (Giai đoạn 7)</a></li><li><a href="#doc-13-design-system">13 — Design system giao diện</a></li><li><a href="#doc-14-diem-thuong">14 — Điểm thưởng (Reward Points)</a></li></ol>
+<section class="doc" id="doc-01-phan-tich-yeu-cau"><h1 id="01-phan-tich-yeu-cau-ac-ta-nghiep-vu">01 — Phân tích yêu cầu &amp; đặc tả nghiệp vụ</h1>
+<p>Tên sản phẩm (tạm): <strong>EduViet</strong> — nền tảng bán và học khóa học trực tuyến.</p>
+<h2 id="1-muc-tieu">1. Mục tiêu</h2>
+<table>
+<thead>
+<tr>
+<th>Mục tiêu</th>
+<th>Thước đo</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Học viên tìm, mua và học khóa học trên mọi thiết bị</td>
+<td>Mua được khóa học trong ≤ 3 bước từ trang chi tiết</td>
+</tr>
+<tr>
+<td>Giảng viên tự xuất bản khóa học, có Admin kiểm duyệt</td>
+<td>Quy trình Draft → Pending → Published/Rejected</td>
+</tr>
+<tr>
+<td>Thanh toán an toàn, đối soát được</td>
+<td>Quyền học chỉ cấp khi Backend xác thực chữ ký IPN</td>
+</tr>
+<tr>
+<td>Chứng chỉ có thể xác minh công khai</td>
+<td>Mỗi chứng chỉ có mã duy nhất, trang <code>/xac-minh/{code}</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="2-tac-nhan-actors">2. Tác nhân (Actors)</h2>
+<table>
+<thead>
+<tr>
+<th>Vai trò</th>
+<th>Mô tả</th>
+<th>Quyền chính</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Guest</strong></td>
+<td>Khách chưa đăng nhập</td>
+<td>Xem trang chủ, tìm kiếm, xem chi tiết khóa học, xem bài học preview, xác minh chứng chỉ, đăng ký, đăng nhập</td>
+</tr>
+<tr>
+<td><strong>Student</strong></td>
+<td>Học viên đã đăng ký</td>
+<td>Giỏ hàng, đặt hàng, thanh toán, học, làm bài kiểm tra, nhận chứng chỉ, đánh giá khóa học đã mua</td>
+</tr>
+<tr>
+<td><strong>Instructor</strong></td>
+<td>Giảng viên (Admin cấp quyền hoặc duyệt đơn đăng ký giảng viên)</td>
+<td>CRUD khóa học của mình, chương/bài học, tài liệu, quiz, xem học viên/doanh thu, trả lời đánh giá</td>
+</tr>
+<tr>
+<td><strong>Admin</strong></td>
+<td>Quản trị hệ thống</td>
+<td>Toàn quyền: người dùng, danh mục, duyệt khóa học, đơn hàng, giao dịch, mã giảm giá, chứng chỉ, báo cáo</td>
+</tr>
+</tbody>
+</table>
+<p>Một tài khoản có thể có nhiều vai trò (ví dụ Instructor cũng là Student). Tài khoản mới đăng ký luôn mang vai trò <code>Student</code>.</p>
+<h2 id="3-danh-sach-chuc-nang-functional-requirements">3. Danh sách chức năng (Functional Requirements)</h2>
+<p>Mã chức năng dùng xuyên suốt tài liệu, API và kiểm thử.</p>
+<h3 id="31-trang-chu-kham-pha-fr-home">3.1 Trang chủ &amp; khám phá (FR-HOME)</h3>
+<ul>
+<li>FR-HOME-01 Banner giới thiệu, ô tìm kiếm.</li>
+<li>FR-HOME-02 Khóa học nổi bật (<code>IsFeatured</code>), mới nhất (<code>PublishedAt</code> desc), bán chạy (<code>EnrollmentCount</code> desc).</li>
+<li>FR-HOME-03 Danh mục khóa học (cây 2 cấp).</li>
+<li>FR-HOME-04 Giảng viên nổi bật (theo tổng học viên + điểm đánh giá).</li>
+<li>FR-HOME-05 Đánh giá tiêu biểu của học viên (rating ≥ 4, có nội dung).</li>
+<li>FR-HOME-06 Tìm kiếm + lọc: từ khóa, danh mục, cấp độ, khoảng giá, rating; sắp xếp; phân trang.</li>
+</ul>
+<h3 id="32-tai-khoan-fr-auth">3.2 Tài khoản (FR-AUTH)</h3>
+<ul>
+<li>FR-AUTH-01 Đăng ký (họ tên, email, mật khẩu) → vai trò Student, gửi email xác nhận.</li>
+<li>FR-AUTH-02 Đăng nhập trả về Access Token (JWT, 15 phút) + Refresh Token (7 ngày, HttpOnly cookie).</li>
+<li>FR-AUTH-03 Refresh token xoay vòng (rotation); phát hiện token cũ bị dùng lại → thu hồi toàn chuỗi.</li>
+<li>FR-AUTH-04 Đăng xuất = thu hồi refresh token.</li>
+<li>FR-AUTH-05 Quên mật khẩu → email chứa link đặt lại (token Identity, hết hạn 1 giờ).</li>
+<li>FR-AUTH-06 Cập nhật hồ sơ, ảnh đại diện; đổi mật khẩu (thu hồi mọi refresh token khác).</li>
+<li>FR-AUTH-07 Admin gán/bỏ vai trò, khóa/mở khóa tài khoản.</li>
+</ul>
+<h3 id="33-khoa-hoc-fr-course">3.3 Khóa học (FR-COURSE)</h3>
+<ul>
+<li>FR-COURSE-01 Instructor tạo/sửa/xóa mềm khóa học của mình (chỉ khi Draft hoặc Rejected được sửa nội dung chính).</li>
+<li>FR-COURSE-02 Ảnh đại diện, video giới thiệu (Cloudinary).</li>
+<li>FR-COURSE-03 Thuộc tính: danh mục, giá, giá khuyến mãi, cấp độ (Beginner/Intermediate/Advanced), mô tả, yêu cầu, kết quả đạt được.</li>
+<li>FR-COURSE-04 Chương (Section) và bài học (Lesson) có thứ tự, kéo thả sắp xếp.</li>
+<li>FR-COURSE-05 Bài học: video, bài viết; tài liệu đính kèm (PDF, ZIP…); cờ <code>IsPreview</code>, <code>IsRequired</code>.</li>
+<li>FR-COURSE-06 Trạng thái: <code>Draft → Pending</code> (gửi duyệt) → <code>Published</code> | <code>Rejected</code> (kèm lý do) → có thể sửa và gửi lại. Admin có thể <code>Unpublish</code> về <code>Draft</code>.</li>
+<li>FR-COURSE-07 Admin CRUD danh mục.</li>
+</ul>
+<h3 id="34-mua-khoa-hoc-fr-order">3.4 Mua khóa học (FR-ORDER)</h3>
+<ul>
+<li>FR-ORDER-01 Xem chi tiết khóa học (đề cương, giảng viên, đánh giá).</li>
+<li>FR-ORDER-02 Giỏ hàng (thêm/xóa). Không thêm khóa đã sở hữu hoặc khóa của chính mình.</li>
+<li>FR-ORDER-03 Tạo đơn hàng từ giỏ hoặc "Mua ngay". <strong>Giá lấy từ DB</strong>, Frontend chỉ gửi danh sách <code>courseId</code> + mã giảm giá.</li>
+<li>FR-ORDER-04 Áp mã giảm giá (kiểm tra hiệu lực, giới hạn lượt, giá trị tối thiểu, phạm vi khóa học).</li>
+<li>FR-ORDER-05 Thanh toán VNPay Sandbox (chính) / MoMo Sandbox (phụ).</li>
+<li>FR-ORDER-06 Nhận IPN từ cổng → xác thực chữ ký + số tiền + trạng thái → idempotent → đơn <code>Paid</code> → tạo Enrollment.</li>
+<li>FR-ORDER-07 Trang Return chỉ <strong>hiển thị</strong> kết quả bằng cách hỏi Backend trạng thái đơn, không cấp quyền.</li>
+<li>FR-ORDER-08 Đơn tổng 0đ (mã giảm 100%) hoàn tất không qua cổng.</li>
+<li>FR-ORDER-09 Đơn <code>Pending</code> quá 30 phút tự hết hạn (<code>Expired</code>). Lượt mã giảm giá chỉ bị trừ khi đơn <code>Paid</code>, nên đơn hết hạn/hủy không tốn lượt.</li>
+</ul>
+<h3 id="35-hoc-truc-tuyen-fr-learn">3.5 Học trực tuyến (FR-LEARN)</h3>
+<ul>
+<li>FR-LEARN-01 Trình học: danh sách chương/bài bên cạnh, video, nội dung, tài liệu.</li>
+<li>FR-LEARN-02 Link video/tài liệu trả phí là <strong>signed URL</strong> có hạn, chỉ cấp khi có Enrollment.</li>
+<li>FR-LEARN-03 Đánh dấu hoàn thành; lưu vị trí xem video (<code>LastPositionSeconds</code>).</li>
+<li>FR-LEARN-04 "Tiếp tục học" → bài gần nhất (<code>Enrollment.LastLessonId</code>).</li>
+<li>FR-LEARN-05 % hoàn thành = bài bắt buộc đã xong / tổng bài bắt buộc.</li>
+</ul>
+<h3 id="36-kiem-tra-fr-quiz">3.6 Kiểm tra (FR-QUIZ)</h3>
+<ul>
+<li>FR-QUIZ-01 Instructor tạo quiz gắn với khóa học (tùy chọn gắn chương), đánh dấu bài thi cuối khóa.</li>
+<li>FR-QUIZ-02 Câu hỏi một đáp án / nhiều đáp án / đúng-sai, điểm từng câu.</li>
+<li>FR-QUIZ-03 Điểm đạt (%), số lần làm tối đa, thời gian giới hạn.</li>
+<li>FR-QUIZ-04 Backend chấm điểm; không gửi <code>IsCorrect</code> xuống client trước khi nộp.</li>
+<li>FR-QUIZ-05 Lưu lịch sử từng lần làm.</li>
+</ul>
+<h3 id="37-chung-chi-fr-cert">3.7 Chứng chỉ (FR-CERT)</h3>
+<ul>
+<li>FR-CERT-01 Điều kiện: 100% bài bắt buộc + đạt mọi quiz <code>IsRequired</code>.</li>
+<li>FR-CERT-02 Tự cấp khi điều kiện thỏa (sau khi hoàn thành bài/nộp quiz); idempotent (1 chứng chỉ / học viên / khóa).</li>
+<li>FR-CERT-03 Mã định danh dạng <code>EDV-2026-7F3K9QX2</code> (unique), PDF sinh bằng QuestPDF có QR tới trang xác minh.</li>
+<li>FR-CERT-04 Trang xác minh công khai; Admin có thể thu hồi.</li>
+</ul>
+<h3 id="38-dashboard">3.8 Dashboard</h3>
+<ul>
+<li>Học viên: khóa đã mua, đang học, tiến độ, lịch sử thanh toán, kết quả kiểm tra, chứng chỉ, hồ sơ.</li>
+<li>Giảng viên: khóa học, nội dung, học viên, biểu đồ đăng ký &amp; doanh thu theo tháng, đánh giá.</li>
+<li>Admin: tổng quan (doanh thu, học viên mới, khóa chờ duyệt), quản lý người dùng/khóa/danh mục/đơn/giao dịch/mã giảm giá/chứng chỉ, báo cáo.</li>
+</ul>
+<h2 id="4-quy-tac-nghiep-vu-business-rules">4. Quy tắc nghiệp vụ (Business Rules)</h2>
+<table>
+<thead>
+<tr>
+<th>Mã</th>
+<th>Quy tắc</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>BR-01</td>
+<td>Giá bán thực = <code>DiscountPrice</code> nếu có và &lt; <code>Price</code>, ngược lại <code>Price</code>. Tiền tệ VND, làm tròn đến đồng.</td>
+</tr>
+<tr>
+<td>BR-02</td>
+<td>Không tạo đơn chứa khóa đã sở hữu, khóa chưa Published, hoặc khóa của chính người mua.</td>
+</tr>
+<tr>
+<td>BR-03</td>
+<td>Mỗi học viên chỉ có 1 Enrollment / khóa (unique index).</td>
+</tr>
+<tr>
+<td>BR-04</td>
+<td>Giá trong <code>OrderItems</code> là ảnh chụp tại thời điểm đặt (không đổi khi giảng viên đổi giá).</td>
+</tr>
+<tr>
+<td>BR-05</td>
+<td>Coupon: <code>Percentage</code> (0–100, có trần <code>MaxDiscountAmount</code>) hoặc <code>FixedAmount</code>; giảm không vượt tổng đơn.</td>
+</tr>
+<tr>
+<td>BR-06</td>
+<td>Một giao dịch cổng (<code>Provider</code> + <code>ProviderTransactionId</code>) chỉ được xử lý một lần.</td>
+</tr>
+<tr>
+<td>BR-07</td>
+<td>IPN hợp lệ khi: chữ ký đúng, <code>Amount</code> = <code>Order.TotalAmount</code>, đơn tồn tại và đang <code>Pending</code>.</td>
+</tr>
+<tr>
+<td>BR-08</td>
+<td>Chỉ khóa <code>Published</code> hiển thị công khai; khóa bị gỡ vẫn cho học viên đã mua tiếp tục học.</td>
+</tr>
+<tr>
+<td>BR-09</td>
+<td>Đánh giá: chỉ học viên có Enrollment, 1 đánh giá / khóa, rating 1–5.</td>
+</tr>
+<tr>
+<td>BR-10</td>
+<td>Quiz: lần làm thứ n bị từ chối nếu n &gt; <code>MaxAttempts</code>; điểm tính theo điểm cao nhất.</td>
+</tr>
+<tr>
+<td>BR-11</td>
+<td>Xóa khóa học là xóa mềm (<code>IsDeleted</code>) nếu đã có Enrollment.</td>
+</tr>
+<tr>
+<td>BR-12</td>
+<td>Doanh thu giảng viên = tổng <code>OrderItems.FinalPrice</code> của khóa thuộc giảng viên, đơn <code>Paid</code>.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="5-yeu-cau-phi-chuc-nang">5. Yêu cầu phi chức năng</h2>
+<ul>
+<li><strong>Bảo mật</strong>: Identity (PBKDF2), JWT ký HMAC-SHA256 khóa ≥ 256 bit lấy từ biến môi trường/User Secrets, refresh token lưu <strong>hash SHA-256</strong>, rate limit đăng nhập &amp; IPN, CORS giới hạn origin, HTTPS, header bảo mật, EF Core tham số hóa (chống SQL Injection), React tự escape + sanitize HTML bài viết bằng DOMPurify (chống XSS), FluentValidation cho mọi input.</li>
+<li><strong>Hiệu năng</strong>: API danh sách có phân trang; index trên cột lọc/sắp xếp; <code>AsNoTracking</code> cho truy vấn đọc.</li>
+<li><strong>Khả dụng</strong>: Responsive 360px → 1920px; giao diện tiếng Việt; trạng thái loading/empty/error.</li>
+<li><strong>Khả năng bảo trì</strong>: Clean Architecture, DI, logging Serilog, Swagger.</li>
+</ul>
+<h2 id="6-use-case-diagram">6. Use Case Diagram</h2>
+<pre><code class="language-mermaid">flowchart LR
+  Guest([Guest])
+  Student([Student])
+  Instructor([Instructor])
+  Admin([Admin])
+  VNPay[[VNPay / MoMo]]
+
+  subgraph System[EduViet]
+    UC1(Xem &amp; tìm kiếm khóa học)
+    UC2(Đăng ký / Đăng nhập)
+    UC3(Xác minh chứng chỉ)
+    UC4(Quản lý giỏ hàng)
+    UC5(Đặt hàng &amp; áp mã giảm giá)
+    UC6(Thanh toán)
+    UC7(Học bài &amp; lưu tiến độ)
+    UC8(Làm bài kiểm tra)
+    UC9(Nhận &amp; tải chứng chỉ)
+    UC10(Đánh giá khóa học)
+    UC11(Quản lý khóa học / chương / bài)
+    UC12(Tạo quiz &amp; câu hỏi)
+    UC13(Xem học viên &amp; doanh thu)
+    UC14(Duyệt khóa học)
+    UC15(Quản lý người dùng &amp; vai trò)
+    UC16(Quản lý danh mục, mã giảm giá)
+    UC17(Quản lý đơn hàng &amp; giao dịch)
+    UC18(Báo cáo thống kê)
+  end
+
+  Guest --&gt; UC1 &amp; UC2 &amp; UC3
+  Student --&gt; UC1 &amp; UC4 &amp; UC5 &amp; UC7 &amp; UC8 &amp; UC9 &amp; UC10
+  UC5 -. include .-&gt; UC6
+  UC6 --- VNPay
+  Instructor --&gt; UC11 &amp; UC12 &amp; UC13
+  Admin --&gt; UC14 &amp; UC15 &amp; UC16 &amp; UC17 &amp; UC18
+  Student -. kế thừa .-&gt; Guest
+</code></pre>
+<h2 id="7-luong-nghiep-vu-quan-trong">7. Luồng nghiệp vụ quan trọng</h2>
+<h3 id="71-thanh-toan-vnpay-cap-quyen-chi-qua-ipn">7.1 Thanh toán VNPay (cấp quyền chỉ qua IPN)</h3>
+<pre><code class="language-mermaid">sequenceDiagram
+  participant FE as React
+  participant API as ASP.NET Core API
+  participant DB as SQL Server
+  participant VN as VNPay Sandbox
+
+  FE-&gt;&gt;API: POST /api/orders {courseIds, couponCode}
+  API-&gt;&gt;DB: Lấy giá từ Courses, kiểm tra sở hữu, coupon
+  API-&gt;&gt;DB: Tạo Order(Pending) + OrderItems + Payment(Pending, TxnRef)
+  API--&gt;&gt;FE: {orderId}
+  FE-&gt;&gt;API: POST /api/payments/vnpay/{orderId}
+  API--&gt;&gt;FE: paymentUrl (ký HMAC-SHA512)
+  FE-&gt;&gt;VN: Redirect người dùng
+  VN-&gt;&gt;API: GET /api/payments/vnpay/ipn (server-to-server)
+  API-&gt;&gt;API: Kiểm tra chữ ký, số tiền, trạng thái, idempotency
+  API-&gt;&gt;DB: Transaction: Payment=Success, Order=Paid, tạo Enrollments, tăng Coupon.UsedCount
+  API--&gt;&gt;VN: {RspCode:&quot;00&quot;}
+  VN--&gt;&gt;FE: Redirect /thanh-toan/ket-qua?...
+  FE-&gt;&gt;API: GET /api/orders/{id} (chỉ đọc trạng thái)
+  API--&gt;&gt;FE: Paid → hiển thị &quot;Vào học&quot;
+</code></pre>
+<h3 id="72-vong-oi-khoa-hoc">7.2 Vòng đời khóa học</h3>
+<pre><code class="language-mermaid">stateDiagram-v2
+  [*] --&gt; Draft
+  Draft --&gt; Pending: Giảng viên gửi duyệt
+  Pending --&gt; Published: Admin duyệt
+  Pending --&gt; Rejected: Admin từ chối (lý do)
+  Rejected --&gt; Pending: Sửa &amp; gửi lại
+  Published --&gt; Draft: Admin gỡ / GV ẩn
+</code></pre>
+<h3 id="73-cap-chung-chi">7.3 Cấp chứng chỉ</h3>
+<pre><code class="language-mermaid">flowchart TD
+  A[Hoàn thành bài học / Nộp quiz] --&gt; B{100% bài bắt buộc?}
+  B -- Không --&gt; Z[Cập nhật tiến độ]
+  B -- Có --&gt; C{Đạt mọi quiz bắt buộc?}
+  C -- Không --&gt; Z
+  C -- Có --&gt; D{Đã có chứng chỉ?}
+  D -- Có --&gt; Z
+  D -- Chưa --&gt; E[Tạo Certificate + mã duy nhất]
+  E --&gt; F[Sinh PDF QuestPDF → Cloudinary]
+  F --&gt; G[Notification cho học viên]
+</code></pre></section><section class="doc" id="doc-02-kien-truc"><h1 id="02-kien-truc-he-thong">02 — Kiến trúc hệ thống</h1>
+<h2 id="1-tong-quan">1. Tổng quan</h2>
+<pre><code class="language-mermaid">flowchart LR
+  subgraph Client
+    B[Trình duyệt&lt;br/&gt;React + TS + Vite]
+  end
+  subgraph Server[ASP.NET Core 10 Web API]
+    API[OnlineLearning.API&lt;br/&gt;Controllers, Middleware, Auth]
+    APP[OnlineLearning.Application&lt;br/&gt;Services, DTO, Validators, Interfaces]
+    DOM[OnlineLearning.Domain&lt;br/&gt;Entities, Enums, Rules]
+    INF[OnlineLearning.Infrastructure&lt;br/&gt;EF Core, Identity, VNPay, MoMo,&lt;br/&gt;Cloudinary, QuestPDF, Email]
+  end
+  DB[(SQL Server)]
+  CLD[(Cloudinary)]
+  PAY[[VNPay / MoMo Sandbox]]
+  SMTP[[SMTP]]
+
+  B -- HTTPS JSON + JWT --&gt; API
+  API --&gt; APP --&gt; DOM
+  API --&gt; INF
+  INF --&gt; APP
+  INF --&gt; DB
+  INF --&gt; CLD
+  INF &lt;--&gt; PAY
+  INF --&gt; SMTP
+</code></pre>
+<h2 id="2-clean-architecture-quy-tac-phu-thuoc">2. Clean Architecture — quy tắc phụ thuộc</h2>
+<table>
+<thead>
+<tr>
+<th>Project</th>
+<th>Phụ thuộc</th>
+<th>Chứa</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>OnlineLearning.Domain</code></td>
+<td>(không, trừ <code>Microsoft.Extensions.Identity.Stores</code> cho <code>IdentityUser&lt;Guid&gt;</code>)</td>
+<td>Entity, Enum, hằng số vai trò, quy tắc thuần</td>
+</tr>
+<tr>
+<td><code>OnlineLearning.Application</code></td>
+<td>Domain</td>
+<td>Interface (<code>IAppDbContext</code>, <code>IPaymentGateway</code>, <code>IFileStorage</code>, <code>ICertificateGenerator</code>, <code>IEmailSender</code>, <code>ICurrentUser</code>), DTO, service nghiệp vụ, FluentValidation, <code>Result&lt;T&gt;</code></td>
+</tr>
+<tr>
+<td><code>OnlineLearning.Infrastructure</code></td>
+<td>Application, Domain</td>
+<td><code>AppDbContext</code>, cấu hình Fluent API, Migrations, seed, Identity, JWT, VNPay/MoMo, Cloudinary, QuestPDF, SMTP</td>
+</tr>
+<tr>
+<td><code>OnlineLearning.API</code></td>
+<td>Application, Infrastructure</td>
+<td>Controllers, middleware lỗi, CORS, rate limiting, Swagger, <code>Program.cs</code></td>
+</tr>
+</tbody>
+</table>
+<p>Lõi nghiệp vụ (Domain + Application) không biết đến SQL Server, VNPay hay Cloudinary → đổi nhà cung cấp chỉ sửa Infrastructure.</p>
+<h2 id="3-cau-truc-thu-muc">3. Cấu trúc thư mục</h2>
+<pre><code>(thư mục gốc repository)
+├── setup/database/schema.sql     Script SQL Server tham chiếu (tương đương migration)
+├── thesis/html/                  Tài liệu phân tích, thiết kế, hướng dẫn (các tệp 01–14 này)
+├── docker/                       docker-compose.yml, .env.example
+└── src/
+    ├── backend/
+    │   ├── OnlineLearning.sln
+    │   └── src/
+    │       ├── OnlineLearning.Domain/
+    │       │   ├── Common/           BaseEntity, AuditableEntity
+    │       │   ├── Constants/        Roles
+    │       │   ├── Entities/         23 entity
+    │       │   └── Enums/
+    │       ├── OnlineLearning.Application/
+    │       │   ├── Common/           Result, PagedResult, interfaces
+    │       │   ├── Features/         Auth, Courses, Orders, Learning, Quizzes, Certificates, Admin…
+    │       │   └── DependencyInjection.cs
+    │       ├── OnlineLearning.Infrastructure/
+    │       │   ├── Persistence/      AppDbContext, Configurations/, Migrations/, Seed/
+    │       │   ├── Identity/         JwtTokenService
+    │       │   ├── Payments/         VnPayGateway, MoMoGateway
+    │       │   ├── Storage/          CloudinaryStorage
+    │       │   ├── Certificates/     QuestPdfCertificateGenerator
+    │       │   └── DependencyInjection.cs
+    │       └── OnlineLearning.API/
+    │           ├── Controllers/
+    │           ├── Middleware/
+    │           ├── Program.cs
+    │           └── appsettings.json
+    └── frontend/
+        └── online-learning-client/
+            └── src/
+                ├── assets/  components/  contexts/  hooks/
+                ├── layouts/ pages/       services/  types/
+                └── main.tsx, App.tsx, index.css
+</code></pre>
+<h2 id="4-bao-mat-quyet-inh-kien-truc">4. Bảo mật — quyết định kiến trúc</h2>
+<table>
+<thead>
+<tr>
+<th>Mối nguy</th>
+<th>Giải pháp</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Lộ mật khẩu</td>
+<td>ASP.NET Core Identity (PBKDF2 + salt), khóa tài khoản sau 5 lần sai</td>
+</tr>
+<tr>
+<td>Đánh cắp token</td>
+<td>Access token 15 phút trong bộ nhớ (không localStorage); refresh token HttpOnly + Secure + SameSite=Strict cookie, lưu <strong>hash</strong> trong DB, rotation + phát hiện tái sử dụng</td>
+</tr>
+<tr>
+<td>Leo thang quyền</td>
+<td><code>[Authorize(Roles=…)]</code> + kiểm tra sở hữu tài nguyên trong service (Instructor chỉ sửa khóa của mình)</td>
+</tr>
+<tr>
+<td>Sửa giá phía client</td>
+<td>Backend tính lại giá từ DB; request chỉ chứa <code>courseIds</code></td>
+</tr>
+<tr>
+<td>Giả mạo callback</td>
+<td>Xác thực HMAC-SHA512 (VNPay) / HMAC-SHA256 (MoMo), so khớp số tiền, chỉ IPN mới cấp quyền</td>
+</tr>
+<tr>
+<td>Callback lặp</td>
+<td>Unique index <code>(Provider, ProviderTransactionId)</code> + kiểm tra trạng thái trong transaction <code>Serializable</code>/rowversion</td>
+</tr>
+<tr>
+<td>Truy cập video trả phí</td>
+<td>Cloudinary <code>type=authenticated</code>, API cấp signed URL hết hạn sau 1 giờ khi có Enrollment</td>
+</tr>
+<tr>
+<td>SQL Injection</td>
+<td>Chỉ dùng EF Core LINQ (tham số hóa)</td>
+</tr>
+<tr>
+<td>XSS</td>
+<td>React escape mặc định; HTML bài viết lọc bằng DOMPurify; header CSP</td>
+</tr>
+<tr>
+<td>Lộ bí mật</td>
+<td><code>appsettings.json</code> không chứa khóa thật; dùng User Secrets (dev) và biến môi trường (prod)</td>
+</tr>
+<tr>
+<td>Brute force</td>
+<td><code>AddRateLimiter</code> cho <code>/auth/*</code> và <code>/payments/*</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="5-quy-uoc-api">5. Quy ước API</h2>
+<ul>
+<li>Tiền tố <code>/api</code>, REST, JSON camelCase, phiên bản qua route khi cần (<code>/api/v1</code>).</li>
+<li>Phản hồi lỗi chuẩn <code>ProblemDetails</code> (RFC 7807) + danh sách lỗi validation.</li>
+<li>Phân trang: <code>?page=1&amp;pageSize=12</code> → <code>{ items, page, pageSize, totalCount, totalPages }</code>.</li>
+<li>Thời gian lưu UTC (<code>datetime2</code>), Frontend hiển thị múi giờ <code>Asia/Ho_Chi_Minh</code>.</li>
+</ul>
+<h2 id="6-frontend">6. Frontend</h2>
+<table>
+<thead>
+<tr>
+<th>Thư mục</th>
+<th>Vai trò</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>services/</code></td>
+<td>Axios instance + interceptor tự refresh token, mỗi module 1 file (<code>courseService.ts</code>…)</td>
+</tr>
+<tr>
+<td><code>contexts/</code></td>
+<td><code>AuthContext</code> (user, roles, accessToken), <code>CartContext</code></td>
+</tr>
+<tr>
+<td><code>hooks/</code></td>
+<td><code>useAuth</code>, <code>useDebounce</code>, <code>usePagination</code>…</td>
+</tr>
+<tr>
+<td><code>layouts/</code></td>
+<td><code>MainLayout</code>, <code>LearningLayout</code>, <code>DashboardLayout</code> (Student/Instructor/Admin)</td>
+</tr>
+<tr>
+<td><code>pages/</code></td>
+<td>Theo route, tiếng Việt slug: <code>/khoa-hoc/:slug</code>, <code>/gio-hang</code>, <code>/hoc/:courseId/:lessonId</code>…</td>
+</tr>
+<tr>
+<td><code>components/</code></td>
+<td>UI dùng chung: <code>CourseCard</code>, <code>Button</code>, <code>EmptyState</code>, <code>Skeleton</code>, <code>ProtectedRoute</code></td>
+</tr>
+<tr>
+<td><code>types/</code></td>
+<td>Kiểu TS khớp DTO Backend</td>
+</tr>
+</tbody>
+</table>
+<p>Biểu đồ dashboard: Recharts. Thông báo: Sonner. HTML sanitize: DOMPurify.</p></section><section class="doc" id="doc-03-thiet-ke-database"><h1 id="03-thiet-ke-co-so-du-lieu-sql-server">03 — Thiết kế cơ sở dữ liệu (SQL Server)</h1>
+<ul>
+<li>Code First bằng EF Core; script tham chiếu tương đương ở <a href="../../setup/database/schema.sql"><code>setup/database/schema.sql</code></a>.</li>
+<li>Khóa chính <code>uniqueidentifier</code> (<code>NEWSEQUENTIALID()</code>) — không đoán được ID, không phân mảnh index.</li>
+<li>Tiền: <code>decimal(18,2)</code> (VND). Thời gian: <code>datetime2</code> UTC.</li>
+<li>Enum lưu dạng <code>nvarchar</code> (dễ đọc khi đối soát, không vỡ khi đổi thứ tự enum).</li>
+<li>Bảng Identity: <code>Users</code>, <code>Roles</code>, <code>UserRoles</code>, <code>UserClaims</code>, <code>UserLogins</code>, <code>UserTokens</code>, <code>RoleClaims</code> (đổi tên từ <code>AspNet*</code>).</li>
+<li>Xóa: cascade <strong>chỉ trong cùng aggregate</strong> (Course→Section→Lesson→Resource, Order→Item, Quiz→Question→Option…), còn lại <code>NO ACTION</code> để tránh multiple cascade paths của SQL Server.</li>
+</ul>
+<h2 id="1-erd">1. ERD</h2>
+<pre><code class="language-mermaid">erDiagram
+  Users ||--o{ UserRoles : has
+  Roles ||--o{ UserRoles : has
+  Users ||--o{ RefreshTokens : owns
+  Categories ||--o{ Categories : parent
+  Categories ||--o{ Courses : groups
+  Users ||--o{ Courses : teaches
+  Courses ||--o{ CourseSections : contains
+  CourseSections ||--o{ Lessons : contains
+  Lessons ||--o{ LessonResources : attaches
+  Users ||--o{ Enrollments : enrolls
+  Courses ||--o{ Enrollments : has
+  Enrollments ||--o{ LessonProgress : tracks
+  Lessons ||--o{ LessonProgress : tracked
+  Users ||--|| Carts : owns
+  Carts ||--o{ CartItems : contains
+  Courses ||--o{ CartItems : in
+  Users ||--o{ Orders : places
+  Coupons ||--o{ Orders : applied
+  Orders ||--o{ OrderItems : contains
+  Courses ||--o{ OrderItems : sold
+  Orders ||--o{ Payments : paid_by
+  Orders ||--o{ Enrollments : grants
+  Courses ||--o{ Quizzes : has
+  CourseSections ||--o{ Quizzes : optional
+  Quizzes ||--o{ Questions : contains
+  Questions ||--o{ AnswerOptions : offers
+  Quizzes ||--o{ QuizAttempts : attempted
+  Users ||--o{ QuizAttempts : makes
+  QuizAttempts ||--o{ QuizAnswers : records
+  Questions ||--o{ QuizAnswers : answered
+  AnswerOptions ||--o{ QuizAnswers : chosen
+  Enrollments ||--o| Certificates : earns
+  Courses ||--o{ Reviews : receives
+  Users ||--o{ Reviews : writes
+  Users ||--o{ Notifications : receives
+</code></pre>
+<h2 id="2-tu-ien-du-lieu">2. Từ điển dữ liệu</h2>
+<p>Ký hiệu: <strong>PK</strong> khóa chính, <strong>FK</strong> khóa ngoại, <strong>UQ</strong> unique, <strong>IX</strong> index, <strong>CK</strong> check.</p>
+<h3 id="users-aspnet-identity-mo-rong">Users (ASP.NET Identity + mở rộng)</h3>
+<table>
+<thead>
+<tr>
+<th>Cột</th>
+<th>Kiểu</th>
+<th>Ràng buộc</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Id</td>
+<td>uniqueidentifier</td>
+<td>PK</td>
+</tr>
+<tr>
+<td>UserName, NormalizedUserName</td>
+<td>nvarchar(256)</td>
+<td>UQ NormalizedUserName</td>
+</tr>
+<tr>
+<td>Email, NormalizedEmail</td>
+<td>nvarchar(256)</td>
+<td>IX NormalizedEmail</td>
+</tr>
+<tr>
+<td>PasswordHash, SecurityStamp, ConcurrencyStamp, PhoneNumber…</td>
+<td>(Identity)</td>
+<td></td>
+</tr>
+<tr>
+<td>FullName</td>
+<td>nvarchar(150)</td>
+<td>NOT NULL</td>
+</tr>
+<tr>
+<td>AvatarUrl</td>
+<td>nvarchar(500)</td>
+<td></td>
+</tr>
+<tr>
+<td>Headline</td>
+<td>nvarchar(200)</td>
+<td>Chức danh giảng viên</td>
+</tr>
+<tr>
+<td>Bio</td>
+<td>nvarchar(max)</td>
+<td></td>
+</tr>
+<tr>
+<td>IsActive</td>
+<td>bit</td>
+<td>DEFAULT 1</td>
+</tr>
+<tr>
+<td>CreatedAt, UpdatedAt</td>
+<td>datetime2</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h3 id="roles-userroles">Roles / UserRoles</h3>
+<p><code>Roles(Id PK, Name, NormalizedName UQ, Description)</code>; <code>UserRoles(UserId FK, RoleId FK, PK(UserId, RoleId))</code>. Dữ liệu: <code>Admin</code>, <code>Instructor</code>, <code>Student</code>.</p>
+<h3 id="refreshtokens">RefreshTokens</h3>
+<table>
+<thead>
+<tr>
+<th>Cột</th>
+<th>Kiểu</th>
+<th>Ràng buộc</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Id</td>
+<td>uniqueidentifier</td>
+<td>PK</td>
+</tr>
+<tr>
+<td>UserId</td>
+<td>uniqueidentifier</td>
+<td>FK → Users (CASCADE), IX</td>
+</tr>
+<tr>
+<td>TokenHash</td>
+<td>nvarchar(128)</td>
+<td>UQ — SHA-256 của token, không lưu token gốc</td>
+</tr>
+<tr>
+<td>ExpiresAt, CreatedAt, RevokedAt</td>
+<td>datetime2</td>
+<td></td>
+</tr>
+<tr>
+<td>CreatedByIp, RevokedByIp</td>
+<td>nvarchar(64)</td>
+<td></td>
+</tr>
+<tr>
+<td>ReplacedByTokenHash</td>
+<td>nvarchar(128)</td>
+<td>Chuỗi rotation</td>
+</tr>
+</tbody>
+</table>
+<h3 id="categories">Categories</h3>
+<table>
+<thead>
+<tr>
+<th>Cột</th>
+<th>Kiểu</th>
+<th>Ràng buộc</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Id</td>
+<td>uniqueidentifier</td>
+<td>PK</td>
+</tr>
+<tr>
+<td>ParentId</td>
+<td>uniqueidentifier</td>
+<td>FK → Categories (NO ACTION)</td>
+</tr>
+<tr>
+<td>Name</td>
+<td>nvarchar(100)</td>
+<td>NOT NULL</td>
+</tr>
+<tr>
+<td>Slug</td>
+<td>nvarchar(120)</td>
+<td>UQ</td>
+</tr>
+<tr>
+<td>Description</td>
+<td>nvarchar(500)</td>
+<td></td>
+</tr>
+<tr>
+<td>IconUrl</td>
+<td>nvarchar(500)</td>
+<td></td>
+</tr>
+<tr>
+<td>DisplayOrder</td>
+<td>int</td>
+<td>DEFAULT 0</td>
+</tr>
+<tr>
+<td>IsActive</td>
+<td>bit</td>
+<td>DEFAULT 1</td>
+</tr>
+</tbody>
+</table>
+<h3 id="courses">Courses</h3>
+<table>
+<thead>
+<tr>
+<th>Cột</th>
+<th>Kiểu</th>
+<th>Ràng buộc</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Id</td>
+<td>uniqueidentifier</td>
+<td>PK</td>
+</tr>
+<tr>
+<td>InstructorId</td>
+<td>uniqueidentifier</td>
+<td>FK → Users, IX</td>
+</tr>
+<tr>
+<td>CategoryId</td>
+<td>uniqueidentifier</td>
+<td>FK → Categories, IX</td>
+</tr>
+<tr>
+<td>Title</td>
+<td>nvarchar(200)</td>
+<td>NOT NULL</td>
+</tr>
+<tr>
+<td>Slug</td>
+<td>nvarchar(220)</td>
+<td>UQ</td>
+</tr>
+<tr>
+<td>ShortDescription</td>
+<td>nvarchar(500)</td>
+<td></td>
+</tr>
+<tr>
+<td>Description</td>
+<td>nvarchar(max)</td>
+<td>HTML đã sanitize</td>
+</tr>
+<tr>
+<td>Requirements, Outcomes</td>
+<td>nvarchar(max)</td>
+<td>JSON mảng chuỗi</td>
+</tr>
+<tr>
+<td>ThumbnailUrl, PreviewVideoUrl</td>
+<td>nvarchar(500)</td>
+<td></td>
+</tr>
+<tr>
+<td>Language</td>
+<td>nvarchar(10)</td>
+<td>DEFAULT 'vi'</td>
+</tr>
+<tr>
+<td>Level</td>
+<td>nvarchar(20)</td>
+<td>CK IN (Beginner, Intermediate, Advanced)</td>
+</tr>
+<tr>
+<td>Price</td>
+<td>decimal(18,2)</td>
+<td>CK ≥ 0</td>
+</tr>
+<tr>
+<td>DiscountPrice</td>
+<td>decimal(18,2)</td>
+<td>CK NULL hoặc 0 ≤ x ≤ Price</td>
+</tr>
+<tr>
+<td>Status</td>
+<td>nvarchar(20)</td>
+<td>CK IN (Draft, Pending, Published, Rejected); IX (Status, PublishedAt)</td>
+</tr>
+<tr>
+<td>RejectionReason</td>
+<td>nvarchar(1000)</td>
+<td></td>
+</tr>
+<tr>
+<td>IsFeatured</td>
+<td>bit</td>
+<td></td>
+</tr>
+<tr>
+<td>SubmittedAt, PublishedAt</td>
+<td>datetime2</td>
+<td></td>
+</tr>
+<tr>
+<td>TotalDurationSeconds, TotalLessons</td>
+<td>int</td>
+<td>Denormalized, cập nhật khi sửa bài</td>
+</tr>
+<tr>
+<td>EnrollmentCount, ReviewCount</td>
+<td>int</td>
+<td>Denormalized</td>
+</tr>
+<tr>
+<td>AverageRating</td>
+<td>decimal(3,2)</td>
+<td></td>
+</tr>
+<tr>
+<td>IsDeleted</td>
+<td>bit</td>
+<td>Global query filter</td>
+</tr>
+<tr>
+<td>CreatedAt, UpdatedAt</td>
+<td>datetime2</td>
+<td></td>
+</tr>
+<tr>
+<td>RowVersion</td>
+<td>rowversion</td>
+<td>Optimistic concurrency</td>
+</tr>
+</tbody>
+</table>
+<h3 id="coursesections">CourseSections</h3>
+<p><code>Id PK, CourseId FK→Courses (CASCADE), Title nvarchar(200), Description nvarchar(1000), SortOrder int</code>; IX <code>(CourseId, SortOrder)</code>.</p>
+<h3 id="lessons">Lessons</h3>
+<table>
+<thead>
+<tr>
+<th>Cột</th>
+<th>Kiểu</th>
+<th>Ràng buộc</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Id</td>
+<td>uniqueidentifier</td>
+<td>PK</td>
+</tr>
+<tr>
+<td>SectionId</td>
+<td>uniqueidentifier</td>
+<td>FK → CourseSections (CASCADE)</td>
+</tr>
+<tr>
+<td>Title</td>
+<td>nvarchar(200)</td>
+<td></td>
+</tr>
+<tr>
+<td>Type</td>
+<td>nvarchar(20)</td>
+<td>CK IN (Video, Article)</td>
+</tr>
+<tr>
+<td>Content</td>
+<td>nvarchar(max)</td>
+<td>Bài viết/ghi chú</td>
+</tr>
+<tr>
+<td>VideoUrl</td>
+<td>nvarchar(500)</td>
+<td></td>
+</tr>
+<tr>
+<td>VideoPublicId</td>
+<td>nvarchar(300)</td>
+<td>ID Cloudinary để ký URL</td>
+</tr>
+<tr>
+<td>DurationSeconds</td>
+<td>int</td>
+<td>CK ≥ 0</td>
+</tr>
+<tr>
+<td>SortOrder</td>
+<td>int</td>
+<td>IX (SectionId, SortOrder)</td>
+</tr>
+<tr>
+<td>IsPreview</td>
+<td>bit</td>
+<td>Cho xem miễn phí</td>
+</tr>
+<tr>
+<td>IsRequired</td>
+<td>bit</td>
+<td>DEFAULT 1, tính điều kiện chứng chỉ</td>
+</tr>
+</tbody>
+</table>
+<h3 id="lessonresources">LessonResources</h3>
+<p><code>Id PK, LessonId FK→Lessons (CASCADE), FileName nvarchar(255), FileUrl nvarchar(500), PublicId nvarchar(300), ContentType nvarchar(100), FileSize bigint CK ≥ 0, CreatedAt</code>.</p>
+<h3 id="enrollments">Enrollments</h3>
+<table>
+<thead>
+<tr>
+<th>Cột</th>
+<th>Kiểu</th>
+<th>Ràng buộc</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Id</td>
+<td>uniqueidentifier</td>
+<td>PK</td>
+</tr>
+<tr>
+<td>UserId</td>
+<td>uniqueidentifier</td>
+<td>FK → Users</td>
+</tr>
+<tr>
+<td>CourseId</td>
+<td>uniqueidentifier</td>
+<td>FK → Courses</td>
+</tr>
+<tr>
+<td>OrderId</td>
+<td>uniqueidentifier</td>
+<td>FK → Orders (NULL nếu Admin cấp)</td>
+</tr>
+<tr>
+<td>EnrolledAt</td>
+<td>datetime2</td>
+<td></td>
+</tr>
+<tr>
+<td>ProgressPercent</td>
+<td>decimal(5,2)</td>
+<td>CK 0–100</td>
+</tr>
+<tr>
+<td>LastLessonId</td>
+<td>uniqueidentifier</td>
+<td>FK → Lessons (NO ACTION)</td>
+</tr>
+<tr>
+<td>LastAccessedAt, CompletedAt</td>
+<td>datetime2</td>
+<td></td>
+</tr>
+<tr>
+<td>Status</td>
+<td>nvarchar(20)</td>
+<td>Active, Completed, Revoked</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td><strong>UQ (UserId, CourseId)</strong> — chống mua trùng</td>
+</tr>
+</tbody>
+</table>
+<h3 id="lessonprogress">LessonProgress</h3>
+<p><code>Id PK, EnrollmentId FK→Enrollments (CASCADE), LessonId FK→Lessons (NO ACTION), IsCompleted bit, CompletedAt, LastPositionSeconds int, UpdatedAt</code>; <strong>UQ (EnrollmentId, LessonId)</strong>.</p>
+<h3 id="carts-cartitems">Carts / CartItems</h3>
+<p><code>Carts(Id PK, UserId FK UQ, UpdatedAt)</code>; <code>CartItems(Id PK, CartId FK CASCADE, CourseId FK, AddedAt, UQ(CartId, CourseId))</code>.</p>
+<h3 id="orders">Orders</h3>
+<table>
+<thead>
+<tr>
+<th>Cột</th>
+<th>Kiểu</th>
+<th>Ràng buộc</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Id</td>
+<td>uniqueidentifier</td>
+<td>PK</td>
+</tr>
+<tr>
+<td>OrderCode</td>
+<td>varchar(20)</td>
+<td>UQ — gửi sang cổng làm <code>vnp_TxnRef</code></td>
+</tr>
+<tr>
+<td>UserId</td>
+<td>uniqueidentifier</td>
+<td>FK → Users, IX (UserId, CreatedAt)</td>
+</tr>
+<tr>
+<td>CouponId</td>
+<td>uniqueidentifier</td>
+<td>FK → Coupons</td>
+</tr>
+<tr>
+<td>CouponCode</td>
+<td>nvarchar(50)</td>
+<td>Ảnh chụp</td>
+</tr>
+<tr>
+<td>SubTotal, DiscountAmount, TotalAmount</td>
+<td>decimal(18,2)</td>
+<td>CK ≥ 0, TotalAmount = SubTotal − DiscountAmount</td>
+</tr>
+<tr>
+<td>Status</td>
+<td>nvarchar(20)</td>
+<td>Pending, Paid, Cancelled, Expired, Refunded; IX</td>
+</tr>
+<tr>
+<td>CreatedAt, PaidAt, CancelledAt, ExpiresAt</td>
+<td>datetime2</td>
+<td></td>
+</tr>
+<tr>
+<td>RowVersion</td>
+<td>rowversion</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h3 id="orderitems">OrderItems</h3>
+<p><code>Id PK, OrderId FK CASCADE, CourseId FK, CourseTitle nvarchar(200), InstructorId uniqueidentifier, OriginalPrice, Price, DiscountAllocated, FinalPrice decimal(18,2)</code>; <strong>UQ (OrderId, CourseId)</strong>.</p>
+<h3 id="payments">Payments</h3>
+<table>
+<thead>
+<tr>
+<th>Cột</th>
+<th>Kiểu</th>
+<th>Ràng buộc</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Id</td>
+<td>uniqueidentifier</td>
+<td>PK</td>
+</tr>
+<tr>
+<td>OrderId</td>
+<td>uniqueidentifier</td>
+<td>FK → Orders, IX</td>
+</tr>
+<tr>
+<td>Provider</td>
+<td>nvarchar(20)</td>
+<td>VNPay, MoMo, Free</td>
+</tr>
+<tr>
+<td>Amount</td>
+<td>decimal(18,2)</td>
+<td></td>
+</tr>
+<tr>
+<td>Status</td>
+<td>nvarchar(20)</td>
+<td>Pending, Success, Failed</td>
+</tr>
+<tr>
+<td>TransactionRef</td>
+<td>varchar(50)</td>
+<td>UQ — mã gửi cổng</td>
+</tr>
+<tr>
+<td>ProviderTransactionId</td>
+<td>varchar(100)</td>
+<td><strong>UQ (Provider, ProviderTransactionId) WHERE NOT NULL</strong> — idempotency</td>
+</tr>
+<tr>
+<td>BankCode, ResponseCode</td>
+<td>nvarchar(20)</td>
+<td></td>
+</tr>
+<tr>
+<td>RawResponse</td>
+<td>nvarchar(max)</td>
+<td>Đã loại bỏ dữ liệu nhạy cảm; không lưu số thẻ</td>
+</tr>
+<tr>
+<td>CreatedAt, PaidAt</td>
+<td>datetime2</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h3 id="coupons">Coupons</h3>
+<p><code>Id PK, Code nvarchar(50) UQ, Description, DiscountType (Percentage|FixedAmount), DiscountValue decimal CK &gt; 0, MaxDiscountAmount, MinOrderAmount, UsageLimit int NULL, UsedCount int, PerUserLimit int, CourseId FK NULL (NULL = áp toàn sàn), StartsAt, ExpiresAt CK ExpiresAt &gt; StartsAt, IsActive, CreatedAt</code>; CK Percentage ⇒ DiscountValue ≤ 100.</p>
+<h3 id="quizzes-questions-answeroptions">Quizzes / Questions / AnswerOptions</h3>
+<ul>
+<li><code>Quizzes(Id PK, CourseId FK CASCADE, SectionId FK NULL NO ACTION, Title, Description, PassingScore decimal(5,2) CK 0–100, MaxAttempts int NULL, TimeLimitMinutes int NULL, IsRequired bit, IsFinalExam bit, ShuffleQuestions bit, SortOrder, CreatedAt)</code></li>
+<li><code>Questions(Id PK, QuizId FK CASCADE, Content nvarchar(2000), Type (SingleChoice|MultipleChoice|TrueFalse), Points decimal(5,2) CK &gt; 0, Explanation, SortOrder)</code></li>
+<li><code>AnswerOptions(Id PK, QuestionId FK CASCADE, Content nvarchar(1000), IsCorrect bit, SortOrder)</code></li>
+</ul>
+<h3 id="quizattempts-quizanswers">QuizAttempts / QuizAnswers</h3>
+<ul>
+<li><code>QuizAttempts(Id PK, QuizId FK, UserId FK, AttemptNumber int, StartedAt, SubmittedAt, Score, MaxScore, ScorePercent decimal(5,2), IsPassed bit)</code>; <strong>UQ (QuizId, UserId, AttemptNumber)</strong>.</li>
+<li><code>QuizAnswers(Id PK, AttemptId FK CASCADE, QuestionId FK NO ACTION, AnswerOptionId FK NO ACTION, IsCorrect bit)</code>; UQ (AttemptId, QuestionId, AnswerOptionId). Mỗi đáp án được chọn là một dòng.</li>
+</ul>
+<h3 id="certificates">Certificates</h3>
+<table>
+<thead>
+<tr>
+<th>Cột</th>
+<th>Kiểu</th>
+<th>Ràng buộc</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Id</td>
+<td>uniqueidentifier</td>
+<td>PK</td>
+</tr>
+<tr>
+<td>CertificateCode</td>
+<td>varchar(30)</td>
+<td>UQ</td>
+</tr>
+<tr>
+<td>UserId, CourseId</td>
+<td>uniqueidentifier</td>
+<td>FK; <strong>UQ (UserId, CourseId)</strong></td>
+</tr>
+<tr>
+<td>EnrollmentId</td>
+<td>uniqueidentifier</td>
+<td>FK → Enrollments, UQ</td>
+</tr>
+<tr>
+<td>StudentName, CourseTitle, InstructorName</td>
+<td>nvarchar</td>
+<td>Ảnh chụp tại thời điểm cấp</td>
+</tr>
+<tr>
+<td>FinalScore</td>
+<td>decimal(5,2)</td>
+<td></td>
+</tr>
+<tr>
+<td>PdfUrl</td>
+<td>nvarchar(500)</td>
+<td></td>
+</tr>
+<tr>
+<td>IssuedAt, RevokedAt</td>
+<td>datetime2</td>
+<td></td>
+</tr>
+<tr>
+<td>IsRevoked</td>
+<td>bit</td>
+<td></td>
+</tr>
+<tr>
+<td>RevokedReason</td>
+<td>nvarchar(500)</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h3 id="reviews">Reviews</h3>
+<p><code>Id PK, CourseId FK, UserId FK, Rating tinyint CK 1–5, Comment nvarchar(2000), IsHidden bit, InstructorReply nvarchar(2000), RepliedAt, CreatedAt, UpdatedAt</code>; <strong>UQ (CourseId, UserId)</strong>; IX (CourseId, CreatedAt).</p>
+<h3 id="notifications">Notifications</h3>
+<p><code>Id PK, UserId FK CASCADE, Title nvarchar(200), Message nvarchar(1000), Type (System|Order|Course|Certificate|Review), Link nvarchar(500), IsRead bit, CreatedAt, ReadAt</code>; IX (UserId, IsRead, CreatedAt).</p>
+<h2 id="3-chuan-hoa">3. Chuẩn hóa</h2>
+<ul>
+<li>3NF cho dữ liệu nghiệp vụ. Các cột ảnh chụp (<code>OrderItems.Price</code>, <code>Certificates.StudentName</code>…) là <strong>cố ý</strong> để giữ giá trị lịch sử, không phải trùng lặp.</li>
+<li>Cột đếm (<code>EnrollmentCount</code>, <code>AverageRating</code>) là denormalization có kiểm soát để trang chủ truy vấn nhanh; cập nhật trong cùng transaction với thao tác gốc.</li>
+</ul></section><section class="doc" id="doc-04-cai-dat-moi-truong"><h1 id="04-chay-du-an-tren-may-tinh">04 — Chạy dự án trên máy tính</h1>
+<p>Có hai cách chạy:</p>
+<table>
+<thead>
+<tr>
+<th>Cách</th>
+<th>Khi nào dùng</th>
+<th>Cần cài</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>A. Chế độ demo (SQLite)</strong></td>
+<td>Xem thử, phát triển giao diện, chạy E2E</td>
+<td>.NET 10 SDK, Node.js 22+</td>
+</tr>
+<tr>
+<td><strong>B. SQL Server</strong></td>
+<td>Giống môi trường thật, kiểm tra migration</td>
+<td>Thêm SQL Server 2022 (Developer/Express) hoặc LocalDB</td>
+</tr>
+</tbody>
+</table>
+<h2 id="1-cai-at-cong-cu-windows">1. Cài đặt công cụ (Windows)</h2>
+<pre><code class="language-powershell">winget install Microsoft.DotNet.SDK.10
+winget install OpenJS.NodeJS.LTS
+dotnet tool install --global dotnet-ef
+# Chỉ cho cách B:
+winget install Microsoft.SQLServer.2022.Developer
+</code></pre>
+<p>Không có quyền Admin thì cài .NET vào thư mục người dùng:</p>
+<pre><code class="language-powershell">Invoke-WebRequest https://dot.net/v1/dotnet-install.ps1 -OutFile dotnet-install.ps1
+.\dotnet-install.ps1 -Channel 10.0 -InstallDir &quot;$env:USERPROFILE\.dotnet&quot;
+# Thêm %USERPROFILE%\.dotnet và %USERPROFILE%\.dotnet\tools vào PATH
+</code></pre>
+<p>Kiểm tra: <code>dotnet --list-sdks</code> (có 10.0.x), <code>node -v</code> (≥ 22).</p>
+<h2 id="2-cau-hinh-bi-mat-mot-lan">2. Cấu hình bí mật (một lần)</h2>
+<p>Bí mật không nằm trong mã nguồn mà lưu bằng User Secrets:</p>
+<pre><code class="language-powershell">cd src\backend\src\OnlineLearning.API
+dotnet user-secrets set &quot;Jwt:SecretKey&quot; &quot;&lt;chuỗi ngẫu nhiên ≥ 32 ký tự&gt;&quot;
+dotnet user-secrets set &quot;Seed:DemoPassword&quot; &quot;&lt;mật khẩu demo, ≥8 ký tự, có hoa/thường/số&gt;&quot;
+</code></pre>
+<p>Sinh chuỗi ngẫu nhiên trong PowerShell: <code>[Convert]::ToBase64String((1..48 | % { Get-Random -Max 256 }))</code>.</p>
+<h2 id="3-cach-a-che-o-demo-khong-can-sql-server">3. Cách A — chế độ demo (không cần SQL Server)</h2>
+<pre><code class="language-powershell"># Terminal 1: API (http://localhost:5080). Tự tạo eduviet-demo.db và dữ liệu mẫu.
+cd src\backend\src\OnlineLearning.API
+dotnet run --launch-profile demo-sqlite
+
+# Terminal 2: Frontend (http://localhost:5173)
+cd src\frontend\online-learning-client
+npm install
+npm run dev
+</code></pre>
+<p>Muốn tạo lại dữ liệu mẫu từ đầu: dừng API, xóa <code>eduviet-demo.db</code>, chạy lại.</p>
+<blockquote>
+<p>Chế độ demo tạo DB bằng <code>EnsureCreated</code> nên <strong>không tự cập nhật khi schema đổi</strong>. Sau khi kéo code có migration mới (ví dụ <code>InstructorProfileAndMessaging</code>), hãy dừng API rồi đổi tên/xóa <code>eduviet-demo.db</code> để DB được tạo lại kèm dữ liệu mẫu.</p>
+</blockquote>
+<h2 id="4-cach-b-sql-server">4. Cách B — SQL Server</h2>
+<pre><code class="language-powershell">cd src\backend
+# Nếu không dùng instance mặc định (localhost), đặt chuỗi kết nối:
+dotnet user-secrets --project src\OnlineLearning.API set &quot;ConnectionStrings:DefaultConnection&quot; &quot;Server=.\SQLEXPRESS;Database=OnlineLearningDb;Trusted_Connection=True;TrustServerCertificate=True&quot;
+dotnet ef database update -p src\OnlineLearning.Infrastructure -s src\OnlineLearning.API
+dotnet run --project src\OnlineLearning.API --launch-profile https
+</code></pre>
+<ul>
+<li>Swagger: https://localhost:7080/swagger. Frontend vẫn gọi API qua http://localhost:5080.</li>
+<li>Nếu dùng LocalDB: <code>Server=(localdb)\MSSQLLocalDB;Database=OnlineLearningDb;Trusted_Connection=True;TrustServerCertificate=True</code>.</li>
+<li>DBA muốn chạy tay thì dùng script <a href="../../setup/database/migration-InitialCreate.sql"><code>setup/database/migration-InitialCreate.sql</code></a>.</li>
+</ul>
+<h2 id="5-tai-khoan-demo">5. Tài khoản demo</h2>
+<p>Mật khẩu chung là giá trị <code>Seed:DemoPassword</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Email</th>
+<th>Vai trò</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>admin@eduviet.local</code></td>
+<td>Admin</td>
+</tr>
+<tr>
+<td><code>giangvien@eduviet.local</code>, <code>lethu.design@eduviet.local</code>, <code>phamquang.data@eduviet.local</code></td>
+<td>Giảng viên</td>
+</tr>
+<tr>
+<td><code>hocvien@eduviet.local</code>, <code>hoangnam@…</code>, <code>ngoclan@…</code>, <code>minhtuan@…</code>, <code>baoanh@…</code>, <code>ducthinh@…</code></td>
+<td>Học viên</td>
+</tr>
+</tbody>
+</table>
+<p>Mã giảm giá mẫu: <code>CHAOBANMOI</code>, <code>GIAM50K</code>, <code>MIENPHI100</code>. Thanh toán: chọn "Kênh thanh toán thử nghiệm" (tự thành công, không thu tiền).</p>
+<h2 id="6-chay-kiem-thu">6. Chạy kiểm thử</h2>
+<pre><code class="language-powershell"># Backend: 30 test tích hợp (SQLite in-memory, không cần SQL Server)
+cd src\backend
+dotnet test
+
+# E2E: Playwright tự khởi động API demo (cổng 5081) + Vite (cổng 5174) với DB mới
+cd src\frontend\online-learning-client
+$env:E2E_CHANNEL=&quot;chrome&quot;   # dùng Chrome đã cài; bỏ dòng này nếu đã chạy: npx playwright install chromium
+npm run test:e2e
+npm run test:e2e:report     # xem báo cáo HTML
+</code></pre>
+<p>Phải dừng API demo đang chạy trước khi chạy E2E, vì lệnh <code>dotnet run</code> cần build lại dự án.</p>
+<h2 id="7-su-co-thuong-gap">7. Sự cố thường gặp</h2>
+<table>
+<thead>
+<tr>
+<th>Lỗi</th>
+<th>Cách xử lý</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Jwt:SecretKey phải dài ít nhất 32 ký tự</code></td>
+<td>Chưa đặt User Secrets (mục 2)</td>
+</tr>
+<tr>
+<td>Frontend báo "Không kết nối được máy chủ"</td>
+<td>API chưa chạy ở cổng 5080</td>
+</tr>
+<tr>
+<td><code>A network-related or instance-specific error</code></td>
+<td>Sai tên SQL Server trong chuỗi kết nối, hoặc service SQL Server chưa chạy</td>
+</tr>
+<tr>
+<td><code>The certificate chain was issued by an authority that is not trusted</code></td>
+<td>Thêm <code>TrustServerCertificate=True</code> vào chuỗi kết nối</td>
+</tr>
+<tr>
+<td><code>dotnet ef</code> không nhận</td>
+<td>Mở terminal mới, hoặc thêm <code>%USERPROFILE%\.dotnet\tools</code> vào PATH</td>
+</tr>
+<tr>
+<td>Build báo tệp DLL đang bị khóa</td>
+<td>Dừng tiến trình API đang chạy rồi build lại</td>
+</tr>
+<tr>
+<td>PDF chứng chỉ mất dấu tiếng Việt (Linux)</td>
+<td>Cài <code>fonts-dejavu-core</code> hoặc <code>fonts-noto-core</code></td>
+</tr>
+</tbody>
+</table></section><section class="doc" id="doc-05-design-system"><h1 id="05-design-system">05 — Design system</h1>
+<p>Nguồn token: <a href="../../src/frontend/online-learning-client/src/index.css"><code>src/frontend/online-learning-client/src/index.css</code></a> (Tailwind v4 <code>@theme</code>).
+Trang xem trước: chạy frontend và mở http://localhost:5173.</p>
+<h2 id="mau">Màu</h2>
+<p>Lấy cảm hứng từ cổng tuyển sinh Đại học Văn Hiến: xanh dương rực, nền trắng/xanh rất nhạt, điểm nhấn cam và vàng nắng.</p>
+<table>
+<thead>
+<tr>
+<th>Vai trò</th>
+<th>Token</th>
+<th>Hex</th>
+<th>Dùng cho</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Chính</td>
+<td><code>brand-600</code></td>
+<td>#005CF8</td>
+<td>Nút chính, liên kết, khối hero</td>
+</tr>
+<tr>
+<td>Chính đậm</td>
+<td><code>brand-700</code></td>
+<td>#004DC1</td>
+<td>Hover, mặt phẳng trên nền xanh</td>
+</tr>
+<tr>
+<td>Nền nhạt</td>
+<td><code>brand-50</code></td>
+<td>#EFF6FF</td>
+<td>Nền khu vực, nút phụ</td>
+</tr>
+<tr>
+<td>Nhấn</td>
+<td><code>accent-500</code></td>
+<td>#EF8000</td>
+<td>Hành động mua, giá khuyến mãi — <strong>chữ màu ink</strong>, không dùng chữ trắng (tương phản 2.7:1)</td>
+</tr>
+<tr>
+<td>Vàng</td>
+<td><code>sun-300</code></td>
+<td>#FFDC7C</td>
+<td>Nhãn "Bán chạy", highlight</td>
+</tr>
+<tr>
+<td>Chữ</td>
+<td><code>ink</code></td>
+<td>#0B1B33</td>
+<td>Văn bản chính</td>
+</tr>
+<tr>
+<td>Chữ phụ</td>
+<td><code>ink-muted</code></td>
+<td>#6B7686</td>
+<td>Ghi chú, metadata</td>
+</tr>
+<tr>
+<td>Mặt phẳng</td>
+<td><code>surface</code>, <code>surface-2</code>, <code>surface-3</code></td>
+<td>#FFF, #F3F6FB, #E8EEF7</td>
+<td>Tách vùng bằng bậc tông</td>
+</tr>
+<tr>
+<td>Trạng thái</td>
+<td><code>success</code>, <code>warning</code>, <code>danger</code> (+ <code>-50</code>)</td>
+<td></td>
+<td>Toast, badge trạng thái đơn hàng/khóa học</td>
+</tr>
+</tbody>
+</table>
+<p>Tương phản đã kiểm: trắng trên <code>brand-600</code> = 5.4:1 (AA), <code>ink</code> trên <code>accent-500</code> ≈ 7:1.</p>
+<h2 id="chu">Chữ</h2>
+<ul>
+<li>Một họ chữ: <strong>Be Vietnam Pro</strong> (400–800), thiết kế cho tiếng Việt, dấu không bị chồng.</li>
+<li>Cỡ: <code>text-display</code> (40→88px, -0.035em, leading 1), <code>text-title</code> (28→44px), thân bài 16–18px, leading 1.6.</li>
+<li>Căn trái mặc định; tiêu đề tối đa 2 dòng.</li>
+</ul>
+<h2 id="thanh-phan">Thành phần</h2>
+<ul>
+<li>Nút: phẳng, một màu, pill (<code>--radius-control</code>), cao ≥ 44px, nhấn co <code>scale(0.97)</code> trong 140ms <code>ease-out-strong</code>.
+  Biến thể: <code>btn-primary</code>, <code>btn-accent</code>, <code>btn-soft</code>, <code>btn-ghost</code>.</li>
+<li>Thẻ: bo 12px (<code>--radius-card</code>), tách nền bằng <code>surface-2</code>; không shadow khi tĩnh, chỉ menu/dialog nổi mới có shadow.</li>
+<li>Không gradient, không glassmorphism, không icon trong ô màu lặp lại, không nhãn chữ hoa nhỏ giãn cách.</li>
+</ul>
+<h2 id="chuyen-ong-theo-nguyen-tac-cua-emil-kowalski">Chuyển động (theo nguyên tắc của Emil Kowalski)</h2>
+<ul>
+<li>Chỉ animate <code>transform</code> và <code>opacity</code>; dùng <code>ease-out</code> cho phần tử xuất hiện, không dùng <code>ease-in</code>.</li>
+<li>UI tương tác ≤ 250ms; không animate thao tác bàn phím lặp lại.</li>
+<li>Tôn trọng <code>prefers-reduced-motion</code> (đã có trong base layer).</li>
+</ul>
+<h2 id="ap-dung-cho-cac-man-hinh">Áp dụng cho các màn hình</h2>
+<ul>
+<li><strong>Trang công khai</strong> (trang chủ, chi tiết khóa học): theo quy trình taste-skill — hero chiếm trọn màn đầu với màu <code>brand-600</code>, ảnh thật của khóa học, mỗi section một bố cục khác nhau.</li>
+<li><strong>Dashboard</strong> (học viên/giảng viên/admin): nền <code>surface-2</code>, panel trắng, biểu đồ Recharts dùng <code>brand-600</code> cho chuỗi chính và <code>accent-500</code> cho chuỗi so sánh.</li>
+</ul></section><section class="doc" id="doc-06-backend-api"><h1 id="06-backend-api-giai-oan-2">06 — Backend API (Giai đoạn 2)</h1>
+<p>Swagger: <code>https://localhost:7080/swagger</code> (Development). Mọi lỗi trả về <code>ProblemDetails</code> (<code>title</code> là thông báo tiếng Việt, <code>code</code> là mã lỗi, <code>errors</code> cho lỗi validation). Enum trả về dạng chuỗi (<code>"Published"</code>, <code>"Paid"</code>…).</p>
+<h2 id="1-cau-truc-ma-nguon">1. Cấu trúc mã nguồn</h2>
+<pre><code>src/OnlineLearning.Application/
+  Common/        Result, PagedQuery, Options, Helpers (Slug, mã đơn, lọc HTML), Interfaces
+  Features/
+    Auth/            AuthService (đăng ký, đăng nhập, refresh xoay vòng, quên/đặt lại mật khẩu, hồ sơ)
+    Categories/      CategoryService (cây 2 cấp)
+    Courses/         CatalogService (công khai), InstructorCourseService, CourseModerationService
+    Orders/          CartService, PricingService, OrderService, OrderFulfillmentService, CouponService, ReviewService
+    Notifications/   NotificationService
+    Admin/           AdminService (tổng quan, người dùng, vai trò)
+src/OnlineLearning.Infrastructure/
+  Identity/      JwtTokenService, VietnameseIdentityErrorDescriber
+  Email/         SmtpEmailSender (không cấu hình Host → chỉ ghi log)
+  BackgroundJobs/OrderExpiryService (5 phút/lần chuyển đơn quá hạn sang Expired)
+  Persistence/   AppDbContext, Configurations, Migrations/InitialCreate, Seed/
+src/OnlineLearning.API/
+  Common/        ApiControllerBase (Result → HTTP), CurrentUser, ValidationFilter, GlobalExceptionHandler
+  Controllers/   Auth, Account, Home, Categories, Courses, Instructors, Instructor, Cart, Orders, Notifications, Admin
+tests/OnlineLearning.IntegrationTests/  16 kịch bản end-to-end trên SQLite in-memory
+</code></pre>
+<h2 id="2-danh-sach-endpoint">2. Danh sách endpoint</h2>
+<h3 id="cong-khai">Công khai</h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Đường dẫn</th>
+<th>Mô tả</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GET</td>
+<td><code>/api/home</code></td>
+<td>Nổi bật, mới nhất, bán chạy, danh mục, giảng viên nổi bật, đánh giá tiêu biểu, thống kê</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/categories</code> · <code>/api/categories/{slug}</code></td>
+<td>Cây danh mục</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/courses?keyword=&amp;category=&amp;level=&amp;minPrice=&amp;maxPrice=&amp;minRating=&amp;free=&amp;sort=&amp;page=&amp;pageSize=</code></td>
+<td>Tìm kiếm; <code>sort</code>: <code>newest</code>, <code>popular</code>, <code>rating</code>, <code>price_asc</code>, <code>price_desc</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/courses/{slug}</code></td>
+<td>Chi tiết + đề cương (chỉ lộ URL video của bài preview), <code>isEnrolled</code>, <code>isInCart</code>, phân bố sao</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/courses/{courseId}/reviews</code></td>
+<td>Đánh giá (phân trang)</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/instructors/featured</code> · <code>/api/instructors/{id}</code></td>
+<td>Giảng viên</td>
+</tr>
+</tbody>
+</table>
+<h3 id="tai-khoan">Tài khoản</h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Đường dẫn</th>
+<th>Ghi chú</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>POST</td>
+<td><code>/api/auth/register</code> · <code>/api/auth/login</code></td>
+<td>Trả <code>accessToken</code> (15 phút) + đặt cookie <code>eduviet_rt</code> HttpOnly (7 ngày)</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/auth/refresh</code></td>
+<td>Xoay vòng refresh token; dùng lại token cũ → thu hồi mọi phiên</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/auth/logout</code></td>
+<td>Thu hồi refresh token</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/auth/forgot-password</code> · <code>/api/auth/reset-password</code> · <code>/api/auth/confirm-email</code></td>
+<td>Luôn 204 với forgot-password</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/auth/me</code></td>
+<td>Người dùng hiện tại</td>
+</tr>
+<tr>
+<td>GET/PUT</td>
+<td><code>/api/account/profile</code></td>
+<td>Hồ sơ</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/account/change-password</code></td>
+<td>Đăng xuất các thiết bị khác</td>
+</tr>
+</tbody>
+</table>
+<h3 id="hoc-vien-can-ang-nhap">Học viên (cần đăng nhập)</h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Đường dẫn</th>
+<th>Ghi chú</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GET/DELETE</td>
+<td><code>/api/cart</code></td>
+<td>Giỏ hàng (tự loại khóa đã mua/ngừng bán)</td>
+</tr>
+<tr>
+<td>POST/DELETE</td>
+<td><code>/api/cart/items</code> · <code>/api/cart/items/{courseId}</code></td>
+<td></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/orders/quote</code></td>
+<td><code>{ courseIds, couponCode }</code> → giá do server tính</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/orders</code></td>
+<td><code>{ courseIds | fromCart, couponCode, note }</code> — <strong>không có trường giá</strong>. Tổng 0đ → Paid ngay</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/orders</code> · <code>/api/orders/{id}</code></td>
+<td>Lịch sử mua hàng</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/orders/{id}/cancel</code></td>
+<td>Hủy đơn Pending</td>
+</tr>
+<tr>
+<td>GET/POST/PUT/DELETE</td>
+<td><code>/api/courses/{courseId}/reviews[/me]</code></td>
+<td>Đánh giá (cần sở hữu khóa học)</td>
+</tr>
+<tr>
+<td>GET/POST</td>
+<td><code>/api/notifications</code>, <code>/unread-count</code>, <code>/{id}/read</code>, <code>/read-all</code></td>
+<td>Thông báo</td>
+</tr>
+</tbody>
+</table>
+<h3 id="giang-vien-instructor-hoac-admin">Giảng viên (<code>Instructor</code> hoặc <code>Admin</code>)</h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Đường dẫn</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GET/POST</td>
+<td><code>/api/instructor/courses</code></td>
+</tr>
+<tr>
+<td>GET/PUT/DELETE</td>
+<td><code>/api/instructor/courses/{id}</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/instructor/courses/{id}/submit</code> · <code>/unpublish</code></td>
+</tr>
+<tr>
+<td>POST · PUT</td>
+<td><code>/api/instructor/courses/{courseId}/sections</code> · <code>/sections/order</code></td>
+</tr>
+<tr>
+<td>PUT/DELETE</td>
+<td><code>/api/instructor/sections/{id}</code></td>
+</tr>
+<tr>
+<td>POST · PUT</td>
+<td><code>/api/instructor/sections/{id}/lessons</code> · <code>/lessons/order</code></td>
+</tr>
+<tr>
+<td>PUT/DELETE</td>
+<td><code>/api/instructor/lessons/{id}</code></td>
+</tr>
+<tr>
+<td>POST · DELETE</td>
+<td><code>/api/instructor/lessons/{id}/resources</code> · <code>/api/instructor/resources/{id}</code></td>
+</tr>
+<tr>
+<td>GET · POST</td>
+<td><code>/api/instructor/reviews</code> · <code>/api/instructor/reviews/{id}/reply</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="admin">Admin</h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Đường dẫn</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GET</td>
+<td><code>/api/admin/overview</code> (doanh thu, đơn, người dùng 12 tháng)</td>
+</tr>
+<tr>
+<td>GET · PUT · PUT</td>
+<td><code>/api/admin/users</code> · <code>/users/{id}/roles</code> · <code>/users/{id}/active</code></td>
+</tr>
+<tr>
+<td>GET · POST</td>
+<td><code>/api/admin/courses?status=Pending</code> · <code>/courses/{id}/approve</code> · <code>/reject</code> · <code>/unpublish</code></td>
+</tr>
+<tr>
+<td>PUT</td>
+<td><code>/api/admin/courses/{id}/featured</code></td>
+</tr>
+<tr>
+<td>GET/POST/PUT/DELETE</td>
+<td><code>/api/admin/categories[/{id}]</code></td>
+</tr>
+<tr>
+<td>GET/POST/PUT/DELETE</td>
+<td><code>/api/admin/coupons[/{id}]</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/admin/orders</code> · <code>/api/admin/orders/{id}</code></td>
+</tr>
+<tr>
+<td>PUT</td>
+<td><code>/api/admin/reviews/{id}/hidden</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="3-quy-tac-nghiep-vu-a-thuc-thi-trong-code">3. Quy tắc nghiệp vụ đã thực thi trong code</h2>
+<table>
+<thead>
+<tr>
+<th>Quy tắc</th>
+<th>Nơi thực thi</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>BR-01 giá thực = giá KM nếu nhỏ hơn giá gốc</td>
+<td><code>Course.EffectivePrice</code>, <code>CatalogService.ToSummary</code></td>
+</tr>
+<tr>
+<td>BR-02 không mua khóa đã sở hữu / của chính mình / chưa xuất bản</td>
+<td><code>PricingService.CalculateAsync</code>, <code>CartService.AddAsync</code></td>
+</tr>
+<tr>
+<td>BR-03 không ghi danh trùng</td>
+<td>Unique <code>(UserId, CourseId)</code> + kiểm tra trong <code>OrderFulfillmentService</code></td>
+</tr>
+<tr>
+<td>BR-04 giá ảnh chụp</td>
+<td><code>OrderItem.Price/FinalPrice</code></td>
+</tr>
+<tr>
+<td>BR-05 coupon %/cố định, trần, tối thiểu, phạm vi khóa, lượt/người</td>
+<td><code>Coupon.CalculateDiscount</code>, <code>PricingService</code> (phân bổ giảm giá theo tỷ lệ)</td>
+</tr>
+<tr>
+<td>BR-06/07 idempotent, khớp số tiền</td>
+<td><code>OrderFulfillmentService.MarkPaidAsync</code> (transaction; đơn đã Paid → bỏ qua; sai số tiền → từ chối)</td>
+</tr>
+<tr>
+<td>BR-09 đánh giá cần sở hữu, 1 lần</td>
+<td><code>ReviewService.CreateAsync</code> + unique index</td>
+</tr>
+<tr>
+<td>BR-11 xóa mềm khi có lịch sử</td>
+<td><code>InstructorCourseService.DeleteAsync</code></td>
+</tr>
+<tr>
+<td>Nội dung chỉ sửa khi Draft/Rejected</td>
+<td><code>Course.IsEditable</code></td>
+</tr>
+<tr>
+<td>XSS</td>
+<td><code>ContentSanitizer</code> (HtmlSanitizer) cho mô tả khóa học và bài viết</td>
+</tr>
+<tr>
+<td>Lượt dùng coupon chỉ tính khi đơn <strong>Paid</strong></td>
+<td>Đơn hết hạn/hủy không tốn lượt</td>
+</tr>
+</tbody>
+</table>
+<p><code>MarkPaidAsync</code> là điểm duy nhất cấp quyền học. Giai đoạn 5 (VNPay/MoMo) chỉ gọi hàm này sau khi xác thực chữ ký IPN.</p>
+<h2 id="4-kiem-thu">4. Kiểm thử</h2>
+<pre><code class="language-powershell">cd src\backend
+dotnet test
+</code></pre>
+<p>16 kịch bản chạy toàn bộ pipeline thật (controller → service → EF Core) trên SQLite in-memory với dữ liệu mẫu:
+trang chủ, tìm kiếm/lọc/sắp xếp, ẩn video không preview, ẩn khóa Pending; đăng ký, refresh xoay vòng, phát hiện tái sử dụng token,
+đăng xuất, sai mật khẩu, validation, đổi mật khẩu, phân quyền 401/403; giỏ hàng, báo giá, chống sửa giá, mã giảm giá, đơn 0đ cấp quyền,
+chặn mua trùng, đánh giá một lần; giảng viên tạo khóa → gửi duyệt → bị từ chối → duyệt, khóa chỉnh sửa khi Pending, cô lập giữa giảng viên;
+admin tổng quan, vai trò, khóa tài khoản, mã giảm giá, danh mục.</p>
+<h2 id="5-du-lieu-mau">5. Dữ liệu mẫu</h2>
+<table>
+<thead>
+<tr>
+<th>Loại</th>
+<th>Nội dung</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Tài khoản</td>
+<td><code>admin@eduviet.local</code>; giảng viên <code>giangvien@</code>, <code>lethu.design@</code>, <code>phamquang.data@</code>; học viên <code>hocvien@</code>, <code>hoangnam@</code>, <code>ngoclan@</code>, <code>minhtuan@</code>, <code>baoanh@</code>, <code>ducthinh@</code> (đuôi <code>@eduviet.local</code>), mật khẩu = <code>Seed:DemoPassword</code></td>
+</tr>
+<tr>
+<td>Khóa học</td>
+<td>10 khóa Published (1 khóa miễn phí) + 1 khóa Pending để demo kiểm duyệt; ảnh từ picsum.photos, video mẫu công khai</td>
+</tr>
+<tr>
+<td>Đơn hàng</td>
+<td>~40 đơn Paid rải 10 tháng (có dữ liệu cho biểu đồ doanh thu), kèm đánh giá và phản hồi</td>
+</tr>
+<tr>
+<td>Mã giảm giá</td>
+<td><code>CHAOBANMOI</code> (10%, tối đa 100k), <code>GIAM50K</code> (đơn từ 300k), <code>MIENPHI100</code> (100% — demo đơn 0đ)</td>
+</tr>
+</tbody>
+</table>
+<p>Ảnh, video và tài liệu mẫu là placeholder; sẽ thay bằng Cloudinary ở Giai đoạn 5.</p></section><section class="doc" id="doc-07-frontend"><h1 id="07-frontend-giai-oan-3">07 — Frontend (Giai đoạn 3)</h1>
+<p>React 19 + TypeScript + Vite 8 + Tailwind CSS v4 + React Router 7 + Axios. Thông báo: Sonner. Lọc HTML: DOMPurify. Icon: lucide-react.</p>
+<h2 id="1-chay">1. Chạy</h2>
+<pre><code class="language-powershell"># Terminal 1 — API, chế độ demo không cần SQL Server (SQLite file eduviet-demo.db, tự seed dữ liệu mẫu)
+cd src\backend\src\OnlineLearning.API
+dotnet user-secrets set &quot;Jwt:SecretKey&quot; &quot;&lt;chuỗi ngẫu nhiên ≥ 32 ký tự&gt;&quot;
+dotnet user-secrets set &quot;Seed:DemoPassword&quot; &quot;&lt;mật khẩu demo, có hoa/thường/số&gt;&quot;
+dotnet run --launch-profile demo-sqlite
+
+# Terminal 2 — Frontend
+cd src\frontend\online-learning-client
+npm install
+npm run dev
+</code></pre>
+<p>Mở http://localhost:5173. Vite proxy chuyển <code>/api/*</code> tới <code>http://localhost:5080</code> (đổi bằng biến <code>API_PROXY_TARGET</code>).
+Dùng SQL Server thật: chạy profile <code>https</code> thay cho <code>demo-sqlite</code> (cả hai đều mở http://localhost:5080).</p>
+<h2 id="2-trang">2. Trang</h2>
+<table>
+<thead>
+<tr>
+<th>Đường dẫn</th>
+<th>Trang</th>
+<th>Ghi chú</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/</code></td>
+<td>Trang chủ</td>
+<td>Hero "chứng chỉ" (gõ tên để in lên chứng chỉ mẫu), lĩnh vực, nổi bật, bán chạy, phiếu thư viện, mới xuất bản, giảng viên, đánh giá, lời mời đăng ký</td>
+</tr>
+<tr>
+<td><code>/khoa-hoc</code></td>
+<td>Danh sách</td>
+<td>Tìm kiếm, lọc lĩnh vực/cấp độ/giá/đánh giá, sắp xếp, phân trang; trạng thái lọc nằm trên URL</td>
+</tr>
+<tr>
+<td><code>/khoa-hoc/:slug</code></td>
+<td>Chi tiết</td>
+<td>Thẻ mua hàng dính, xem thử video preview, đề cương, mô tả (DOMPurify), giảng viên, phân bố sao, đánh giá, viết/sửa đánh giá khi đã sở hữu</td>
+</tr>
+<tr>
+<td><code>/giang-vien/:id</code></td>
+<td>Hồ sơ giảng viên</td>
+<td></td>
+</tr>
+<tr>
+<td><code>/dang-nhap</code>, <code>/dang-ky</code>, <code>/quen-mat-khau</code>, <code>/dat-lai-mat-khau</code>, <code>/xac-nhan-email</code></td>
+<td>Tài khoản</td>
+<td>Quay lại trang trước qua <code>?next=</code> (chỉ chấp nhận đường dẫn nội bộ)</td>
+</tr>
+<tr>
+<td><code>/gio-hang</code></td>
+<td>Giỏ hàng</td>
+<td>Cần đăng nhập</td>
+</tr>
+<tr>
+<td><code>/thanh-toan[?course=id]</code></td>
+<td>Thanh toán</td>
+<td>Báo giá từ server, mã giảm giá, đơn 0đ hoàn tất ngay</td>
+</tr>
+<tr>
+<td><code>/don-hang/:id</code></td>
+<td>Đơn hàng</td>
+<td>Hóa đơn, đếm ngược hết hạn, hủy đơn</td>
+</tr>
+<tr>
+<td><code>/tai-khoan</code>, <code>/tai-khoan/don-hang</code></td>
+<td>Hồ sơ, đổi mật khẩu, lịch sử mua hàng</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="3-xac-thuc-phia-client">3. Xác thực phía client</h2>
+<ul>
+<li>Access token chỉ giữ <strong>trong bộ nhớ</strong> (<code>tokenStore</code>), không dùng localStorage.</li>
+<li>Refresh token ở cookie HttpOnly. Khi tải trang, <code>AuthProvider</code> gọi <code>/api/auth/refresh</code> để khôi phục phiên; cứ 12 phút làm mới một lần.</li>
+<li>Interceptor Axios: gặp 401 → refresh một lần (gộp các request song song) → gửi lại.</li>
+<li><code>ProtectedRoute</code> chặn trang cần đăng nhập/vai trò.</li>
+</ul>
+<p>Lần tải đầu khi chưa đăng nhập, console có một dòng 401 từ <code>/api/auth/refresh</code>: đây là kiểm tra phiên, không phải lỗi.</p>
+<h2 id="4-thiet-ke">4. Thiết kế</h2>
+<p>Hướng thiết kế lấy từ taste-skill (seed 1677846207), hướng <strong>"Trang chính là vật thể"</strong>:
+<em>chứng chỉ có mã xác minh của EduViet trở thành tấm thẻ ở hero</em>. Các phần tiếp theo là giấy tờ cùng bộ: phiếu thư viện (mép răng cưa, cộng đúng tổng số khóa học), đánh giá in trên mẩu giấy xé, thẻ hồi đáp nghiêng, chân trang là mặt sau tấm thiệp với mép vỏ sò.</p>
+<ul>
+<li>Màu: xanh <code>#005CF8</code> / <code>#004DC1</code>, cam <code>#EF8000</code>, vàng <code>#FFDC7C</code>, nền <code>#EFF6FF</code> (tham khảo tuyensinh.vhu.edu.vn).</li>
+<li>Không gradient, không đổ bóng khi tĩnh (chỉ menu, hộp thoại và thẻ mua hàng nổi), không viền trừ ô nhập và bảng.</li>
+<li>Chuyển động: hero trồi lên, ảnh nền trôi chậm, các phần tử từng section xuất hiện lần lượt (stagger 70ms), phản hồi khi nhấn nút (<code>scale(0.97)</code>); tôn trọng <code>prefers-reduced-motion</code>.</li>
+<li>Kết quả đo <code>inspect.mjs</code> trên bản build production của trang chủ: <strong>0 FAIL</strong>, 2 WARN có lý do (số cỡ chữ của trang thương mại; video nằm ở trang chi tiết khóa học).</li>
+</ul>
+<p>Ảnh khóa học và ảnh nền là ảnh Unsplash qua picsum.photos (chỉ để minh họa), sẽ thay bằng ảnh thật qua Cloudinary ở Giai đoạn 5.</p></section><section class="doc" id="doc-08-hoc-tap-va-dashboard"><h1 id="08-hoc-truc-tuyen-kiem-tra-va-dashboard-giai-oan-4">08 — Học trực tuyến, kiểm tra và dashboard (Giai đoạn 4)</h1>
+<h2 id="1-hoc-truc-tuyen">1. Học trực tuyến</h2>
+<table>
+<thead>
+<tr>
+<th>Đường dẫn</th>
+<th>Mô tả</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/hoc/:slug</code></td>
+<td>Vào khóa học, tự chuyển tới bài nên học tiếp (bài gần nhất, hoặc bài đầu tiên chưa xong)</td>
+</tr>
+<tr>
+<td><code>/hoc/:slug/bai/:lessonId</code></td>
+<td>Video / bài viết, tài liệu tải về, đánh dấu hoàn thành, bài trước / bài sau</td>
+</tr>
+<tr>
+<td><code>/hoc/:slug/kiem-tra/:quizId</code></td>
+<td>Giới thiệu bài kiểm tra → làm bài (đồng hồ, tự nộp khi hết giờ) → kết quả + đáp án chi tiết + lịch sử</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>Video tự lưu vị trí xem mỗi 15 giây và khi tạm dừng; mở lại sẽ tiếp tục từ vị trí cũ. Xem hết video thì bài tự được đánh dấu hoàn thành.</li>
+<li>% hoàn thành = số bài <strong>bắt buộc</strong> đã xong / tổng số bài bắt buộc.</li>
+<li>Khóa học chuyển sang <strong>Completed</strong> khi đủ 100% bài bắt buộc <strong>và</strong> đạt mọi bài kiểm tra bắt buộc. Nếu bỏ đánh dấu một bài, trạng thái quay về Active. Giai đoạn 6 sẽ cấp chứng chỉ tại thời điểm này.</li>
+<li>Giảng viên sở hữu khóa và Admin mở trình học ở <strong>chế độ xem trước</strong>: xem được mọi bài, không ghi tiến độ, không làm bài kiểm tra.</li>
+<li>Bảo vệ nội dung: chỉ bài học thử mở cho mọi người dùng đã đăng nhập. Các bài khác trả 403 nếu chưa ghi danh. URL video có chữ ký và hết hạn sẽ làm ở Giai đoạn 5 (Cloudinary).</li>
+</ul>
+<h2 id="2-bai-kiem-tra">2. Bài kiểm tra</h2>
+<table>
+<thead>
+<tr>
+<th>Quy tắc</th>
+<th>Cách thực hiện</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Không lộ đáp án</td>
+<td>API bắt đầu làm bài trả đề <strong>không có</strong> <code>isCorrect</code>; đáp án chỉ trả sau khi nộp</td>
+</tr>
+<tr>
+<td>Chấm điểm ở server</td>
+<td>Câu đúng khi tập đáp án chọn <strong>trùng khớp</strong> tập đáp án đúng; mỗi câu có điểm riêng</td>
+</tr>
+<tr>
+<td>Giới hạn số lần (BR-10)</td>
+<td>Mỗi lần bắt đầu tính một lượt; hết lượt trả 409; tải lại trang thì tiếp tục lượt đang làm</td>
+</tr>
+<tr>
+<td>Thời gian</td>
+<td>Hạn = lúc bắt đầu + giới hạn phút; nộp trễ quá 60 giây thì bị chấm 0 điểm; client tự nộp khi hết giờ</td>
+</tr>
+<tr>
+<td>Nộp lặp</td>
+<td>Nộp lại lượt đã nộp chỉ trả về kết quả cũ, không chấm lại</td>
+</tr>
+<tr>
+<td>Toàn vẹn lịch sử</td>
+<td>Khi đã có người làm, giảng viên chỉ sửa được thông tin chung và lời giải thích, không sửa được câu hỏi/đáp án, và không xóa được bài</td>
+</tr>
+<tr>
+<td>Trộn câu hỏi</td>
+<td>Trộn theo lượt làm (giữ nguyên thứ tự khi tải lại trang)</td>
+</tr>
+</tbody>
+</table>
+<p>Loại câu hỏi: một đáp án, nhiều đáp án, đúng/sai (đúng 2 đáp án, 1 đáp án đúng). Mỗi câu có 2–10 đáp án.</p>
+<h2 id="3-dashboard">3. Dashboard</h2>
+<table>
+<thead>
+<tr>
+<th>Khu vực</th>
+<th>Đường dẫn</th>
+<th>Nội dung</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Học viên</td>
+<td><code>/hoc-vien</code></td>
+<td>Số liệu (khóa đã mua, hoàn thành, số bài, bài kiểm tra đạt, tổng chi), ô "Tiếp tục học", khóa học theo trạng thái kèm tiến độ</td>
+</tr>
+<tr>
+<td></td>
+<td><code>/hoc-vien/ket-qua</code>, <code>/hoc-vien/chung-chi</code></td>
+<td>Lịch sử làm bài; danh sách chứng chỉ (PDF ở Giai đoạn 6)</td>
+</tr>
+<tr>
+<td></td>
+<td><code>/tai-khoan</code>, <code>/tai-khoan/don-hang</code></td>
+<td>Hồ sơ, lịch sử thanh toán</td>
+</tr>
+<tr>
+<td>Giảng viên</td>
+<td><code>/giang-day</code></td>
+<td>Doanh thu, học viên, khóa học, đánh giá; biểu đồ doanh thu và lượt đăng ký 12 tháng; bảng theo khóa học kèm tiến độ trung bình</td>
+</tr>
+<tr>
+<td></td>
+<td><code>/giang-day/khoa-hoc[/:id]</code></td>
+<td>Danh sách và trang soạn khóa học: thông tin, chương/bài (sắp xếp, học thử, bắt buộc, tài liệu), bài kiểm tra; gửi duyệt / chuyển về nháp / xóa</td>
+</tr>
+<tr>
+<td></td>
+<td><code>/giang-day/hoc-vien</code>, <code>/giang-day/danh-gia</code></td>
+<td>Học viên và tiến độ; trả lời đánh giá</td>
+</tr>
+<tr>
+<td>Admin</td>
+<td><code>/quan-tri</code></td>
+<td>Doanh thu, đơn hàng, người dùng, khóa học, lượt ghi danh, chứng chỉ; 3 biểu đồ 12 tháng</td>
+</tr>
+<tr>
+<td></td>
+<td><code>/quan-tri/khoa-hoc</code></td>
+<td>Duyệt / từ chối có lý do / gỡ khóa học / đặt nổi bật</td>
+</tr>
+<tr>
+<td></td>
+<td><code>/quan-tri/nguoi-dung</code>, <code>/danh-muc</code>, <code>/don-hang</code>, <code>/ma-giam-gia</code></td>
+<td>Phân quyền, khóa tài khoản; CRUD danh mục và mã giảm giá; tra cứu đơn hàng</td>
+</tr>
+</tbody>
+</table>
+<p>Biểu đồ dùng Recharts: chuỗi chính màu <code>brand-600</code>, cột màu <code>accent-500</code>, trục và lưới màu trung tính, tooltip định dạng tiền Việt Nam.</p>
+<h2 id="4-api-moi">4. API mới</h2>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Đường dẫn</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GET</td>
+<td><code>/api/learning/summary</code>, <code>/api/learning/courses?filter=all\|in-progress\|not-started\|completed</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/learning/courses/{slug}</code>, <code>/api/learning/lessons/{id}</code></td>
+</tr>
+<tr>
+<td>POST/DELETE</td>
+<td><code>/api/learning/lessons/{id}/complete</code></td>
+</tr>
+<tr>
+<td>PUT</td>
+<td><code>/api/learning/lessons/{id}/position</code></td>
+</tr>
+<tr>
+<td>GET · POST</td>
+<td><code>/api/learning/quizzes/{id}</code> · <code>/api/learning/quizzes/{id}/attempts</code></td>
+</tr>
+<tr>
+<td>POST · GET</td>
+<td><code>/api/learning/attempts/{id}/submit</code> · <code>/api/learning/attempts/{id}</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/learning/quiz-results</code>, <code>/api/learning/certificates</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/instructor/overview</code>, <code>/api/instructor/students</code></td>
+</tr>
+<tr>
+<td>GET/POST</td>
+<td><code>/api/instructor/courses/{courseId}/quizzes</code></td>
+</tr>
+<tr>
+<td>GET/PUT/DELETE</td>
+<td><code>/api/instructor/quizzes/{id}</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="5-du-lieu-mau-bo-sung">5. Dữ liệu mẫu bổ sung</h2>
+<p>Mỗi khóa học đã xuất bản có một "Bài kiểm tra cuối khóa" gồm 5 câu, đạt 70%, tối đa 3 lượt, giới hạn 15 phút. Mỗi lượt ghi danh mẫu đã hoàn thành sẵn một phần bài học.
+Muốn tạo lại dữ liệu demo thì xóa <code>src/backend/src/OnlineLearning.API/eduviet-demo.db</code> rồi chạy lại API.</p></section><section class="doc" id="doc-09-thanh-toan-va-luu-tru"><h1 id="09-thanh-toan-luu-tru-tep-giai-oan-5">09 — Thanh toán &amp; lưu trữ tệp (Giai đoạn 5)</h1>
+<h2 id="1-cac-phuong-thuc-thanh-toan">1. Các phương thức thanh toán</h2>
+<table>
+<thead>
+<tr>
+<th>Phương thức</th>
+<th>Khi nào bật</th>
+<th>Thu tiền thật?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Kênh thanh toán thử nghiệm</strong></td>
+<td><code>Payments:TestGateway:Enabled = true</code> (bật sẵn trong <code>appsettings.Development.json</code>)</td>
+<td><strong>Không</strong>: tự động thành công</td>
+</tr>
+<tr>
+<td><strong>VNPay</strong></td>
+<td>Khi có <code>VnPay:TmnCode</code> và <code>VnPay:HashSecret</code></td>
+<td>Không với URL sandbox; có khi dùng URL production</td>
+</tr>
+<tr>
+<td><strong>MoMo</strong></td>
+<td>Khi có <code>MoMo:PartnerCode</code>, <code>AccessKey</code>, <code>SecretKey</code></td>
+<td>Không với endpoint <code>test-payment</code>; có khi dùng endpoint production</td>
+</tr>
+</tbody>
+</table>
+<p>Trang thanh toán chỉ hiện các phương thức đang bật (<code>GET /api/payments/methods</code>). Khi khách chọn kênh thử nghiệm hoặc cổng sandbox, trang hiện thông báo:</p>
+<blockquote>
+<p><strong>Hiện tại đang trong giai đoạn test kênh thanh toán, chưa thu tiền thật.</strong></p>
+</blockquote>
+<p>Thông báo này cũng hiện trên trang kết quả thanh toán và trang chi tiết đơn hàng đã trả qua kênh test.</p>
+<p><strong>Production phải tắt kênh thử nghiệm</strong> (<code>Payments__TestGateway__Enabled=false</code>, mặc định trong <code>appsettings.json</code>). Khi tắt, endpoint <code>/api/payments/test/gateway</code> trả 404.</p>
+<h2 id="2-luong-thanh-toan">2. Luồng thanh toán</h2>
+<pre><code class="language-mermaid">sequenceDiagram
+  participant FE as React
+  participant API as API
+  participant GW as Cổng (VNPay/MoMo/Test)
+  FE-&gt;&gt;API: POST /api/orders (giá do server tính)
+  FE-&gt;&gt;API: POST /api/payments/orders/{id}/checkout {provider}
+  API-&gt;&gt;API: Tạo Payment(Pending, TransactionRef mới)
+  API--&gt;&gt;FE: redirectUrl (đã ký)
+  FE-&gt;&gt;GW: Chuyển trình duyệt
+  GW-&gt;&gt;API: IPN (server-to-server, có chữ ký)
+  API-&gt;&gt;API: Xác thực chữ ký → khớp số tiền → idempotency → MarkPaid → cấp quyền học
+  GW--&gt;&gt;FE: Chuyển về /thanh-toan/ket-qua?...
+  FE-&gt;&gt;API: GET /api/payments/return/{provider}?... (chỉ đọc trạng thái)
+</code></pre>
+<p>Kênh thử nghiệm đi <strong>đúng các bước trên</strong>. "Cổng" <code>/api/payments/test/gateway</code> (do API phục vụ) kiểm tra chữ ký của yêu cầu, tạo IPN có chữ ký HMAC-SHA256 rồi đưa vào cùng hàm xử lý IPN của VNPay/MoMo. Nhờ vậy khi chuyển sang cổng thật, luồng cấp quyền không phải thay đổi gì.</p>
+<h3 id="quy-tac-bao-mat-a-kiem-thu">Quy tắc bảo mật đã kiểm thử</h3>
+<table>
+<thead>
+<tr>
+<th>Quy tắc</th>
+<th>Thực hiện</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Không tin giá từ Frontend</td>
+<td>Request tạo đơn không có trường giá; số tiền gửi sang cổng lấy từ <code>Order.TotalAmount</code></td>
+</tr>
+<tr>
+<td>Xác thực chữ ký</td>
+<td>VNPay HMAC-SHA512 trên query đã sắp xếp và URL-encode; MoMo HMAC-SHA256 theo chuỗi <code>accessKey=…&amp;amount=…</code>. So sánh trong thời gian cố định</td>
+</tr>
+<tr>
+<td>Khớp số tiền</td>
+<td>Số tiền IPN phải bằng <code>Payment.Amount</code> và <code>Order.TotalAmount</code>; lệch thì VNPay nhận <code>RspCode=04</code></td>
+</tr>
+<tr>
+<td>Idempotency</td>
+<td>Giao dịch không còn ở trạng thái <code>Pending</code> thì bỏ qua (<code>02</code>); có unique index <code>(Provider, ProviderTransactionId)</code>; <code>MarkPaidAsync</code> chạy trong transaction và bỏ qua nếu đơn đã <code>Paid</code></td>
+</tr>
+<tr>
+<td>Không cấp quyền qua redirect</td>
+<td><code>/api/payments/return/*</code> chỉ trả trạng thái để hiển thị. Test kiểm chứng: return báo thành công, đúng chữ ký, đơn vẫn <code>Pending</code></td>
+</tr>
+<tr>
+<td>Thanh toán thất bại</td>
+<td>Payment chuyển <code>Failed</code>, đơn vẫn <code>Pending</code> để khách thanh toán lại</td>
+</tr>
+<tr>
+<td>Thanh toán hai lần</td>
+<td>Giao dịch thứ hai được ghi <code>Success</code> kèm log cảnh báo để đối soát hoàn tiền; không cấp quyền lần nữa</td>
+</tr>
+<tr>
+<td>Không lưu dữ liệu thẻ</td>
+<td>Chỉ lưu mã giao dịch, mã ngân hàng, mã phản hồi và tham số callback (không có số thẻ)</td>
+</tr>
+<tr>
+<td>Chống spam</td>
+<td>Rate limit 60 yêu cầu/phút/IP cho checkout và IPN</td>
+</tr>
+</tbody>
+</table>
+<p>Mã phản hồi IPN VNPay: <code>00</code> thành công/đã ghi nhận thất bại, <code>01</code> không tìm thấy, <code>02</code> đã xử lý, <code>04</code> sai số tiền, <code>97</code> sai chữ ký, <code>99</code> lỗi khác. Tên trường giữ đúng <code>RspCode</code>/<code>Message</code>. MoMo IPN trả <code>204</code>, sai chữ ký trả <code>400</code>.</p>
+<h2 id="3-cau-hinh-vnpay-momo-sandbox">3. Cấu hình VNPay / MoMo sandbox</h2>
+<ol>
+<li>Đăng ký tài khoản sandbox:
+   - VNPay: https://sandbox.vnpayment.vn/devreg — nhận <code>TmnCode</code> và <code>HashSecret</code>.
+   - MoMo: https://developers.momo.vn — nhận <code>PartnerCode</code>, <code>AccessKey</code>, <code>SecretKey</code>.</li>
+<li>Mở API ra Internet để cổng gọi được IPN về máy:
+   <code>powershell
+   ngrok http 5080</code></li>
+<li>Lưu khóa bằng User Secrets (không đưa vào mã nguồn):
+   <code>powershell
+   cd src\backend\src\OnlineLearning.API
+   dotnet user-secrets set "VnPay:TmnCode" "&lt;TmnCode&gt;"
+   dotnet user-secrets set "VnPay:HashSecret" "&lt;HashSecret&gt;"
+   dotnet user-secrets set "VnPay:IpnUrl" "https://&lt;ngrok&gt;.ngrok-free.app/api/payments/vnpay/ipn"
+   dotnet user-secrets set "MoMo:PartnerCode" "&lt;PartnerCode&gt;"
+   dotnet user-secrets set "MoMo:AccessKey" "&lt;AccessKey&gt;"
+   dotnet user-secrets set "MoMo:SecretKey" "&lt;SecretKey&gt;"
+   dotnet user-secrets set "MoMo:IpnUrl" "https://&lt;ngrok&gt;.ngrok-free.app/api/payments/momo/ipn"</code>
+   Với VNPay, URL IPN còn phải được khai báo trong trang quản trị merchant sandbox.</li>
+<li><code>Payments:ReturnUrl</code> mặc định là <code>http://localhost:5173/thanh-toan/ket-qua</code>.</li>
+<li>Thẻ test VNPay (ngân hàng NCB): số <code>9704198526191432198</code>, chủ thẻ <code>NGUYEN VAN A</code>, ngày phát hành <code>07/15</code>, OTP <code>123456</code>.</li>
+</ol>
+<p>Nếu chưa mở ngrok, cổng sandbox vẫn chuyển khách về trang kết quả nhưng đơn sẽ ở trạng thái "Đang chờ xác nhận", vì IPN không tới được máy. Đây là hành vi đúng: hệ thống không cấp quyền dựa trên redirect.</p>
+<h2 id="4-luu-tru-tep">4. Lưu trữ tệp</h2>
+<table>
+<thead>
+<tr>
+<th>Loại</th>
+<th>Giới hạn</th>
+<th>Định dạng</th>
+<th>Quyền tải lên</th>
+<th>Truy cập</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Ảnh</td>
+<td>5 MB</td>
+<td>JPG, PNG, WEBP, GIF</td>
+<td>Mọi người dùng đã đăng nhập</td>
+<td>Công khai</td>
+</tr>
+<tr>
+<td>Video</td>
+<td>500 MB</td>
+<td>MP4, WEBM, MOV, M4V</td>
+<td>Giảng viên, Admin</td>
+<td><strong>Riêng tư</strong>: URL có chữ ký, chỉ cấp cho người có quyền xem bài</td>
+</tr>
+<tr>
+<td>Tài liệu</td>
+<td>50 MB</td>
+<td>PDF, ZIP, RAR, DOCX, XLSX, PPTX, TXT, MD</td>
+<td>Giảng viên, Admin</td>
+<td><strong>Riêng tư</strong>: URL có chữ ký</td>
+</tr>
+</tbody>
+</table>
+<p>Mỗi tệp được kiểm tra phần mở rộng, dung lượng và <strong>chữ ký tệp (magic bytes)</strong>: một tệp <code>.png</code> có nội dung là script sẽ bị từ chối.</p>
+<table>
+<thead>
+<tr>
+<th>Môi trường</th>
+<th>Cách lưu</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Có khóa Cloudinary</td>
+<td>Ảnh lưu dạng <code>upload</code> (CDN công khai). Video/tài liệu lưu dạng <code>authenticated</code>; Backend tạo URL có chữ ký khi học viên đã ghi danh mở bài</td>
+</tr>
+<tr>
+<td>Chưa có khóa (mặc định khi phát triển)</td>
+<td>Ảnh lưu ở <code>wwwroot/uploads/images</code>. Video/tài liệu lưu ở <code>App_Data/storage</code> (không truy cập trực tiếp được), phát qua <code>/api/media/{id}?exp=…&amp;sig=…</code> (HMAC, hết hạn sau 120 phút, hỗ trợ tua video)</td>
+</tr>
+</tbody>
+</table>
+<p>Cấu hình Cloudinary:</p>
+<pre><code class="language-powershell">dotnet user-secrets set &quot;Cloudinary:CloudName&quot; &quot;&lt;cloud name&gt;&quot;
+dotnet user-secrets set &quot;Cloudinary:ApiKey&quot; &quot;&lt;api key&gt;&quot;
+dotnet user-secrets set &quot;Cloudinary:ApiSecret&quot; &quot;&lt;api secret&gt;&quot;
+</code></pre>
+<p>URL <code>authenticated</code> có chữ ký của Cloudinary không đoán được nhưng không tự hết hạn. Muốn link có hạn dùng thì phải bật gói <em>Token-based authentication</em> của Cloudinary.</p>
+<h2 id="5-giao-dien">5. Giao diện</h2>
+<ul>
+<li><strong>Thanh toán:</strong> chọn phương thức, rồi "Đặt hàng và thanh toán" chuyển tới cổng. Đơn 0đ hoàn tất ngay.</li>
+<li><strong>Đơn hàng chờ thanh toán:</strong> chọn phương thức và thanh toán lại trong thời gian còn hiệu lực.</li>
+<li><strong><code>/thanh-toan/ket-qua</code>:</strong> nhận biết cổng qua tham số, nhờ Backend xác thực chữ ký, rồi hỏi lại trạng thái đơn tối đa khoảng 15 giây nếu IPN tới chậm.</li>
+<li><strong>Soạn khóa học:</strong> tải ảnh đại diện, tải video bài học (tự điền thời lượng khi dùng Cloudinary), tải tài liệu. Vẫn có thể dán URL như trước.</li>
+<li><strong>Hồ sơ:</strong> tải ảnh đại diện.</li>
+<li><strong>Admin <code>/quan-tri/giao-dich</code>:</strong> tra cứu và lọc giao dịch theo cổng và trạng thái.</li>
+</ul>
+<h2 id="6-kiem-thu">6. Kiểm thử</h2>
+<p><code>dotnet test</code>: 28 kịch bản, trong đó 9 kịch bản mới:
+- Kênh test thành công qua IPN có chữ ký; gọi lại không cấp quyền lần hai; URL bị sửa bị từ chối.
+- VNPay: chữ ký gửi đi đúng chuẩn; IPN sai chữ ký (97), sai số tiền (04), không tồn tại (01), hợp lệ (00), lặp (02); trang return không cấp quyền; thanh toán thất bại.
+- MoMo: IPN giả chữ ký bị từ chối, IPN đúng chữ ký thì cấp quyền.
+- Tải tệp: ảnh hợp lệ và dùng làm ảnh đại diện; tệp giả định dạng, đuôi cấm, học viên tải video đều bị chặn; video riêng tư chỉ phát qua URL có chữ ký, sửa chữ ký hoặc truy cập thẳng đều bị chặn.</p></section><section class="doc" id="doc-10-chung-chi"><h1 id="10-chung-chi-pdf-trang-xac-minh-giai-oan-6">10 — Chứng chỉ PDF &amp; trang xác minh (Giai đoạn 6)</h1>
+<h2 id="1-ieu-kien-va-cach-cap">1. Điều kiện và cách cấp</h2>
+<ul>
+<li><strong>Điều kiện (FR-CERT-01):</strong> hoàn thành 100% bài học <strong>bắt buộc</strong> và <strong>đạt</strong> mọi bài kiểm tra bắt buộc của khóa.</li>
+<li><strong>Thời điểm cấp:</strong> ngay khi điều kiện được thỏa, dù bước cuối là đánh dấu xong bài học hay nộp bài kiểm tra đạt (<code>LearningService.RecalculateAsync</code> gọi <code>CertificateService.IssueIfEligibleAsync</code>).</li>
+<li><strong>Idempotent:</strong> mỗi lượt ghi danh chỉ có một chứng chỉ (unique <code>EnrollmentId</code> và <code>(UserId, CourseId)</code>). Bỏ đánh dấu một bài rồi hoàn thành lại vẫn giữ nguyên mã cũ. Hai yêu cầu đến cùng lúc sẽ bị unique index chặn bản thứ hai.</li>
+<li><strong>Mã chứng chỉ:</strong> <code>EDV-YYYY-XXXXXXXX</code>, 8 ký tự ngẫu nhiên (bộ sinh số ngẫu nhiên an toàn), bỏ các ký tự dễ nhầm O/0/I/1/L.</li>
+<li><strong>Thông tin lưu cố định lúc cấp:</strong> tên học viên, tên khóa học, tên giảng viên. Đổi tên sau này không làm thay đổi chứng chỉ đã cấp.</li>
+<li><strong>Điểm in trên chứng chỉ:</strong> điểm cao nhất của bài thi cuối khóa; nếu không có bài thi cuối khóa thì lấy trung bình điểm cao nhất của các bài bắt buộc.</li>
+<li>Học viên nhận thông báo kèm mã chứng chỉ.</li>
+<li>Admin có nút <strong>"Cấp bù chứng chỉ còn thiếu"</strong> dành cho các lượt ghi danh đã hoàn thành trước khi tính năng này ra đời.</li>
+</ul>
+<h2 id="2-pdf">2. PDF</h2>
+<p>Sinh bằng <strong>QuestPDF</strong> (giấy phép Community, miễn phí cho tổ chức doanh thu dưới 1 triệu USD/năm) cùng <strong>QRCoder</strong>:</p>
+<ul>
+<li>Khổ A4 ngang, dải thương hiệu xanh, tên học viên cỡ lớn, khóa học, giảng viên, ngày cấp (giờ Việt Nam), điểm, thời lượng.</li>
+<li>Mã chứng chỉ kèm mã QR và liên kết tới <code>{App:ClientUrl}/xac-minh/{mã}</code>.</li>
+<li>Chứng chỉ đã thu hồi có dấu đỏ <strong>"ĐÃ THU HỒI"</strong> (chỉ Admin tải được bản này).</li>
+<li>PDF được tạo <strong>khi tải</strong>, không lưu tệp, nên luôn khớp với trạng thái hiện tại trong DB.</li>
+</ul>
+<p><strong>Font tiếng Việt:</strong> QuestPDF dùng font cài trên máy chủ, thứ tự ưu tiên Arial, Segoe UI, DejaVu Sans, Noto Sans, Liberation Sans.
+- Windows có sẵn Arial.
+- Linux/Docker cần cài font, ví dụ <code>apt-get install -y fonts-dejavu-core</code> hoặc <code>fonts-noto-core</code>.
+- Muốn PDF giống hệt nhau trên mọi máy chủ, đặt tệp <code>.ttf</code> (ví dụ Be Vietnam Pro) vào thư mục <code>Fonts/</code> cạnh ứng dụng; font sẽ được đăng ký khi khởi động.</p>
+<h2 id="3-api">3. API</h2>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Đường dẫn</th>
+<th>Quyền</th>
+<th>Mô tả</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GET</td>
+<td><code>/api/learning/certificates</code></td>
+<td>Học viên</td>
+<td>Chứng chỉ còn hiệu lực của tôi</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/certificates/{id}/pdf</code></td>
+<td>Chủ sở hữu / Admin</td>
+<td>Tải PDF</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/certificates/verify/{code}</code></td>
+<td>Công khai</td>
+<td>Xác minh, không phân biệt chữ hoa/thường</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/certificates/verify/{code}/pdf</code></td>
+<td>Công khai</td>
+<td>Tải PDF bản gốc (chỉ khi chứng chỉ còn hiệu lực)</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/admin/certificates</code></td>
+<td>Admin</td>
+<td>Tra cứu theo mã, tên, email, khóa học; lọc theo tình trạng</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/admin/certificates/{id}/revoke</code> · <code>/restore</code></td>
+<td>Admin</td>
+<td>Thu hồi (bắt buộc ghi lý do) / khôi phục</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/admin/certificates/backfill</code></td>
+<td>Admin</td>
+<td>Cấp bù chứng chỉ còn thiếu</td>
+</tr>
+</tbody>
+</table>
+<p>Các endpoint xác minh công khai có giới hạn 60 yêu cầu/phút/IP để chống dò mã.</p>
+<h2 id="4-giao-dien">4. Giao diện</h2>
+<table>
+<thead>
+<tr>
+<th>Trang</th>
+<th>Nội dung</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/xac-minh</code>, <code>/xac-minh/:mã</code></td>
+<td>Trang công khai (có liên kết trên menu và chân trang). Nhập mã hoặc quét QR, kết quả hiển thị như một tấm chứng chỉ: dải xanh "hợp lệ" hoặc dải đỏ "đã thu hồi" kèm lý do; tải bản PDF gốc</td>
+</tr>
+<tr>
+<td><code>/hoc-vien/chung-chi</code></td>
+<td>Danh sách chứng chỉ của tôi: tải PDF, mở trang xác minh, sao chép liên kết để gửi nhà tuyển dụng</td>
+</tr>
+<tr>
+<td>Trình học</td>
+<td>Hoàn thành khóa thì hiện thông báo kèm nút "Xem chứng chỉ"; đề cương có liên kết "Xem và tải chứng chỉ"; trang kết quả bài kiểm tra hiện mã chứng chỉ</td>
+</tr>
+<tr>
+<td><code>/quan-tri/chung-chi</code></td>
+<td>Tra cứu, tải PDF, thu hồi có lý do (học viên nhận thông báo), khôi phục, cấp bù</td>
+</tr>
+</tbody>
+</table>
+<h2 id="5-kiem-thu">5. Kiểm thử</h2>
+<p>30/30 test. Hai kịch bản mới:
+- Học xong khóa và đạt bài kiểm tra thì có đúng một chứng chỉ với mã đúng định dạng. Hoàn thành lại không cấp thêm. PDF hợp lệ (<code>%PDF</code>). Người khác không tải được bằng id. Xác minh công khai hoạt động, mã không tồn tại trả 404. Thu hồi thì trang xác minh báo đã thu hồi kèm lý do và PDF công khai bị chặn; khôi phục được.
+- Khóa chưa hoàn thành thì không có chứng chỉ; endpoint cấp bù hoạt động.</p>
+<p>Đã chạy thử trên trình duyệt: học viên mẫu học hết khóa "Kỹ năng thuyết trình chuyên nghiệp", đạt bài kiểm tra và nhận chứng chỉ ngay. Mở PDF thấy dấu tiếng Việt, mã QR và đường dẫn xác minh hiển thị đúng.</p></section><section class="doc" id="doc-11-trien-khai"><h1 id="11-trien-khai-len-moi-truong-thuc-te">11 — Triển khai lên môi trường thực tế</h1>
+<p>Ba phương án, chọn một:</p>
+<table>
+<thead>
+<tr>
+<th>Phương án</th>
+<th>Phù hợp</th>
+<th>Thành phần</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>A. Docker Compose trên VPS Linux</strong> (khuyến nghị)</td>
+<td>Một máy chủ 2 vCPU / 4 GB RAM trở lên</td>
+<td>SQL Server 2022 container, API, Nginx (frontend + reverse proxy)</td>
+</tr>
+<tr>
+<td><strong>B. Windows Server + IIS</strong></td>
+<td>Hạ tầng Windows có sẵn</td>
+<td>IIS + ASP.NET Core Hosting Bundle, SQL Server</td>
+</tr>
+<tr>
+<td><strong>C. Azure</strong></td>
+<td>Không muốn tự quản máy chủ</td>
+<td>App Service (API), Static Web Apps (frontend), Azure SQL</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>Dockerfile và docker-compose đã viết nhưng <strong>chưa build thử</strong> trên máy phát triển vì máy này không có Docker. Hãy chạy <code>docker compose build</code> (trong thư mục <code>docker/</code>) ở môi trường có Docker trước khi đưa lên production.</p>
+</blockquote>
+<h2 id="phuong-an-a-docker-compose">Phương án A — Docker Compose</h2>
+<pre><code>Internet ──HTTPS──&gt; Caddy/Cloudflare (TLS) ──HTTP──&gt; web (Nginx :80)
+                                                    ├── /           → React (dist)
+                                                    ├── /api/*      → api:8080
+                                                    └── /uploads/*  → api:8080
+                                       api ──&gt; sqlserver:1433 (không mở ra ngoài)
+</code></pre>
+<ol>
+<li><strong>Chuẩn bị máy chủ</strong> (Ubuntu 24.04): cài Docker Engine + Compose plugin, mở cổng 80/443, trỏ DNS <code>eduviet.example.com</code> về máy chủ.</li>
+<li><strong>Lấy mã nguồn và cấu hình:</strong>
+   <code>bash
+   git clone &lt;repo&gt; eduviet &amp;&amp; cd eduviet/docker
+   cp .env.example .env
+   nano .env   # PUBLIC_URL, SQL_SA_PASSWORD, JWT_SECRET, ADMIN_EMAIL/ADMIN_PASSWORD, khóa VNPay/MoMo/Cloudinary/SMTP</code></li>
+<li><strong>Chạy:</strong>
+   <code>bash
+   docker compose up -d --build
+   docker compose logs -f api   # chờ dòng "Application started"
+   curl http://localhost/api/health</code>
+   API tự áp dụng migration (<code>Database__MigrateOnStartup=true</code>), tạo vai trò, danh mục mặc định và tài khoản Admin từ <code>ADMIN_EMAIL</code>/<code>ADMIN_PASSWORD</code>. Sau lần chạy đầu, xóa <code>ADMIN_PASSWORD</code> khỏi <code>.env</code>.</li>
+<li><strong>HTTPS:</strong> đặt Caddy trước Nginx (tự xin chứng chỉ Let's Encrypt):
+   <code>eduviet.example.com {
+       reverse_proxy localhost:8081
+       header_up X-Forwarded-Proto https
+   }</code>
+   Khi đó đặt <code>HTTP_PORT=8081</code> và <code>HTTPS_REDIRECT=true</code> trong <code>.env</code>. Dùng Cloudflare cũng được, với chế độ SSL "Full".</li>
+<li><strong>Cập nhật phiên bản:</strong> <code>git pull &amp;&amp; docker compose up -d --build</code>. Migration mới được áp dụng tự động.</li>
+<li><strong>Sao lưu:</strong>
+   <code>bash
+   docker compose exec sqlserver /opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P "$SQL_SA_PASSWORD" \
+     -Q "BACKUP DATABASE OnlineLearningDb TO DISK='/var/opt/mssql/backup/eduviet.bak' WITH INIT"</code>
+   Sao lưu thêm volume <code>apidata</code> (khóa Data Protection + tệp riêng tư) và <code>uploads</code>, trừ khi đã dùng Cloudinary.</li>
+</ol>
+<h2 id="phuong-an-b-windows-server-iis">Phương án B — Windows Server + IIS</h2>
+<ol>
+<li>Cài <strong>ASP.NET Core 10 Hosting Bundle</strong>, <strong>SQL Server 2022</strong>, bật IIS và module <strong>URL Rewrite</strong>.</li>
+<li>Build và publish:
+   <code>powershell
+   cd src\backend
+   dotnet publish src\OnlineLearning.API -c Release -o C:\inetpub\eduviet-api
+   cd ..\frontend\online-learning-client
+   npm ci; npm run build   # copy dist\* vào C:\inetpub\eduviet-web</code></li>
+<li>Áp dụng migration bằng <em>migration bundle</em> (không cần cài SDK trên máy chủ):
+   <code>powershell
+   dotnet ef migrations bundle -p src\OnlineLearning.Infrastructure -s src\OnlineLearning.API -o efbundle.exe
+   .\efbundle.exe --connection "Server=...;Database=OnlineLearningDb;..."</code></li>
+<li>Tạo site IIS cho frontend (thư mục <code>eduviet-web</code>). Thêm <code>web.config</code> dùng URL Rewrite để: chuyển <code>api/*</code> và <code>uploads/*</code> sang API (ứng dụng con <code>/api</code>, hoặc ARR proxy tới site API), và trả <code>index.html</code> cho mọi đường dẫn còn lại (SPA).</li>
+<li>Cấu hình API bằng <strong>biến môi trường</strong> trong Application Pool, ví dụ <code>ConnectionStrings__DefaultConnection</code>, <code>Jwt__SecretKey</code>, <code>App__ClientUrl</code>, <code>VnPay__*</code>, <code>MoMo__*</code>, <code>Cloudinary__*</code>, <code>DataProtection__KeysPath=C:\eduviet-data\keys</code>, <code>Storage__LocalRoot=C:\eduviet-data\storage</code>. Cấp quyền ghi cho identity của Application Pool vào <code>C:\eduviet-data</code> và <code>wwwroot\uploads</code>.</li>
+<li>Gắn chứng chỉ HTTPS cho site (win-acme để lấy Let's Encrypt). Để <code>Https__Redirect=true</code>.</li>
+</ol>
+<h2 id="phuong-an-c-azure">Phương án C — Azure</h2>
+<table>
+<thead>
+<tr>
+<th>Thành phần</th>
+<th>Dịch vụ</th>
+<th>Ghi chú</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>API</td>
+<td>App Service Linux (.NET 10)</td>
+<td>Đặt cấu hình ở <em>Environment variables</em>; khóa bí mật để trong Key Vault</td>
+</tr>
+<tr>
+<td>Frontend</td>
+<td>Static Web Apps</td>
+<td>Build <code>npm run build</code>, thư mục <code>dist</code>; khai báo route <code>/api/*</code> tới App Service (linked backend)</td>
+</tr>
+<tr>
+<td>Database</td>
+<td>Azure SQL Database (gói S0 trở lên)</td>
+<td>Bật <em>Allow Azure services</em>; chạy migration bundle trong pipeline</td>
+</tr>
+<tr>
+<td>Tệp</td>
+<td>Cloudinary</td>
+<td>Không lưu tệp trên đĩa App Service</td>
+</tr>
+<tr>
+<td>Data Protection</td>
+<td>Blob Storage</td>
+<td>Hoặc <code>DataProtection__KeysPath=/home/keys</code> (thư mục <code>/home</code> của App Service là bền vững)</td>
+</tr>
+</tbody>
+</table>
+<p>App Service Linux chưa có sẵn font tiếng Việt. Muốn PDF chứng chỉ hiển thị đúng dấu, triển khai API dạng container (dùng <code>src/backend/Dockerfile</code>, đã cài font), hoặc đặt tệp <code>.ttf</code> vào thư mục <code>Fonts/</code>.</p>
+<h2 id="checklist-truoc-khi-mo-cho-nguoi-dung">Checklist trước khi mở cho người dùng</h2>
+<p><strong>Bảo mật</strong>
+- [ ] <code>ASPNETCORE_ENVIRONMENT=Production</code> (Swagger tự tắt)
+- [ ] <code>Jwt:SecretKey</code> ngẫu nhiên ≥ 32 ký tự; không có bí mật nào trong <code>appsettings.json</code> hay git
+- [ ] <code>Payments:TestGateway:Enabled=false</code>. <strong>Bắt buộc</strong>, nếu không khách có thể "thanh toán" mà không trả tiền
+- [ ] HTTPS bắt buộc; <code>App:ClientUrl</code> và <code>Payments:ReturnUrl</code> dùng <code>https://</code> và tên miền thật
+- [ ] Chỉ mở cổng 80/443; SQL Server và API không mở ra Internet (<code>ForwardedHeaders</code> đang tin mọi proxy, nên API chỉ được đứng sau Nginx)
+- [ ] Mật khẩu SA mạnh; tốt nhất tạo user SQL riêng chỉ có quyền trên <code>OnlineLearningDb</code>
+- [ ] Không bật <code>Seed:RunOnStartup</code> (seed này tạo tài khoản demo)</p>
+<p><strong>Thanh toán</strong>
+- [ ] VNPay/MoMo đã chuyển sang khóa và URL <strong>production</strong>
+- [ ] Đã khai báo URL IPN <code>https://&lt;tên miền&gt;/api/payments/vnpay/ipn</code> trong trang merchant VNPay; MoMo dùng <code>…/momo/ipn</code>
+- [ ] Đã thử một giao dịch thật số tiền nhỏ và đối chiếu trang Admin → Giao dịch</p>
+<p><strong>Cơ sở dữ liệu</strong>
+- [ ] Migration <code>InstructorProfileAndMessaging</code> (hồ sơ giảng viên, tin nhắn) được áp dụng tự động khi <code>Database__MigrateOnStartup=true</code>; DBA chạy tay thì dùng <code>setup/database/migration-InstructorProfileAndMessaging.sql</code> (idempotent)</p>
+<ul>
+<li>[ ] Migration <code>RewardPoints</code> (điểm thưởng) được áp dụng tự động; chạy tay thì dùng <code>setup/database/migration-RewardPoints.sql</code>. Rà lại số điểm từng nhiệm vụ tại Quản trị › Điểm thưởng trước khi mở cho học viên</li>
+</ul>
+<p><strong>Nội dung &amp; SEO</strong>
+- [x] Điều khoản hoàn tiền đã xác nhận (06/11/2026): yêu cầu trong 7 ngày, đã học tối đa 20%, chưa cấp chứng chỉ; phản hồi trong 7 ngày làm việc
+- [ ] Thay email, điện thoại, địa chỉ mẫu bằng thông tin thật trong <code>src/frontend/online-learning-client/src/config/site.ts</code> (mục "CẦN THAY")
+- [ ] Nhờ người có chuyên môn pháp lý rà soát các trang <code>/chinh-sach/*</code>
+- [ ] <code>PUBLIC_URL</code> đúng tên miền thật: docker-compose truyền vào <code>VITE_SITE_URL</code> khi build để thẻ Open Graph/canonical dùng URL tuyệt đối
+- [ ] Sửa dòng <code>Sitemap:</code> trong <code>public/robots.txt</code> thành URL đầy đủ, rồi khai báo <code>https://&lt;tên miền&gt;/sitemap.xml</code> trong Google Search Console
+- [ ] Thêm link mạng xã hội thật vào <code>site.social</code> (để trống thì footer không hiện)</p>
+<p><strong>Vận hành</strong>
+- [ ] Đã cấu hình SMTP để email đặt lại mật khẩu gửi được
+- [ ] Đã cấu hình Cloudinary (hoặc volume tệp được sao lưu)
+- [ ] Khóa Data Protection lưu bền vững (<code>DataProtection:KeysPath</code> trỏ vào volume)
+- [ ] Có lịch sao lưu DB hằng ngày và đã thử khôi phục
+- [ ] Giám sát <code>/api/health</code> (UptimeRobot, Azure Monitor…); log được thu thập (<code>docker compose logs</code>, hoặc thêm Serilog sink)
+- [ ] Có font tiếng Việt cho PDF (đã có sẵn trong <code>src/backend/Dockerfile</code>)
+- [ ] Kiểm tra giấy phép QuestPDF: bản Community chỉ miễn phí cho tổ chức có doanh thu dưới 1 triệu USD/năm</p></section><section class="doc" id="doc-12-bao-cao-kiem-thu"><h1 id="12-bao-cao-kiem-thu-giai-oan-7">12 — Báo cáo kiểm thử (Giai đoạn 7)</h1>
+<table>
+<thead>
+<tr>
+<th>Tầng</th>
+<th>Công cụ</th>
+<th>Số kịch bản</th>
+<th>Kết quả</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Backend tích hợp</td>
+<td>xUnit + WebApplicationFactory + SQLite in-memory</td>
+<td>43</td>
+<td><strong>43/43 đạt</strong></td>
+</tr>
+<tr>
+<td>End-to-end</td>
+<td>Playwright (Chrome) + API demo + Vite</td>
+<td>25 (18 desktop, 7 điện thoại)</td>
+<td><strong>25/25 đạt</strong></td>
+</tr>
+<tr>
+<td>Giao diện</td>
+<td>taste-skill <code>inspect.mjs</code> (1440 / 768 / 390 px)</td>
+<td>Trang chủ, chi tiết khóa, xác minh</td>
+<td>Trang chủ 0 FAIL; các trang khác đã sửa lỗi tương phản/bố cục</td>
+</tr>
+<tr>
+<td>Thủ công trên trình duyệt</td>
+<td>Claude Browser</td>
+<td>Mọi luồng chính của 3 vai trò</td>
+<td>Đạt</td>
+</tr>
+</tbody>
+</table>
+<h2 id="1-backend-srcbackendtests">1. Backend (<code>src/backend/tests</code>)</h2>
+<table>
+<thead>
+<tr>
+<th>Nhóm</th>
+<th>Kịch bản chính</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Danh mục &amp; khóa học</td>
+<td>Trang chủ; sitemap.xml chỉ chứa khóa đã xuất bản; tìm kiếm/lọc/sắp xếp; ẩn khóa Pending; chỉ lộ video bài học thử</td>
+</tr>
+<tr>
+<td>Tài khoản</td>
+<td>Đăng ký, refresh token xoay vòng, phát hiện dùng lại token cũ → thu hồi mọi phiên; đăng xuất; sai mật khẩu; validation; đổi mật khẩu; phân quyền 401/403</td>
+</tr>
+<tr>
+<td>Mua hàng</td>
+<td>Giỏ hàng; báo giá; chống sửa giá; mã giảm giá (sai, tối thiểu, 100%); đơn 0đ; chặn mua trùng; hủy đơn; đánh giá một lần</td>
+</tr>
+<tr>
+<td>Giảng viên/Admin</td>
+<td>Tạo khóa → gửi duyệt → từ chối → duyệt; khóa chỉnh sửa khi chờ duyệt; giảng viên không thấy khóa của nhau; vai trò; khóa tài khoản; mã giảm giá; danh mục</td>
+</tr>
+<tr>
+<td>Học tập &amp; quiz</td>
+<td>Nội dung chặn khi chưa mua; tiến độ; tiếp tục học; giới hạn lượt; nộp lặp; hoàn thành khóa; người khác không nộp hộ được</td>
+</tr>
+<tr>
+<td>Thanh toán</td>
+<td>Kênh test qua IPN có chữ ký + chống phát lại; VNPay sai chữ ký (97) / sai số tiền (04) / không tồn tại (01) / hợp lệ (00) / lặp (02) / thất bại; trang return không cấp quyền; MoMo đúng/sai chữ ký; Admin xem giao dịch</td>
+</tr>
+<tr>
+<td>Tệp</td>
+<td>Ảnh hợp lệ / giả định dạng / đuôi cấm; học viên không tải video được; video riêng tư chỉ phát qua URL có chữ ký</td>
+</tr>
+<tr>
+<td>Giảng viên &amp; tin nhắn</td>
+<td>Hồ sơ công khai (kinh nghiệm, xác minh, thống kê); giảng viên sửa hồ sơ + validation (URL https, năm, gộp chuyên môn trùng); học viên không gọi được API hồ sơ; nhắn tin: không tự nhắn, chỉ nhắn giảng viên, chưa đọc/đã đọc, thông báo, người ngoài không đọc được, cùng một cuộc trao đổi; Admin chỉ xác minh được giảng viên</td>
+</tr>
+<tr>
+<td>Điểm thưởng</td>
+<td>Xem <code>14-diem-thuong.md</code> mục 4 (7 kịch bản: làm tròn, IPN lặp, giới thiệu, hoàn tiền, điểm danh đồng thời + chuỗi, chia sẻ chống gian lận, đổi điểm, quyền Admin, CSV)</td>
+</tr>
+<tr>
+<td>Chứng chỉ</td>
+<td>Cấp đúng một lần; PDF hợp lệ; người khác không tải được; xác minh công khai; thu hồi/khôi phục; cấp bù</td>
+</tr>
+</tbody>
+</table>
+<h2 id="2-end-to-end-srcfrontendonline-learning-cliente2e">2. End-to-end (<code>src/frontend/online-learning-client/e2e</code>)</h2>
+<table>
+<thead>
+<tr>
+<th>Tệp</th>
+<th>Kịch bản</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>public.spec.ts</code></td>
+<td>Trang chủ: đủ các section, tab lĩnh vực đổi nội dung, menu "Khóa học" trên header lọc đúng, ô xác minh chứng chỉ; trang Giới thiệu/Liên hệ/Chính sách, canonical, JSON-LD Course, robots.txt, sitemap.xml; mở ô tìm kiếm → tìm kiếm → chi tiết; lọc + sắp xếp lưu trên URL; mua khi chưa đăng nhập → chuyển tới đăng nhập; xác minh mã không tồn tại; <code>/quan-tri</code> yêu cầu đăng nhập</td>
+</tr>
+<tr>
+<td><code>student.spec.ts</code></td>
+<td>Đăng ký → thêm giỏ → mã sai/đúng → kênh test (có thông báo "chưa thu tiền thật") → kết quả thành công → vào học (có video). Đăng ký khóa miễn phí → học hết bài → làm quiz đạt → nhận mã chứng chỉ → tải PDF → chuông thông báo có "Bạn đã nhận chứng chỉ" → người lạ xác minh hợp lệ. Dashboard học viên mẫu → "Học tiếp"</td>
+</tr>
+<tr>
+<td><code>staff.spec.ts</code></td>
+<td>Giảng viên: biểu đồ tổng quan, tạo khóa, chương, bài, bài kiểm tra, gửi duyệt bị chặn vì thiếu thông tin. Admin: duyệt khóa chờ duyệt → khóa xuất hiện công khai; trang giao dịch. Học viên bị chặn khỏi <code>/quan-tri</code> và <code>/giang-day</code></td>
+</tr>
+<tr>
+<td><code>instructor.spec.ts</code></td>
+<td>Hồ sơ giảng viên có huy hiệu xác minh, kinh nghiệm, chứng nhận, JSON-LD Person; khách bấm nhắn tin → đăng nhập; học viên hỏi về khóa học → giảng viên nhận thông báo, trả lời → học viên thấy; giảng viên sửa hồ sơ (lỗi báo đúng ô, trang công khai cập nhật); Admin xác minh → huy hiệu hiện trên trang khóa học</td>
+</tr>
+<tr>
+<td><code>rewards.spec.ts</code></td>
+<td>Học viên điểm danh, nhiệm vụ, lịch sử, chia sẻ tạo liên kết riêng, mã giới thiệu được nhớ khi đăng ký; Admin xem tổng quan, sửa nhiệm vụ, điều chỉnh điểm có lý do, lịch sử</td>
+</tr>
+<tr>
+<td><code>mobile.spec.ts</code></td>
+<td>Không tràn ngang trên 6 trang; menu điện thoại; bộ lọc dạng sheet</td>
+</tr>
+</tbody>
+</table>
+<p>Mỗi lần chạy E2E dùng một DB SQLite mới với dữ liệu mẫu. API chạy trên cổng 5081, Vite trên cổng 5174, nên không ảnh hưởng server đang dùng để phát triển.</p>
+<h2 id="3-loi-phat-hien-nho-kiem-thu-a-sua">3. Lỗi phát hiện nhờ kiểm thử (đã sửa)</h2>
+<table>
+<thead>
+<tr>
+<th>Giai đoạn</th>
+<th>Lỗi</th>
+<th>Phát hiện bởi</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>3</td>
+<td>Giờ hiển thị lệch 7 tiếng (DateTime thiếu "Z")</td>
+<td>Chạy thử trên trình duyệt</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Trang thanh toán tự quay về giỏ hàng sau khi đặt; thông báo mã giảm giá sai bị xóa ngay; tiền định dạng "249,000đ"</td>
+<td>Chạy thử trên trình duyệt</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Nộp bài xong không hiện kết quả; thẻ <code>&lt;a&gt;</code> lồng nhau; số liệu tràn ô</td>
+<td>Chạy thử trên trình duyệt</td>
+</tr>
+<tr>
+<td>5</td>
+<td>VNPay yêu cầu trường <code>RspCode</code> nhưng API trả <code>rspCode</code></td>
+<td>Test tích hợp</td>
+</tr>
+<tr>
+<td>5</td>
+<td>SMTP mặc định trỏ <code>localhost</code> làm "quên mật khẩu" lỗi 500</td>
+<td>Rà soát cấu hình</td>
+</tr>
+<tr>
+<td>6</td>
+<td>QuestPDF không thấy font hệ thống → PDF lỗi 500</td>
+<td>Test tích hợp</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Rate limit đăng nhập chặn kiểm thử tự động → thêm <code>RateLimiting:Enabled</code> (chỉ tắt khi chạy E2E)</td>
+<td>E2E</td>
+</tr>
+</tbody>
+</table>
+<p>Các lỗi E2E ở lần chạy đầu đều nằm trong kịch bản test (bộ chọn trùng phần tử, đếm trước khi dữ liệu tải xong), không phải lỗi ứng dụng.</p>
+<h2 id="4-chua-kiem-thu-uoc">4. Chưa kiểm thử được</h2>
+<ul>
+<li>Chạy trên <strong>SQL Server thật</strong>: máy phát triển không có SQL Server. Migration đã được sinh và CI kiểm tra model không lệch migration, nhưng chưa áp dụng vào SQL Server.</li>
+<li><strong>VNPay/MoMo sandbox thật</strong>: cần khóa merchant và URL công khai (ngrok). Thuật toán ký đã được test với khóa giả theo đặc tả.</li>
+<li><strong>Cloudinary thật</strong>: cần khóa. Đã test đầy đủ với lưu trữ cục bộ cùng giao diện <code>IFileStorage</code>.</li>
+<li><strong>Docker Compose</strong>: chưa build được vì máy không có Docker.</li>
+<li><strong>CI GitHub Actions</strong>: đã viết workflow nhưng chưa chạy, vì thư mục chưa phải repo git và chưa có remote.</li>
+</ul></section><section class="doc" id="doc-13-design-system"><h1 id="13-design-system-giao-dien">13 — Design system giao diện</h1>
+<p>Phong cách: "technology platform" sáng, thoáng (tham khảo ngôn ngữ thiết kế của các trang giới thiệu nền tảng công nghệ như digibird.co). Thương hiệu EduViet được giữ nguyên: logo, màu xanh #005CF8, cam #EF8000, nội dung và dữ liệu thật từ API.</p>
+<p>Mã nguồn: token và utility nằm trong <code>src/frontend/online-learning-client/src/index.css</code>, component dùng chung nằm trong <code>src/components/ui/index.tsx</code>.</p>
+<h2 id="token">Token</h2>
+<table>
+<thead>
+<tr>
+<th>Nhóm</th>
+<th>Giá trị</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Màu chính</td>
+<td><code>brand-50 … brand-900</code>, chính là <code>brand-600</code> #005CF8</td>
+</tr>
+<tr>
+<td>Màu nhấn</td>
+<td><code>accent-*</code> (cam, dùng cho giá và đánh giá); <code>mint-*</code> (trang trí: gạch chân từ khóa, khối nền, gạch dưới menu đang chọn)</td>
+</tr>
+<tr>
+<td>Nền</td>
+<td><code>surface</code> #fff, <code>surface-2</code> #f6f8fc (dải tiêu đề, section xen kẽ), <code>line</code> #e4e9f1</td>
+</tr>
+<tr>
+<td>Chữ</td>
+<td>Tiêu đề <strong>Lexend</strong> (h1–h3, <code>.font-display</code>), thân bài <strong>Be Vietnam Pro</strong>. Cả hai hỗ trợ tiếng Việt</td>
+</tr>
+<tr>
+<td>Cỡ chữ</td>
+<td><code>text-display</code> (hero, 36–58px) · <code>text-title</code> (h1 trang con, h2 section, 27–38px) · <code>text-heading</code> (h3 thẻ, 20px)</td>
+</tr>
+<tr>
+<td>Bo góc</td>
+<td><code>--radius-card</code> 16px · <code>--radius-control</code> 10px (nút, ô nhập)</td>
+</tr>
+<tr>
+<td>Đổ bóng</td>
+<td><code>--shadow-soft</code> (thẻ khi tĩnh) · <code>--shadow-lift</code> (hover, vùng nổi) · <code>--shadow-brand</code> (hover nút chính)</td>
+</tr>
+<tr>
+<td>Khoảng cách</td>
+<td>Thang 4px của Tailwind; section dọc 80–96px (<code>py-20 md:py-24</code>), khoảng cách giữa các thẻ 24px</td>
+</tr>
+<tr>
+<td>Breakpoint</td>
+<td>sm 640 · md 768 (tablet) · lg 1024 (menu đầy đủ) · xl 1280</td>
+</tr>
+</tbody>
+</table>
+<h2 id="utility">Utility</h2>
+<table>
+<thead>
+<tr>
+<th>Utility</th>
+<th>Dùng cho</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>btn-primary</code> / <code>btn-outline</code></td>
+<td>Cặp CTA chính / phụ. Hover nhấc 1px và có bóng, active co 0.97, disabled mờ 50%</td>
+</tr>
+<tr>
+<td><code>btn-soft</code> / <code>btn-ghost</code> / <code>btn-accent</code> / <code>btn-light</code></td>
+<td>Hành động thứ cấp, nút trong thanh công cụ, nút cam, nút trên nền màu</td>
+</tr>
+<tr>
+<td><code>card</code> + <code>card-hover</code></td>
+<td>Thẻ trắng có viền mảnh và bóng nhẹ, thẻ bấm được nhấc lên khi hover</td>
+</tr>
+<tr>
+<td><code>input</code></td>
+<td>Ô nhập: hover và focus có viền xanh và vòng sáng; có trạng thái <code>aria-invalid</code> và <code>disabled</code></td>
+</tr>
+<tr>
+<td><code>chip</code>, <code>eyebrow</code>, <code>mark-mint</code></td>
+<td>Nhãn viên thuốc, nhãn nhỏ trên tiêu đề, gạch chân từ khóa</td>
+</tr>
+<tr>
+<td><code>float-slow</code>, <code>rise-in</code>, <code>[data-reveal]</code> + <code>useReveal</code></td>
+<td>Chuyển động nhẹ. Tất cả tắt khi người dùng bật "giảm chuyển động"</td>
+</tr>
+</tbody>
+</table>
+<h2 id="component-dung-chung">Component dùng chung</h2>
+<ul>
+<li><code>PageHeader</code>: dải tiêu đề trang con gồm đường dẫn, nhãn, h1, mô tả và hành động. Đang dùng ở các trang Khóa học, Giỏ hàng, Thanh toán, Lịch sử mua hàng.</li>
+<li><code>SectionHeading</code>: tiêu đề section, căn trái kèm hành động hoặc căn giữa.</li>
+<li><code>DecorBlobs</code>: khối tròn mờ trang trí nằm phía sau nội dung.</li>
+<li><code>ResponsiveImg</code>: ảnh có <code>srcset</code>/<code>sizes</code> (Cloudinary dùng <code>f_auto,q_auto</code>; picsum đổi kích thước theo URL), mặc định tải lười.</li>
+<li><code>CourseCard</code> / <code>CourseGrid</code>: thẻ khóa học dạng card, hiển thị lĩnh vực, thông số bài, thời lượng, học viên và giá.</li>
+<li>Header (<code>MainLayout</code>): menu có biểu tượng, menu thả xuống "Khóa học" lấy lĩnh vực từ API, ô tìm kiếm mở bằng biểu tượng kính lúp, có bóng khi cuộn, menu hamburger trên điện thoại. Footer: dải CTA và 4 cột liên kết.</li>
+</ul></section><section class="doc" id="doc-14-diem-thuong"><h1 id="14-iem-thuong-reward-points">14 — Điểm thưởng (Reward Points)</h1>
+<h2 id="1-quy-tac-mac-inh">1. Quy tắc mặc định</h2>
+<p>Admin chỉnh được tại <strong>Quản trị › Điểm thưởng › Nhiệm vụ &amp; quy tắc</strong>.</p>
+<table>
+<thead>
+<tr>
+<th>Nhiệm vụ (khóa)</th>
+<th>Điểm</th>
+<th>Điều kiện và chống gian lận</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Mua khóa học (<code>purchase</code>)</td>
+<td>10 điểm / 100.000đ</td>
+<td>Chỉ cộng trong transaction xác nhận thanh toán từ <strong>IPN đã kiểm tra chữ ký và số tiền</strong> (<code>OrderFulfillmentService.MarkPaidAsync</code>). Trang redirect sau thanh toán không cộng điểm. Đơn 0đ không có điểm.</td>
+</tr>
+<tr>
+<td>Hoàn thành khóa học (<code>course_completion</code>)</td>
+<td>100</td>
+<td>Do backend xác định từ tiến độ thật: 100% bài bắt buộc và đạt các bài kiểm tra bắt buộc, cùng điều kiện cấp chứng chỉ. Không có API nào để client tự xin điểm. Mỗi khóa chỉ một lần, kể cả khi ghi danh lại.</td>
+</tr>
+<tr>
+<td>Điểm danh hằng ngày (<code>daily_checkin</code>)</td>
+<td>5</td>
+<td>Một lần mỗi ngày theo giờ Việt Nam (UTC+7). Có unique <code>(UserId, CheckInDate)</code>.</td>
+</tr>
+<tr>
+<td>Điểm danh liên tục (<code>checkin_streak</code>)</td>
+<td>30, ngưỡng 7 ngày</td>
+<td>Cộng mỗi khi chuỗi đạt bội số của ngưỡng (7, 14, 21…). Bỏ lỡ một ngày, chuỗi bắt đầu lại từ 1.</td>
+</tr>
+<tr>
+<td>Chia sẻ khóa học (<code>course_share</code>)</td>
+<td>5</td>
+<td>Chỉ cộng khi <strong>người khác mở</strong> liên kết chia sẻ, tức khác tài khoản và khác IP người tạo. Tối đa một lần mỗi ngày. Mỗi người xem tính một lần. Liên kết cũ hơn 30 ngày không còn được thưởng. Bấm nút chia sẻ không tự cộng điểm.</td>
+</tr>
+<tr>
+<td>Giới thiệu bạn bè (<code>referral</code>)</td>
+<td>50</td>
+<td>Người được giới thiệu đăng ký bằng mã (<code>?ref=</code> hoặc mã đã lưu khi mở liên kết chia sẻ) và <strong>thanh toán thành công đơn có phí đầu tiên</strong>. Mỗi người chỉ được giới thiệu bởi một người. Tự giới thiệu bị bỏ qua.</td>
+</tr>
+<tr>
+<td>Đổi điểm (<code>redeem_voucher</code>)</td>
+<td>100 điểm = 10.000đ, tối thiểu 100</td>
+<td>Tạo mã giảm giá cá nhân (<code>Coupon.RestrictedToUserId</code>), dùng một lần, hạn 90 ngày. Chỉ chủ sở hữu dùng được.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="lam-tron-iem-mua-hang">Làm tròn điểm mua hàng</h3>
+<p><code>Số điểm = floor(Số tiền thanh toán hợp lệ × Điểm / Đơn vị tiền)</code>, tức <strong>làm tròn xuống tới điểm nguyên</strong>. Số tiền tính là tổng đã thanh toán sau mã giảm giá (<code>Order.TotalAmount</code>).</p>
+<p>Ví dụ với 10 điểm/100.000đ:</p>
+<table>
+<thead>
+<tr>
+<th>Số tiền thanh toán</th>
+<th>Điểm</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>390.000đ</td>
+<td>39</td>
+</tr>
+<tr>
+<td>249.000đ</td>
+<td>24</td>
+</tr>
+<tr>
+<td>9.999đ</td>
+<td>0</td>
+</tr>
+</tbody>
+</table>
+<h3 id="hoan-tien">Hoàn tiền</h3>
+<p>Admin chọn <strong>Đơn hàng › Hoàn tiền</strong> sau khi đã hoàn tiền cho khách qua cổng thanh toán. Hệ thống sẽ:</p>
+<ul>
+<li>Chuyển đơn sang <code>Refunded</code> và thu hồi quyền học các khóa trong đơn.</li>
+<li>Thu hồi điểm mua hàng của đơn.</li>
+<li>Thu hồi thưởng giới thiệu, nếu thưởng đó được trao nhờ đơn này.</li>
+</ul>
+<p>Nếu học viên đã tiêu bớt điểm, hệ thống chỉ thu phần điểm còn lại, vì số dư không bao giờ âm. Đơn đã cấp chứng chỉ không hoàn tiền được, đúng theo chính sách hoàn tiền.</p>
+<h2 id="2-thiet-ke-ky-thuat">2. Thiết kế kỹ thuật</h2>
+<ul>
+<li><strong>Sổ cái duy nhất:</strong> mọi cộng/trừ đều đi qua <code>RewardService.ApplyAsync</code>, và luôn chạy trong transaction.</li>
+<li>Số dư cập nhật bằng <strong>một câu <code>UPDATE … SET Balance = Balance + x</code> nguyên tử</strong>, không đọc-sửa-ghi.</li>
+<li>Lệnh trừ có điều kiện <code>WHERE Balance &gt;= x</code>, nên không bao giờ âm. Ngoài ra còn có check constraint <code>CK_UserPoints_Balance</code>.</li>
+<li><strong>Idempotency:</strong> mỗi bút toán có <code>ReferenceKey</code> duy nhất theo người dùng, với unique index <code>(UserId, ReferenceKey)</code>. Ví dụ:</li>
+<li><code>purchase:{orderId}</code></li>
+<li><code>checkin:2026-11-07</code></li>
+<li><code>share:2026-11-07</code> (bảo đảm mỗi ngày chỉ một lần thưởng chia sẻ)</li>
+<li><code>course_completion:{courseId}</code></li>
+<li><code>referral:{userId}</code></li>
+<li><code>refund:{orderId}</code></li>
+<li><strong>Đồng thời:</strong> hai yêu cầu giống nhau gửi cùng lúc thì yêu cầu sau vi phạm unique index, transaction bị rollback và trả 409. Có test cho trường hợp điểm danh đồng thời.</li>
+<li><strong>Không tin client:</strong> API không nhận số điểm từ client, trừ điều chỉnh thủ công của Admin. Admin phải có role và phải ghi lý do; lý do được lưu vào lịch sử và báo cho học viên.</li>
+<li><strong>Quyền:</strong> <code>/api/rewards/*</code> yêu cầu JWT. <code>/api/admin/rewards/*</code> chỉ dành cho role Admin. Riêng <code>POST /api/rewards/shares/{token}/open</code> cho phép ẩn danh, luôn trả 204 và có giới hạn tần suất.</li>
+<li><strong>Quyền riêng tư:</strong> không lưu IP thô. Người mở liên kết được nhận diện bằng SHA-256 của IP và User-Agent.</li>
+</ul>
+<h3 id="bang-du-lieu-migration-rewardpoints">Bảng dữ liệu (migration <code>RewardPoints</code>)</h3>
+<table>
+<thead>
+<tr>
+<th>Bảng</th>
+<th>Nội dung</th>
+<th>Ràng buộc chính</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>UserPoints</code></td>
+<td>Số dư, tổng tích lũy, tổng đã dùng</td>
+<td>Unique <code>UserId</code>; check <code>Balance &gt;= 0</code></td>
+</tr>
+<tr>
+<td><code>PointTransactions</code></td>
+<td>Lịch sử cộng/trừ (không sửa/xóa)</td>
+<td>Unique <code>(UserId, ReferenceKey)</code>; index theo thời gian, quy tắc</td>
+</tr>
+<tr>
+<td><code>PointRules</code></td>
+<td>Cấu hình nhiệm vụ</td>
+<td>Unique <code>Key</code>; check <code>Points &gt;= 0</code></td>
+</tr>
+<tr>
+<td><code>DailyCheckIns</code></td>
+<td>Lịch sử điểm danh, chuỗi</td>
+<td>Unique <code>(UserId, CheckInDate)</code></td>
+</tr>
+<tr>
+<td><code>CourseShares</code> / <code>CourseShareOpens</code></td>
+<td>Liên kết chia sẻ, lượt mở</td>
+<td>Unique <code>Token</code>; unique <code>(CourseShareId, VisitorKey)</code></td>
+</tr>
+<tr>
+<td><code>PointRedemptions</code></td>
+<td>Lịch sử đổi điểm</td>
+<td>Unique <code>CouponId</code>; check <code>Points &gt; 0</code></td>
+</tr>
+<tr>
+<td><code>ReferralCodes</code> / <code>Referrals</code></td>
+<td>Mã giới thiệu, quan hệ giới thiệu</td>
+<td>Unique <code>Code</code>, <code>UserId</code>; unique <code>ReferredUserId</code></td>
+</tr>
+</tbody>
+</table>
+<p>Các cột thêm vào bảng cũ:</p>
+<ul>
+<li><code>Orders.RefundedAt</code>, <code>Orders.RefundReason</code></li>
+<li><code>Coupons.RestrictedToUserId</code></li>
+</ul>
+<h3 id="api">API</h3>
+<table>
+<thead>
+<tr>
+<th>Phương thức</th>
+<th>Đường dẫn</th>
+<th>Mô tả</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GET</td>
+<td><code>/api/rewards/summary</code></td>
+<td>Số dư, điểm danh, nhiệm vụ, mã giới thiệu, cấu hình đổi điểm</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/rewards/transactions</code></td>
+<td>Lịch sử điểm của tôi</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/rewards/check-in</code></td>
+<td>Điểm danh</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/rewards/shares</code></td>
+<td>Tạo liên kết chia sẻ <code>{ courseId, channel }</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/rewards/shares/{token}/open</code></td>
+<td>Ghi nhận lượt mở (ẩn danh)</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/rewards/redeem</code></td>
+<td>Đổi điểm <code>{ points }</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/rewards/redemptions</code></td>
+<td>Mã đã đổi</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/admin/rewards/overview</code> · <code>balances</code> · <code>transactions</code> · <code>transactions/export</code></td>
+<td>Thống kê, điểm học viên, lịch sử, xuất CSV</td>
+</tr>
+<tr>
+<td>GET/POST/PUT/DELETE</td>
+<td><code>/api/admin/rewards/rules</code></td>
+<td>Quản lý nhiệm vụ. Nhiệm vụ hệ thống chỉ sửa và bật/tắt, không xóa</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/admin/rewards/adjustments</code></td>
+<td>Điều chỉnh thủ công <code>{ userId, points, reason }</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/admin/orders/{id}/refund</code></td>
+<td>Xác nhận hoàn tiền <code>{ reason }</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="3-chay-migration-api-frontend">3. Chạy migration, API, frontend</h2>
+<p><strong>SQL Server.</strong> Migration tự áp dụng khi khởi động nếu <code>Database:MigrateOnStartup=true</code>, ví dụ khi chạy Docker. Muốn chạy tay:</p>
+<pre><code class="language-powershell">cd src\backend
+dotnet ef database update -p src\OnlineLearning.Infrastructure -s src\OnlineLearning.API
+</code></pre>
+<p>DBA có thể chạy script idempotent <code>setup/database/migration-RewardPoints.sql</code>. Các quy tắc mặc định được seed tự động khi API khởi động; seed chỉ thêm quy tắc còn thiếu, không ghi đè cấu hình Admin đã chỉnh.</p>
+<p><strong>Chế độ demo SQLite.</strong> Chế độ này tạo DB bằng <code>EnsureCreated</code> nên không tự nâng cấp schema. Dừng API, đổi tên hoặc xóa <code>src/backend/src/OnlineLearning.API/eduviet-demo.db</code>, rồi chạy:</p>
+<pre><code class="language-powershell">cd src\backend\src\OnlineLearning.API
+dotnet run --launch-profile demo-sqlite
+</code></pre>
+<p><strong>Frontend:</strong></p>
+<pre><code class="language-powershell">cd src\frontend\online-learning-client
+npm run dev
+</code></pre>
+<p>Các trang:</p>
+<ul>
+<li>Học viên: <code>/hoc-vien/diem-thuong</code></li>
+<li>Admin: <code>/quan-tri/diem-thuong</code></li>
+<li>Nút "Chia sẻ khóa học" nằm trên trang chi tiết khóa học.</li>
+</ul>
+<blockquote>
+<p>Khi chạy thử trên một máy, mở liên kết chia sẻ của chính mình (cùng IP) <strong>không</strong> được cộng điểm. Đây là cơ chế chống gian lận. Muốn thấy điểm chia sẻ, hãy mở liên kết từ thiết bị hoặc mạng khác.</p>
+</blockquote>
+<h2 id="4-kiem-thu">4. Kiểm thử</h2>
+<ul>
+<li><strong>Backend, <code>RewardTests</code>:</strong> làm tròn điểm; IPN lặp không cộng trùng; thưởng giới thiệu; hoàn tiền thu hồi cả điểm mua hàng lẫn thưởng giới thiệu; điểm danh một lần mỗi ngày, kể cả hai yêu cầu đồng thời; chuỗi 7 ngày và reset sau khi bỏ lỡ; chia sẻ chỉ thưởng khi người khác mở và tối đa một lần mỗi ngày; hoàn thành khóa chỉ thưởng một lần; đổi điểm tạo mã cá nhân và không âm điểm; điều chỉnh thủ công bắt buộc lý do; quyền Admin; xuất CSV.</li>
+<li><strong>E2E, <code>rewards.spec.ts</code>:</strong> học viên điểm danh, xem nhiệm vụ và lịch sử, chia sẻ tạo liên kết riêng, khách mở liên kết và mã giới thiệu được nhớ khi đăng ký; Admin xem tổng quan, sửa nhiệm vụ, điều chỉnh điểm có lý do, xem lịch sử, và học viên thấy được điều chỉnh.</li>
+</ul></section>
+</body></html>

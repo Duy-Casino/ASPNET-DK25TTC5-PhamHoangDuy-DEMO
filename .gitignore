@@ -28,9 +28,9 @@ Thumbs.db
 *.db-wal
 
 # Tệp tải lên khi lưu cục bộ
-backend/src/OnlineLearning.API/wwwroot/uploads/*
-!backend/src/OnlineLearning.API/wwwroot/uploads/.gitkeep
-backend/src/OnlineLearning.API/App_Data/
+src/backend/src/OnlineLearning.API/wwwroot/uploads/*
+!src/backend/src/OnlineLearning.API/wwwroot/uploads/.gitkeep
+src/backend/src/OnlineLearning.API/App_Data/
 
 # Playwright
 test-results/

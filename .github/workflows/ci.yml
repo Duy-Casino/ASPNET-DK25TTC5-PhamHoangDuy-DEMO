@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: backend
+        working-directory: src/backend
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
@@ -32,7 +32,7 @@ jobs:
         if: always()
         with:
           name: backend-test-results
-          path: backend/**/TestResults/*.trx
+          path: src/backend/**/TestResults/*.trx
 
   frontend:
     name: Frontend (build + E2E)
@@ -40,7 +40,7 @@ jobs:
     needs: backend
     defaults:
       run:
-        working-directory: frontend/online-learning-client
+        working-directory: src/frontend/online-learning-client
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
@@ -50,7 +50,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: frontend/online-learning-client/package-lock.json
+          cache-dependency-path: src/frontend/online-learning-client/package-lock.json
       - run: npm ci
       - run: npm run build
       - name: Cài font tiếng Việt (chứng chỉ PDF) và trình duyệt Playwright
@@ -62,5 +62,5 @@ jobs:
         if: always()
         with:
           name: playwright-report
-          path: frontend/online-learning-client/playwright-report
+          path: src/frontend/online-learning-client/playwright-report
           retention-days: 14
