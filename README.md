@@ -1,170 +1,243 @@
-# EduViet — Website bán khóa học trực tuyến
+# EduViet: Website bán khóa học trực tuyến
 
-ASP.NET Core 10 Web API · EF Core · SQL Server · ASP.NET Core Identity + JWT · React + TypeScript + Vite + Tailwind CSS v4 · VNPay/MoMo Sandbox · Cloudinary · QuestPDF · Playwright.
+> Đồ án môn học ASP.NET, lớp **DK25TTC5**
+> Sinh viên thực hiện: **Phạm Hoàng Duy**
+> Repository: <https://github.com/Duy-Casino/ASPNET-DK25TTC5-PhamHoangDuy-DEMO>
+> Cập nhật lần cuối: **09/11/2026**. Nhật ký thay đổi xem mục [9](#9-nhật-ký-tiến-độ).
 
-Nền tảng bán và học khóa học trực tuyến: 4 vai trò (khách, học viên, giảng viên, admin), giỏ hàng + mã giảm giá, thanh toán VNPay/MoMo
-(kèm kênh thử nghiệm không thu tiền), trình học video có lưu tiến độ, bài kiểm tra trắc nghiệm, chứng chỉ PDF có mã QR và trang xác minh công khai,
-dashboard có biểu đồ cho cả 3 vai trò.
+EduViet là website mua và học khóa học trực tuyến, giao diện tiếng Việt, với bốn vai trò: khách, học viên, giảng viên và quản trị viên.
 
-## Bắt đầu nhanh (không cần SQL Server)
+- Người học tìm khóa học, học thử, mua bằng VNPay/MoMo, học video có lưu tiến độ, làm bài kiểm tra, nhận chứng chỉ PDF có mã xác minh và tích điểm thưởng.
+- Giảng viên soạn khóa học, quản lý hồ sơ giảng dạy và trả lời câu hỏi của học viên.
+- Quản trị viên duyệt khóa học, quản lý người dùng, đơn hàng, mã giảm giá, chứng chỉ và điểm thưởng.
+
+**Công nghệ:** ASP.NET Core 10 Web API · EF Core · SQL Server (SQLite cho chế độ demo) · ASP.NET Core Identity + JWT · React 19 + TypeScript + Vite + Tailwind CSS v4 · VNPay/MoMo Sandbox · Cloudinary · QuestPDF · xUnit · Playwright.
+
+---
+
+## Mục lục
+
+1. [Chức năng đã thực hiện](#1-chức-năng-đã-thực-hiện)
+2. [Kiến trúc và công nghệ](#2-kiến-trúc-và-công-nghệ)
+3. [Cài đặt và chạy thử](#3-cài-đặt-và-chạy-thử)
+4. [Tài khoản và dữ liệu mẫu](#4-tài-khoản-và-dữ-liệu-mẫu)
+5. [Hướng dẫn sử dụng nhanh](#5-hướng-dẫn-sử-dụng-nhanh)
+6. [Kiểm thử](#6-kiểm-thử)
+7. [Cấu trúc thư mục](#7-cấu-trúc-thư-mục)
+8. [Tài liệu chi tiết](#8-tài-liệu-chi-tiết)
+9. [Nhật ký tiến độ](#9-nhật-ký-tiến-độ)
+10. [Hạn chế và việc còn lại](#10-hạn-chế-và-việc-còn-lại)
+
+---
+
+## 1. Chức năng đã thực hiện
+
+| Nhóm | Chức năng |
+| --- | --- |
+| **Tài khoản** | Đăng ký, đăng nhập, JWT 15 phút + refresh token xoay vòng trong cookie HttpOnly, phát hiện dùng lại token, quên/đặt lại mật khẩu, xác nhận email, hồ sơ, đổi mật khẩu, khóa sau 5 lần sai |
+| **Khóa học** | Danh mục 2 cấp; tìm kiếm, lọc theo lĩnh vực, cấp độ, giá, đánh giá; sắp xếp, phân trang; trang chi tiết có đề cương, video học thử, đánh giá và phân bố sao |
+| **Mua hàng** | Giỏ hàng, báo giá tính ở server (chống sửa giá), mã giảm giá, đơn 0đ, chặn mua trùng, đơn quá hạn tự hủy, lịch sử đơn hàng |
+| **Thanh toán** | VNPay (HMAC-SHA512) và MoMo (HMAC-SHA256) sandbox. Kiểm tra chữ ký và số tiền ở IPN, idempotency, chỉ cấp quyền học qua IPN chứ không qua trang redirect. Có thêm kênh thử nghiệm không thu tiền thật |
+| **Học trực tuyến** | Trình học video nhớ vị trí, tự hoàn thành bài, tài liệu đính kèm, tiến độ theo bài bắt buộc; bài chưa mua bị chặn (403) |
+| **Bài kiểm tra** | Trắc nghiệm một hoặc nhiều đáp án, đúng/sai; chấm ở server; giới hạn lượt và thời gian; xem đáp án và giải thích sau khi nộp |
+| **Chứng chỉ** | Tự cấp khi hoàn thành khóa; PDF A4 có mã QR, mã `EDV-YYYY-XXXXXXXX`; trang xác minh công khai `/xac-minh/:mã`; Admin thu hồi, khôi phục, cấp bù |
+| **Giảng viên** | Soạn khóa học, chương, bài, tài liệu, bài kiểm tra; gửi duyệt. Hồ sơ giảng dạy gồm kinh nghiệm, học vấn, chứng nhận, chuyên môn, ảnh đại diện; huy hiệu "Đã xác minh" do Admin cấp; thống kê học viên và đánh giá |
+| **Trao đổi** | Học viên nhắn tin hỏi giảng viên về khóa học, trạng thái đã đọc/chưa đọc, thông báo trên chuông |
+| **Điểm thưởng** | Tích điểm khi mua khóa (10 điểm/100.000đ), hoàn thành khóa, điểm danh hằng ngày, chuỗi 7 ngày, chia sẻ khóa học, giới thiệu bạn bè. Đổi điểm lấy mã giảm giá cá nhân. Admin cấu hình quy tắc, điều chỉnh điểm có lý do, xem thống kê, xuất CSV. Hoàn tiền thì thu hồi điểm |
+| **Dashboard** | Học viên: tiến độ, kết quả, chứng chỉ, thanh toán. Giảng viên: doanh thu, lượt đăng ký 12 tháng. Admin: tổng quan, biểu đồ, duyệt khóa học, phân quyền, đơn hàng, giao dịch |
+| **Nội dung & SEO** | Trang Giới thiệu, Liên hệ, chính sách (điều khoản, bảo mật, hoàn tiền); thẻ Open Graph, canonical, JSON-LD (Course, Person); `sitemap.xml`, `robots.txt`; giao diện responsive cho điện thoại |
+| **Bảo mật** | Rate limit, ProblemDetails tiếng Việt, header bảo mật, lọc HTML chống XSS, kiểm tra magic bytes khi tải tệp, URL video có chữ ký, phân quyền theo vai trò |
+
+## 2. Kiến trúc và công nghệ
+
+```
+React SPA (Vite, cổng 5173) ──/api──> ASP.NET Core Web API (cổng 5080) ──EF Core──> SQL Server / SQLite
+                                              │
+                                              ├── VNPay / MoMo (thanh toán, IPN)
+                                              ├── Cloudinary hoặc lưu cục bộ (ảnh, video, tài liệu)
+                                              └── QuestPDF (chứng chỉ PDF)
+```
+
+Backend theo **Clean Architecture**, gồm bốn project:
+
+| Project | Vai trò |
+| --- | --- |
+| `OnlineLearning.Domain` | Entity, enum, hằng số nghiệp vụ. Không phụ thuộc thư viện ngoài |
+| `OnlineLearning.Application` | Service nghiệp vụ, DTO, FluentValidation, kiểu `Result<T>` |
+| `OnlineLearning.Infrastructure` | EF Core DbContext, cấu hình Fluent API, migration, cổng thanh toán, lưu trữ tệp, email, PDF |
+| `OnlineLearning.API` | Controller, xác thực JWT, phân quyền, rate limit, Swagger |
+
+Frontend: React 19 + TypeScript, React Router, Tailwind CSS v4 (design token trong `src/index.css`), Recharts cho biểu đồ.
+
+Chi tiết: [docs/02 Kiến trúc](docs/02-kien-truc.md) · [docs/03 Database](docs/03-thiet-ke-database.md).
+
+## 3. Cài đặt và chạy thử
+
+### 3.1. Yêu cầu
+
+| Công cụ | Phiên bản | Bắt buộc |
+| --- | --- | --- |
+| .NET SDK | 10.0 | Có |
+| Node.js | 22 trở lên | Có |
+| SQL Server | 2022 (Developer/Express) hoặc LocalDB | Chỉ khi chạy cách B |
+| `dotnet-ef` | 10.x | Chỉ khi chạy cách B |
 
 ```powershell
-# Yêu cầu: .NET 10 SDK, Node.js 22+
-cd backend/src/OnlineLearning.API
+winget install Microsoft.DotNet.SDK.10
+winget install OpenJS.NodeJS.LTS
+dotnet tool install --global dotnet-ef
+```
+
+### 3.2. Lấy mã nguồn và cấu hình bí mật (một lần)
+
+```powershell
+git clone https://github.com/Duy-Casino/ASPNET-DK25TTC5-PhamHoangDuy-DEMO.git
+cd ASPNET-DK25TTC5-PhamHoangDuy-DEMO\backend\src\OnlineLearning.API
 dotnet user-secrets set "Jwt:SecretKey" "<chuỗi ngẫu nhiên ≥ 32 ký tự>"
-dotnet user-secrets set "Seed:DemoPassword" "<mật khẩu demo, có hoa/thường/số>"
-dotnet run --launch-profile demo-sqlite          # API: http://localhost:5080
+dotnet user-secrets set "Seed:DemoPassword" "<mật khẩu demo, ≥ 8 ký tự, có hoa/thường/số>"
+```
 
-cd ../../../frontend/online-learning-client
+Bí mật được lưu bằng User Secrets, không nằm trong mã nguồn. Sinh chuỗi ngẫu nhiên trong PowerShell:
+`[Convert]::ToBase64String((1..48 | % { Get-Random -Max 256 }))`
+
+### 3.3. Cách A: chế độ demo, không cần SQL Server (khuyên dùng để xem thử)
+
+```powershell
+# Terminal 1: API tại http://localhost:5080 (Swagger: /swagger)
+cd backend\src\OnlineLearning.API
+dotnet run --launch-profile demo-sqlite
+
+# Terminal 2: Web tại http://localhost:5173
+cd frontend\online-learning-client
 npm install
-npm run dev                                      # Web: http://localhost:5173
+npm run dev
 ```
 
-Đăng nhập `admin@eduviet.local`, `giangvien@eduviet.local` hoặc `hocvien@eduviet.local` với mật khẩu demo vừa đặt.
-Chạy với SQL Server, chạy test và các chi tiết khác: xem [docs/04](docs/04-cai-dat-moi-truong.md). Triển khai thật: [docs/11](docs/11-trien-khai.md).
+Lần chạy đầu, API tự tạo `eduviet-demo.db` cùng dữ liệu mẫu. Mở <http://localhost:5173>.
 
-## Cấu trúc
+> Chế độ demo tạo DB bằng `EnsureCreated` nên **không tự cập nhật khi schema đổi**. Sau khi kéo code có migration mới, hãy dừng API, xóa hoặc đổi tên `eduviet-demo.db`, rồi chạy lại.
+
+### 3.4. Cách B: SQL Server
+
+1. Sửa `ConnectionStrings:DefaultConnection` (hoặc đặt bằng User Secrets) trỏ tới SQL Server của bạn.
+2. Tạo database bằng migration:
+   ```powershell
+   cd backend
+   dotnet ef database update -p src\OnlineLearning.Infrastructure -s src\OnlineLearning.API
+   ```
+   Có thể chạy tay các script trong thư mục `database/` thay cho bước này.
+3. Chạy API bằng `dotnet run` trong `src\OnlineLearning.API`, rồi chạy frontend như cách A.
+
+Hướng dẫn đầy đủ, kể cả cài .NET không cần quyền Admin: [docs/04](docs/04-cai-dat-moi-truong.md). Triển khai lên máy chủ thật (Docker Compose, IIS, Azure) kèm checklist: [docs/11](docs/11-trien-khai.md).
+
+## 4. Tài khoản và dữ liệu mẫu
+
+Dữ liệu mẫu có 10 khóa học, khoảng 40 đơn hàng, đánh giá, 3 mã giảm giá, 3 giảng viên (ảnh đại diện minh họa, người không có thật) và quy tắc điểm thưởng mặc định.
+
+| Vai trò | Email | Mật khẩu |
+| --- | --- | --- |
+| Quản trị viên | `admin@eduviet.local` | Giá trị `Seed:DemoPassword` đã đặt ở bước 3.2 |
+| Giảng viên | `giangvien@eduviet.local` | như trên |
+| Học viên | `hocvien@eduviet.local` | như trên |
+
+Thanh toán thử: ở trang thanh toán, chọn **Kênh thử nghiệm**. Đơn được xác nhận tự động và không thu tiền thật.
+
+## 5. Hướng dẫn sử dụng nhanh
+
+| Vai trò | Đường dẫn | Việc có thể thử |
+| --- | --- | --- |
+| Khách | `/`, `/khoa-hoc`, `/khoa-hoc/:slug`, `/giang-vien/:id`, `/xac-minh/:mã` | Tìm và lọc khóa học, xem học thử, xem hồ sơ giảng viên, xác minh chứng chỉ |
+| Học viên | `/hoc-vien`, `/hoc/:slug`, `/gio-hang`, `/tin-nhan`, `/hoc-vien/diem-thuong` | Mua khóa học, học, làm bài kiểm tra, nhận chứng chỉ, nhắn giảng viên, điểm danh, đổi điểm |
+| Giảng viên | `/giang-day`, `/giang-day/ho-so` | Tạo khóa học, gửi duyệt, sửa hồ sơ giảng dạy, trả lời tin nhắn và đánh giá |
+| Quản trị viên | `/quan-tri`, `/quan-tri/diem-thuong` | Duyệt khóa học, quản lý người dùng, đơn hàng, hoàn tiền, mã giảm giá, chứng chỉ, điểm thưởng |
+
+Luồng nên thử: đăng ký học viên → thêm khóa vào giỏ → thanh toán qua kênh thử nghiệm → vào học → hoàn thành bài và bài kiểm tra → tải chứng chỉ → mở trang xác minh. Mỗi bước cũng cộng điểm thưởng tương ứng.
+
+## 6. Kiểm thử
+
+| Tầng | Công cụ | Kết quả gần nhất |
+| --- | --- | --- |
+| Backend tích hợp | xUnit + WebApplicationFactory + SQLite in-memory | **43/43 đạt** |
+| End-to-end | Playwright (Chrome), 18 kịch bản desktop + 7 kịch bản điện thoại | **25/25 đạt** |
+| Build | `dotnet build`, `npm run build` | Đạt |
+
+```powershell
+# Backend (dừng API demo trước để tránh khóa DLL)
+cd backend
+dotnet test
+
+# E2E: tự chạy API trên cổng 5081 và Vite trên cổng 5174, dùng DB mới mỗi lần
+cd frontend\online-learning-client
+npx playwright install chrome
+$env:E2E_CHANNEL="chrome"; npx playwright test
+```
+
+Danh sách kịch bản và các lỗi phát hiện nhờ kiểm thử: [docs/12](docs/12-bao-cao-kiem-thu.md).
+
+## 7. Cấu trúc thư mục
 
 ```
-backend/    ASP.NET Core 10 — Domain, Application, Infrastructure, API (Clean Architecture) + tests/
-frontend/   online-learning-client — React 19 + TypeScript + Vite + Tailwind CSS v4 + e2e/ (Playwright)
-database/   schema.sql + script migration
-docs/       Phân tích, thiết kế, hướng dẫn, báo cáo kiểm thử
+backend/
+  src/OnlineLearning.Domain/          Entity, enum, hằng số
+  src/OnlineLearning.Application/     Service nghiệp vụ theo tính năng (Features/*), DTO, validator
+  src/OnlineLearning.Infrastructure/  DbContext, cấu hình EF, Migrations/, thanh toán, lưu trữ, PDF
+  src/OnlineLearning.API/             Controllers/, Program.cs, appsettings, launch profile demo-sqlite
+  tests/OnlineLearning.IntegrationTests/
+frontend/online-learning-client/
+  src/pages/        Trang theo vai trò: auth, checkout, learn, student, instructor, admin, messages, info
+  src/components/   Component dùng chung (ui, layout, dashboard, rewards…)
+  src/services/     Gọi API
+  e2e/              Kịch bản Playwright
+  public/           Ảnh tĩnh, robots.txt, ảnh đại diện giảng viên demo
+database/           schema.sql và script migration cho DBA
+docs/               Tài liệu phân tích, thiết kế, hướng dẫn, báo cáo kiểm thử
 docker-compose.yml, .env.example, .github/workflows/ci.yml
 ```
 
-## Tài liệu
+## 8. Tài liệu chi tiết
 
 | # | Tài liệu |
 | --- | --- |
 | 01 | [Phân tích yêu cầu, quy tắc nghiệp vụ, Use Case](docs/01-phan-tich-yeu-cau.md) |
-| 02 | [Kiến trúc hệ thống & bảo mật](docs/02-kien-truc.md) |
-| 03 | [Thiết kế database & ERD](docs/03-thiet-ke-database.md) · [schema.sql](database/schema.sql) |
-| 04 | [Cài đặt môi trường & chạy dự án](docs/04-cai-dat-moi-truong.md) |
-| 05 | [Design system](docs/05-design-system.md) |
-| 06 | [Backend API, quy tắc nghiệp vụ trong code, kiểm thử, dữ liệu mẫu](docs/06-backend-api.md) |
-| 07 | [Frontend: chạy, các trang, xác thực phía client, thiết kế](docs/07-frontend.md) |
+| 02 | [Kiến trúc hệ thống và bảo mật](docs/02-kien-truc.md) |
+| 03 | [Thiết kế database, ERD](docs/03-thiet-ke-database.md) · [schema.sql](database/schema.sql) |
+| 04 | [Cài đặt môi trường, chạy dự án](docs/04-cai-dat-moi-truong.md) |
+| 05 | [Design system (phiên bản đầu)](docs/05-design-system.md) |
+| 06 | [Backend API, dữ liệu mẫu](docs/06-backend-api.md) |
+| 07 | [Frontend: các trang, xác thực phía client](docs/07-frontend.md) |
 | 08 | [Học trực tuyến, bài kiểm tra, dashboard](docs/08-hoc-tap-va-dashboard.md) |
-| 09 | [Thanh toán VNPay/MoMo/kênh test, lưu trữ Cloudinary](docs/09-thanh-toan-va-luu-tru.md) |
-| 10 | [Chứng chỉ PDF & trang xác minh](docs/10-chung-chi.md) |
-| 11 | [Triển khai: Docker Compose, IIS, Azure + checklist production](docs/11-trien-khai.md) |
+| 09 | [Thanh toán VNPay/MoMo/kênh thử nghiệm, lưu trữ Cloudinary](docs/09-thanh-toan-va-luu-tru.md) |
+| 10 | [Chứng chỉ PDF, trang xác minh](docs/10-chung-chi.md) |
+| 11 | [Triển khai: Docker Compose, IIS, Azure, checklist production](docs/11-trien-khai.md) |
 | 12 | [Báo cáo kiểm thử](docs/12-bao-cao-kiem-thu.md) |
+| 13 | [Design system giao diện hiện tại](docs/13-design-system.md) |
+| 14 | [Điểm thưởng: quy tắc, thiết kế, API](docs/14-diem-thuong.md) |
 
-## Lộ trình
+## 9. Nhật ký tiến độ
 
-| Giai đoạn | Nội dung | Trạng thái |
+Mỗi khi hoàn thành một tính năng, thêm một dòng vào bảng này và cập nhật mục 1, 6, 8 nếu có thay đổi.
+
+| Ngày | Nội dung | Kết quả kiểm thử |
 | --- | --- | --- |
-| 1 | Phân tích, kiến trúc, database, cấu trúc Solution, môi trường | ✅ Hoàn tất |
-| 2 | Backend: Auth/JWT/refresh, Courses, Categories, Cart, Orders, Coupons, Reviews, Admin API, seed khóa học mẫu | ✅ Build sạch, 16/16 test tích hợp đạt (chưa chạy trên SQL Server thật) |
-| 3 | Frontend: layout, trang chủ, danh sách/chi tiết khóa học, auth, giỏ hàng, thanh toán, đơn hàng, hồ sơ | ✅ Đã chạy thử end-to-end với API demo |
-| 4 | Học trực tuyến, tiến độ, Quiz, Dashboard 3 vai trò + biểu đồ | ✅ 20/20 test backend, đã chạy thử trên trình duyệt |
-| 5 | Thanh toán VNPay/MoMo Sandbox (IPN, idempotency), kênh test, Cloudinary | ✅ 28/28 test backend, đã chạy thử kênh test và tải ảnh trên trình duyệt |
-| 6 | Chứng chỉ PDF + trang xác minh | ✅ 30/30 test backend, đã cấp và xác minh chứng chỉ trên trình duyệt |
-| 7 | Kiểm thử (xUnit, Playwright E2E), hướng dẫn triển khai production | ✅ 30/30 test backend, 18/18 E2E; Docker/CI đã viết, chưa chạy |
+| 05/11/2026 | Giai đoạn 1–7: phân tích, thiết kế DB, backend (Auth, khóa học, giỏ hàng, đơn hàng, mã giảm giá, đánh giá, Admin), frontend, học trực tuyến, bài kiểm tra, dashboard, thanh toán VNPay/MoMo, chứng chỉ PDF, kiểm thử, hướng dẫn triển khai | 30/30 backend, 18/18 E2E |
+| 05/11/2026 | Trang chủ dạng sàn khóa học nền sáng; ẩn nút đăng ký khi đã đăng nhập | |
+| 06/11/2026 | Thiết kế lại giao diện theo phong cách nền tảng công nghệ, giữ thương hiệu EduViet ([docs/13](docs/13-design-system.md)) | |
+| 06/11/2026 | Trang chính sách (điều khoản hoàn tiền: 7 ngày, học tối đa 20%), chuông thông báo, SEO (Open Graph, JSON-LD, sitemap), tối ưu ảnh và gói JS | |
+| 07/11/2026 | Tính năng giảng viên: hồ sơ giảng dạy chi tiết, xác minh, nhắn tin với học viên (migration `InstructorProfileAndMessaging`) | 35/35 backend, 23/23 E2E |
+| 07/11/2026 | Hình minh họa ba lợi ích trên trang chủ; ảnh đại diện giảng viên demo | |
+| 07/11/2026 | Điểm thưởng: tích điểm, điểm danh, chia sẻ, giới thiệu, đổi điểm, hoàn tiền thu hồi điểm, trang Admin (migration `RewardPoints`, [docs/14](docs/14-diem-thuong.md)) | 43/43 backend, 25/25 E2E |
+| 09/11/2026 | Viết lại README theo trạng thái hiện tại của đồ án | |
 
-## Checklist Giai đoạn 1
+## 10. Hạn chế và việc còn lại
 
-**Tài liệu**
-- [x] Đặc tả 4 vai trò, 8 nhóm chức năng có mã FR, 12 quy tắc nghiệp vụ BR
-- [x] Use Case Diagram, sequence thanh toán, state khóa học, flow cấp chứng chỉ
-- [x] ERD 23 bảng nghiệp vụ + bảng Identity + RefreshTokens, từ điển dữ liệu
-- [x] Script SQL Server có PK, FK, unique, index, check constraint
+**Chưa kiểm thử được trên máy phát triển**
+- Chạy trên SQL Server thật. Migration đã sinh và đã viết script, nhưng hiện mới chạy trên SQLite.
+- Cổng VNPay/MoMo sandbox thật: cần khóa merchant và URL công khai (ngrok) để nhận IPN. Thuật toán ký đã test bằng khóa giả.
+- Cloudinary thật: cần khóa. Đã test với lưu trữ cục bộ.
+- Docker Compose: chưa build vì máy không có Docker.
 
-**Mã nguồn**
-- [x] Solution 4 project Clean Architecture (`Domain`, `Application`, `Infrastructure`, `API`)
-- [x] Domain entities + enums, AppDbContext + Fluent API (cascade chỉ trong aggregate, unique chống mua trùng / xử lý IPN lặp)
-- [x] Seeder: vai trò, 3 tài khoản demo (mật khẩu từ User Secrets), 8 danh mục
-- [x] `/api/health` kiểm tra kết nối DB, Swagger
-- [x] Frontend Vite + React + TS + Tailwind v4, cấu trúc thư mục yêu cầu, design tokens, Vite proxy `/api`
-- [x] `npm run build` thành công
-
-**Bạn cần kiểm tra trên máy** (máy hiện tại chưa có .NET SDK và SQL Server nên chưa chạy được)
-- [ ] Cài .NET 10 SDK, SQL Server, `dotnet-ef` (xem tài liệu 04)
-- [ ] `dotnet build` không lỗi
-- [ ] `dotnet ef migrations add InitialCreate` + `dotnet ef database update` tạo đủ bảng trong `OnlineLearningDb`
-- [ ] `dotnet run` → Swagger mở được, `/api/health` trả `status: ok`
-- [ ] Bảng `Roles` có 3 vai trò, `Users` có 3 tài khoản demo, `Categories` có 8 danh mục
-- [ ] `npm run dev` → ô "Kết nối Backend" báo sẵn sàng
-
-## Checklist Giai đoạn 2
-
-**Đã hoàn thành và kiểm chứng trên máy phát triển**
-- [x] Auth: đăng ký, đăng nhập, JWT 15 phút, refresh token xoay vòng trong cookie HttpOnly (lưu hash SHA-256), phát hiện tái sử dụng, đăng xuất, quên/đặt lại mật khẩu, xác nhận email, hồ sơ, đổi mật khẩu, khóa sau 5 lần sai
-- [x] Danh mục 2 cấp; tìm kiếm/lọc/sắp xếp/phân trang khóa học; chi tiết khóa học chỉ lộ video preview
-- [x] Giảng viên: CRUD khóa học, chương, bài học, tài liệu, sắp xếp; gửi duyệt; khóa chỉnh sửa khi Pending/Published; xóa mềm
-- [x] Admin: duyệt/từ chối/gỡ khóa học, nổi bật, danh mục, mã giảm giá, đơn hàng, người dùng/vai trò/khóa tài khoản, tổng quan 12 tháng
-- [x] Giỏ hàng, báo giá, đơn hàng; giá tính hoàn toàn ở server; coupon; đơn 0đ cấp quyền ngay; chặn mua trùng; đơn quá hạn tự Expired
-- [x] Đánh giá (chỉ người đã mua, 1 lần), giảng viên phản hồi, admin ẩn; thông báo
-- [x] Rate limit đăng nhập, ProblemDetails tiếng Việt, header bảo mật, lọc HTML chống XSS
-- [x] Migration `InitialCreate` (29 bảng) + script SQL; dữ liệu mẫu 10 khóa học, ~40 đơn hàng, đánh giá, 3 mã giảm giá
-- [x] `dotnet build` 0 lỗi 0 cảnh báo; `dotnet test` 16/16 đạt; Swagger sinh 76 endpoint
-
-**Bạn cần kiểm tra trên máy có SQL Server**
-- [ ] `dotnet ef database update` thành công
-- [ ] `dotnet run` → seed chạy, Swagger gọi được `/api/home`, đăng nhập `admin@eduviet.local`
-- [ ] Dùng nút Authorize trong Swagger với `accessToken` để thử API Admin/Giảng viên
-
-Khi các mục trên đạt, chuyển sang **Giai đoạn 3 — Frontend**.
-
-## Checklist Giai đoạn 3
-
-**Đã hoàn thành và kiểm chứng trên trình duyệt (API demo SQLite + dữ liệu mẫu)**
-- [x] Trang chủ: hero chứng chỉ có tương tác (gõ tên → in lên chứng chỉ + mã xác minh), lĩnh vực, nổi bật, bán chạy, phiếu thống kê, mới xuất bản, giảng viên, đánh giá, lời mời đăng ký
-- [x] Danh sách khóa học: tìm kiếm, lọc lĩnh vực/cấp độ/giá/đánh giá, sắp xếp, phân trang, empty state; bộ lọc dạng sheet trên điện thoại
-- [x] Chi tiết khóa học: thẻ mua hàng dính, xem thử video, đề cương, đánh giá + phân bố sao, viết đánh giá khi đã sở hữu
-- [x] Đăng ký (validation client + server), đăng nhập, quay lại trang trước, quên/đặt lại mật khẩu, xác nhận email, khôi phục phiên sau khi tải lại trang
-- [x] Giỏ hàng, thanh toán với báo giá từ server, mã giảm giá sai/đúng, đơn 0đ hoàn tất, đơn chờ thanh toán có đếm ngược, hủy đơn, lịch sử mua hàng
-- [x] Hồ sơ, đổi mật khẩu; trang 404; loading skeleton, lỗi + thử lại, toast
-- [x] `npm run build` thành công; taste-skill inspect trang chủ 0 FAIL ở 1440/768/390px; backend vẫn 16/16 test
-- [x] Lỗi phát hiện và đã sửa khi chạy thử: giờ hiển thị lệch 7 tiếng (API trả DateTime thiếu "Z"), tiền "249,000đ" trong thông báo mã giảm giá, trang thanh toán tự quay về giỏ sau khi đặt hàng, thông báo mã sai bị xóa ngay
-
-**Để lại cho giai đoạn sau**
-- [ ] Trình học, tiến độ, quiz, dashboard (Giai đoạn 4) — hiện trang khóa học chỉ báo "Bạn đã sở hữu khóa học này"
-- [ ] Nút "Thanh toán qua VNPay" đang tắt (Giai đoạn 5); tải ảnh đại diện lên Cloudinary (Giai đoạn 5)
-- [ ] Trang xác minh chứng chỉ (Giai đoạn 6)
-
-## Checklist Giai đoạn 4
-
-**Đã hoàn thành và kiểm chứng (20/20 test backend + chạy thử trên trình duyệt với API demo)**
-- [x] Trình học: tiếp tục bài gần nhất, video nhớ vị trí và tự hoàn thành khi xem hết, đánh dấu hoàn thành, tài liệu, bài trước/sau, đề cương có trạng thái, giao diện điện thoại
-- [x] Bảo vệ nội dung: bài chưa mua trả 403 (trừ bài học thử); giảng viên/admin ở chế độ xem trước
-- [x] Tiến độ theo bài bắt buộc; khóa học "Hoàn thành" khi đủ bài + đạt bài kiểm tra bắt buộc (sẵn sàng cho cấp chứng chỉ ở Giai đoạn 6)
-- [x] Bài kiểm tra: không lộ đáp án trước khi nộp, chấm ở server, giới hạn lượt, giới hạn thời gian + tự nộp, nộp lặp không chấm lại, đáp án chi tiết + giải thích, lịch sử
-- [x] Giảng viên soạn quiz (một/nhiều đáp án, đúng-sai), khóa câu hỏi khi đã có người làm
-- [x] Dashboard học viên: số liệu, tiếp tục học, khóa học theo trạng thái, kết quả kiểm tra, chứng chỉ, lịch sử thanh toán
-- [x] Dashboard giảng viên: doanh thu/lượt đăng ký 12 tháng, thống kê theo khóa, trang soạn khóa học (thông tin, chương, bài, tài liệu, sắp xếp, bài kiểm tra, gửi duyệt), học viên, trả lời đánh giá
-- [x] Dashboard admin: tổng quan + biểu đồ, duyệt/từ chối/gỡ/nổi bật khóa học, phân quyền, khóa tài khoản, danh mục, đơn hàng, mã giảm giá
-
-**Để lại cho giai đoạn sau**
-- [ ] VNPay/MoMo Sandbox, tải ảnh/video/tài liệu lên Cloudinary, URL video có chữ ký (Giai đoạn 5)
-- [ ] Sinh chứng chỉ PDF + trang xác minh công khai (Giai đoạn 6)
-- [ ] Test E2E Playwright, hướng dẫn triển khai production (Giai đoạn 7)
-
-## Checklist Giai đoạn 5
-
-**Đã hoàn thành và kiểm chứng**
-- [x] Cổng VNPay (HMAC-SHA512) và MoMo (HMAC-SHA256) sandbox: tạo giao dịch, IPN, trang kết quả
-- [x] Kênh thanh toán thử nghiệm: tự động thành công qua IPN có chữ ký, hiện thông báo "Hiện tại đang trong giai đoạn test kênh thanh toán, chưa thu tiền thật"
-- [x] Xác thực chữ ký + số tiền, idempotency, không cấp quyền qua redirect, xử lý thất bại và thanh toán hai lần
-- [x] Chọn phương thức khi thanh toán, thanh toán lại đơn chờ, trang kết quả chờ IPN, Admin tra cứu giao dịch
-- [x] Tải ảnh / video / tài liệu (Cloudinary hoặc lưu cục bộ), kiểm tra định dạng + dung lượng + magic bytes
-- [x] Video và tài liệu trả phí phát qua URL có chữ ký (hết hạn khi lưu cục bộ), chỉ cấp cho người có quyền
-- [x] Sửa: VNPay yêu cầu đúng tên trường `RspCode` (ASP.NET mặc định trả `rspCode`); SMTP mặc định để trống để không lỗi khi chưa cấu hình
-
-**Bạn cần làm khi dùng cổng thật**
-- [ ] Đăng ký sandbox VNPay/MoMo, đặt khóa bằng User Secrets, mở ngrok cho IPN (xem tài liệu 09)
-- [ ] Đặt khóa Cloudinary nếu muốn lưu trên CDN
-- [ ] Tắt kênh thử nghiệm ở production
-
-## Checklist Giai đoạn 6
-
-**Đã hoàn thành và kiểm chứng**
-- [x] Tự cấp chứng chỉ khi đủ 100% bài bắt buộc + đạt bài kiểm tra bắt buộc; một chứng chỉ / lượt ghi danh; mã `EDV-YYYY-XXXXXXXX` duy nhất
-- [x] PDF (QuestPDF) khổ A4 ngang, đủ dấu tiếng Việt, mã QR + đường dẫn xác minh; dấu "ĐÃ THU HỒI" khi bị thu hồi
-- [x] Trang xác minh công khai `/xac-minh/:mã` + tải PDF bản gốc; liên kết trên menu và chân trang
-- [x] Học viên: tải PDF, mở trang xác minh, sao chép liên kết; trình học báo nhận chứng chỉ
-- [x] Admin: tra cứu, tải, thu hồi có lý do, khôi phục, cấp bù chứng chỉ còn thiếu
-
-**Lưu ý triển khai**
-- [ ] Máy chủ Linux cần cài font có dấu tiếng Việt (`fonts-dejavu-core` hoặc `fonts-noto-core`), hoặc đặt `.ttf` vào thư mục `Fonts/`
-- [ ] Đặt `App:ClientUrl` đúng tên miền thật để QR trên chứng chỉ trỏ về trang xác minh thật
+**Cần làm trước khi đưa vào sử dụng thật**
+- Thay email, điện thoại, địa chỉ mẫu trong `frontend/online-learning-client/src/config/site.ts`.
+- Tắt kênh thanh toán thử nghiệm (`Payments:TestGateway:Enabled=false`).
+- Thay ảnh đại diện giảng viên minh họa bằng ảnh thật.
+- Xem checklist đầy đủ ở [docs/11](docs/11-trien-khai.md#checklist-trước-khi-mở-cho-người-dùng).
