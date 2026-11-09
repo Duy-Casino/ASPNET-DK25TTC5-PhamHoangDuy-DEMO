@@ -1,9 +1,18 @@
 # EduViet: Website bán khóa học trực tuyến
 
-> Đồ án môn học ASP.NET, lớp **DK25TTC5**
-> Sinh viên thực hiện: **Phạm Hoàng Duy**
-> Repository: <https://github.com/Duy-Casino/ASPNET-DK25TTC5-PhamHoangDuy-DEMO>
-> Cập nhật lần cuối: **09/11/2026**. Nhật ký thay đổi xem mục [9](#9-nhật-ký-tiến-độ).
+## Thông tin sinh viên
+
+| | |
+| --- | --- |
+| Họ và tên | **Phạm Hoàng Duy** |
+| Mã sinh viên | 170125375 |
+| Lớp | DK25TTC5 |
+| Email | duyph250994@tvu-onschool.edu.vn |
+| Số điện thoại | 0327607672 |
+| Dự án | Website bán khóa học trực tuyến |
+| Repository | <https://github.com/Duy-Casino/ASPNET-DK25TTC5-PhamHoangDuy-DEMO> |
+
+Cập nhật lần cuối: **09/11/2026**. Nhật ký thay đổi xem mục [9](#9-nhật-ký-tiến-độ).
 
 EduViet là website mua và học khóa học trực tuyến, giao diện tiếng Việt, với bốn vai trò: khách, học viên, giảng viên và quản trị viên.
 
@@ -226,7 +235,7 @@ Mỗi khi hoàn thành một tính năng, thêm một dòng vào bảng này và
 | 07/11/2026 | Tính năng giảng viên: hồ sơ giảng dạy chi tiết, xác minh, nhắn tin với học viên (migration `InstructorProfileAndMessaging`) | 35/35 backend, 23/23 E2E |
 | 07/11/2026 | Hình minh họa ba lợi ích trên trang chủ; ảnh đại diện giảng viên demo | |
 | 07/11/2026 | Điểm thưởng: tích điểm, điểm danh, chia sẻ, giới thiệu, đổi điểm, hoàn tiền thu hồi điểm, trang Admin (migration `RewardPoints`, [docs/14](docs/14-diem-thuong.md)) | 43/43 backend, 25/25 E2E |
-| 09/11/2026 | Viết lại README theo trạng thái hiện tại của đồ án | |
+| 09/11/2026 | Viết lại README theo trạng thái hiện tại của đồ án; thêm thông tin sinh viên | |
 
 ## 10. Hạn chế và việc còn lại
 
