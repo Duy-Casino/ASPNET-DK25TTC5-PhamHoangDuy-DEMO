@@ -6,7 +6,7 @@
 | Sinh viên | Phạm Hoàng Duy, MSSV 170125375, lớp DK25TTC5 |
 | Thời gian | **Thứ Năm 12/11/2026 – Thứ Tư 18/11/2026** |
 | Trạng thái | Đang diễn ra, số liệu cập nhật đến 15/11/2026 |
-| Commit trong tuần | Commit "Dùng điểm thưởng trừ khi thanh toán" (15/11) |
+| Commit trong tuần | `5fa7490` "Dùng điểm thưởng trừ khi thanh toán" (15/11) |
 
 ## 1. Tóm tắt tuần
 
@@ -24,7 +24,7 @@
 | Ngày | Commit | Nội dung | Kiểm thử |
 | --- | --- | --- | --- |
 | Thứ Năm 12/11 – Thứ Bảy 14/11 | | Không có commit | |
-| Chủ Nhật 15/11 | Dùng điểm thưởng trừ khi thanh toán | Backend: báo giá có điểm, trừ điểm khi đặt hàng, hoàn điểm khi hủy/hết hạn/hoàn tiền, trừ lại khi IPN đến muộn; migration `CheckoutPoints` và script SQL. Frontend: mục "Điểm thưởng" ở trang thanh toán, dòng giảm bằng điểm ở hóa đơn và chi tiết đơn, cấu hình quy tắc ở trang Admin | 48/48 backend, 26/26 E2E |
+| Chủ Nhật 15/11 | `5fa7490` | Backend: báo giá có điểm, trừ điểm khi đặt hàng, hoàn điểm khi hủy/hết hạn/hoàn tiền, trừ lại khi IPN đến muộn; migration `CheckoutPoints` và script SQL. Frontend: mục "Điểm thưởng" ở trang thanh toán, dòng giảm bằng điểm ở hóa đơn và chi tiết đơn, cấu hình quy tắc ở trang Admin | 48/48 backend, 26/26 E2E |
 | Thứ Hai 16/11 – Thứ Tư 18/11 | | Chưa đến tại thời điểm lập báo cáo | |
 
 ## 3. Chức năng mới: dùng điểm khi thanh toán
