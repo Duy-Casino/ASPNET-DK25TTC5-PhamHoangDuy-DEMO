@@ -13,6 +13,44 @@ Admin chỉnh được tại **Quản trị › Điểm thưởng › Nhiệm v�
 | Chia sẻ khóa học (`course_share`) | 5 | Chỉ cộng khi **người khác mở** liên kết chia sẻ, tức khác tài khoản và khác IP người tạo. Tối đa một lần mỗi ngày. Mỗi người xem tính một lần. Liên kết cũ hơn 30 ngày không còn được thưởng. Bấm nút chia sẻ không tự cộng điểm. |
 | Giới thiệu bạn bè (`referral`) | 50 | Người được giới thiệu đăng ký bằng mã (`?ref=` hoặc mã đã lưu khi mở liên kết chia sẻ) và **thanh toán thành công đơn có phí đầu tiên**. Mỗi người chỉ được giới thiệu bởi một người. Tự giới thiệu bị bỏ qua. |
 | Đổi điểm (`redeem_voucher`) | 100 điểm = 10.000đ, tối thiểu 100 | Tạo mã giảm giá cá nhân (`Coupon.RestrictedToUserId`), dùng một lần, hạn 90 ngày. Chỉ chủ sở hữu dùng được. |
+| Dùng điểm khi thanh toán (`checkout_points`) | 1 điểm = 100đ, tối đa 50% giá trị đơn | Học viên **tự chọn** có dùng hay không ở trang thanh toán. Trừ sau mã giảm giá. Điểm bị trừ khi đặt hàng và tự hoàn khi đơn bị hủy, hết hạn hoặc hoàn tiền. Xem mục 1.1. |
+
+### 1.1. Dùng điểm trừ trực tiếp khi thanh toán
+
+**Cách dùng:** ở trang thanh toán, mục **Điểm thưởng**, bật "Dùng điểm thưởng để giảm giá". Hệ thống tự điền số điểm tối đa dùng được. Học viên có thể nhập số điểm ít hơn rồi bấm **Áp dụng**, hoặc tắt đi để thanh toán toàn bộ bằng tiền. Hóa đơn tạm tính hiện dòng "Điểm thưởng (N điểm)".
+
+**Cách tính** (cấu hình tại Quản trị › Điểm thưởng › Nhiệm vụ & quy tắc › "Dùng điểm khi thanh toán"):
+
+| Tham số quy tắc | Ý nghĩa | Mặc định |
+| --- | --- | --- |
+| Số điểm (`Points`) và số tiền (`AmountUnit`) | `Points` điểm đổi được `AmountUnit` đồng | 1 điểm = 100đ, bằng tỷ lệ đổi mã giảm giá |
+| Ngưỡng (`Threshold`) | Phần trăm tối đa của đơn (sau mã giảm giá) được trả bằng điểm, từ 1 đến 100 | 50% |
+
+```
+Giá sau mã      = Tạm tính − Giảm theo mã
+Tối đa dùng được = min(Số dư, floor(floor(Giá sau mã × Ngưỡng% ) × Points / AmountUnit))
+Tiền giảm        = floor(Số điểm dùng × AmountUnit / Points)
+Tổng thanh toán  = Giá sau mã − Tiền giảm
+```
+
+Ví dụ khóa 390.000đ, số dư 3.000 điểm: dùng tối đa 1.950 điểm, giảm 195.000đ, còn trả 195.000đ. Nếu chỉ dùng 500 điểm thì giảm 50.000đ, trả 340.000đ.
+
+**Vòng đời điểm của đơn:**
+
+| Sự kiện | Xử lý điểm | Mã tham chiếu trong sổ cái |
+| --- | --- | --- |
+| Đặt hàng có dùng điểm | Trừ điểm trong **cùng transaction** tạo đơn. Số dư không đủ (đã tiêu ở nơi khác sau khi báo giá) thì đơn không được tạo | `checkout:{orderId}` (Spend) |
+| Học viên hủy đơn chờ thanh toán | Hoàn lại đủ điểm | `checkout-restore:{orderId}` (Restore) |
+| Đơn hết hạn thanh toán | Hoàn lại đủ điểm (job hết hạn, mỗi đơn một transaction) | `checkout-restore:{orderId}` (Restore) |
+| IPN hợp lệ đến muộn cho đơn đã hết hạn | Đơn vẫn được ghi nhận đã thanh toán; trừ lại điểm, tối đa bằng số dư hiện có | `checkout-repay:{orderId}` (Spend) |
+| Thanh toán thành công | Điểm mua hàng chỉ tính trên **số tiền thật** đã trả, không tính phần trả bằng điểm | `purchase:{orderId}` |
+| Admin hoàn tiền | Hoàn lại điểm đã dùng, đồng thời thu hồi điểm mua hàng của đơn | `checkout-refund:{orderId}` (Restore) |
+
+- Số điểm hoàn được tính từ sổ cái (đã trừ trừ đi đã hoàn), nên gọi lặp không hoàn hai lần.
+- Hoàn điểm giảm "Tổng đã dùng" thay vì tăng "Tổng tích lũy", để thống kê không bị thổi phồng.
+- Nếu điểm trả hết giá trị đơn (Admin đặt ngưỡng 100%), đơn 0đ hoàn tất ngay, không qua cổng thanh toán và không có điểm mua hàng.
+- Phần giảm bằng điểm được phân bổ vào từng dòng đơn hàng (`DiscountAllocated`, `FinalPrice`), nên tổng `FinalPrice` luôn bằng `TotalAmount`. Doanh thu giảng viên tính theo `FinalPrice`, tức số tiền thực thu, giống cách tính với mã giảm giá.
+- Frontend chỉ gửi `usePoints` và số điểm muốn dùng. Backend tự đọc số dư và quy tắc trong DB, tự tính tiền giảm. Số điểm vượt mức cho phép trả lỗi 400 kèm thông báo tiếng Việt.
 
 ### Làm tròn điểm mua hàng
 
@@ -70,6 +108,8 @@ Các cột thêm vào bảng cũ:
 - `Orders.RefundedAt`, `Orders.RefundReason`
 - `Coupons.RestrictedToUserId`
 
+Migration `CheckoutPoints` thêm `Orders.PointsUsed`, `Orders.PointsDiscountAmount`; check constraint `CK_Orders_Points` (không âm) và `CK_Orders_Math` đổi thành `TotalAmount = SubTotal − DiscountAmount − PointsDiscountAmount`.
+
 ### API
 
 | Phương thức | Đường dẫn | Mô tả |
@@ -80,6 +120,8 @@ Các cột thêm vào bảng cũ:
 | POST | `/api/rewards/shares` | Tạo liên kết chia sẻ `{ courseId, channel }` |
 | POST | `/api/rewards/shares/{token}/open` | Ghi nhận lượt mở (ẩn danh) |
 | POST | `/api/rewards/redeem` | Đổi điểm `{ points }` |
+| POST | `/api/orders/quote` | Báo giá; thêm `{ usePoints, points }` (points để trống = dùng tối đa). Kết quả có `pointsUsed`, `pointsDiscountAmount`, `points` (số dư, tối đa dùng được, tỷ lệ, % tối đa) |
+| POST | `/api/orders` | Đặt hàng; thêm `{ usePoints, points }` |
 | GET | `/api/rewards/redemptions` | Mã đã đổi |
 | GET | `/api/admin/rewards/overview` · `balances` · `transactions` · `transactions/export` | Thống kê, điểm học viên, lịch sử, xuất CSV |
 | GET/POST/PUT/DELETE | `/api/admin/rewards/rules` | Quản lý nhiệm vụ. Nhiệm vụ hệ thống chỉ sửa và bật/tắt, không xóa |
@@ -95,7 +137,7 @@ cd src\backend
 dotnet ef database update -p src\OnlineLearning.Infrastructure -s src\OnlineLearning.API
 ```
 
-DBA có thể chạy script idempotent `setup/database/migration-RewardPoints.sql`. Các quy tắc mặc định được seed tự động khi API khởi động; seed chỉ thêm quy tắc còn thiếu, không ghi đè cấu hình Admin đã chỉnh.
+DBA có thể chạy script idempotent `setup/database/migration-RewardPoints.sql`, rồi `setup/database/migration-CheckoutPoints.sql`. Các quy tắc mặc định được seed tự động khi API khởi động; seed chỉ thêm quy tắc còn thiếu, không ghi đè cấu hình Admin đã chỉnh.
 
 **Chế độ demo SQLite.** Chế độ này tạo DB bằng `EnsureCreated` nên không tự nâng cấp schema. Dừng API, đổi tên hoặc xóa `src/backend/src/OnlineLearning.API/eduviet-demo.db`, rồi chạy:
 
@@ -122,4 +164,6 @@ Các trang:
 ## 4. Kiểm thử
 
 - **Backend, `RewardTests`:** làm tròn điểm; IPN lặp không cộng trùng; thưởng giới thiệu; hoàn tiền thu hồi cả điểm mua hàng lẫn thưởng giới thiệu; điểm danh một lần mỗi ngày, kể cả hai yêu cầu đồng thời; chuỗi 7 ngày và reset sau khi bỏ lỡ; chia sẻ chỉ thưởng khi người khác mở và tối đa một lần mỗi ngày; hoàn thành khóa chỉ thưởng một lần; đổi điểm tạo mã cá nhân và không âm điểm; điều chỉnh thủ công bắt buộc lý do; quyền Admin; xuất CSV.
-- **E2E, `rewards.spec.ts`:** học viên điểm danh, xem nhiệm vụ và lịch sử, chia sẻ tạo liên kết riêng, khách mở liên kết và mã giới thiệu được nhớ khi đăng ký; Admin xem tổng quan, sửa nhiệm vụ, điều chỉnh điểm có lý do, xem lịch sử, và học viên thấy được điều chỉnh.
+- **Backend, `CheckoutPointsTests` (5 test):** báo giá không dùng / dùng tối đa / dùng số điểm cụ thể, giới hạn theo số dư và theo %; vượt mức bị từ chối; đặt hàng trừ điểm và hủy đơn hoàn điểm (không hoàn hai lần); thanh toán chỉ cộng điểm trên tiền thật, hoàn tiền trả lại điểm đã dùng; đơn hết hạn hoàn điểm và IPN muộn trừ lại; Admin tắt tính năng, kiểm tra ngưỡng, trả 100% bằng điểm tạo đơn 0đ.
+- **E2E, `rewards.spec.ts`:** học viên bật/tắt dùng điểm ở trang thanh toán, nhập quá mức bị báo lỗi, thanh toán và thấy giao dịch trừ điểm trong lịch sử.
+- **E2E, `rewards.spec.ts` (các kịch bản trước):** học viên điểm danh, xem nhiệm vụ và lịch sử, chia sẻ tạo liên kết riêng, khách mở liên kết và mã giới thiệu được nhớ khi đăng ký; Admin xem tổng quan, sửa nhiệm vụ, điều chỉnh điểm có lý do, xem lịch sử, và học viên thấy được điều chỉnh.

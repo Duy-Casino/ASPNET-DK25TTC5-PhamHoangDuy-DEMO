@@ -101,6 +101,7 @@ App Service Linux chưa có sẵn font tiếng Việt. Muốn PDF chứng chỉ 
 - [ ] Migration `InstructorProfileAndMessaging` (hồ sơ giảng viên, tin nhắn) được áp dụng tự động khi `Database__MigrateOnStartup=true`; DBA chạy tay thì dùng `setup/database/migration-InstructorProfileAndMessaging.sql` (idempotent)
 
 - [ ] Migration `RewardPoints` (điểm thưởng) được áp dụng tự động; chạy tay thì dùng `setup/database/migration-RewardPoints.sql`. Rà lại số điểm từng nhiệm vụ tại Quản trị › Điểm thưởng trước khi mở cho học viên
+- [ ] Migration `CheckoutPoints` (dùng điểm khi thanh toán) được áp dụng tự động; chạy tay thì dùng `setup/database/migration-CheckoutPoints.sql`. Kiểm tra tỷ lệ quy đổi và % tối đa của quy tắc "Dùng điểm khi thanh toán"
 
 **Nội dung & SEO**
 - [x] Điều khoản hoàn tiền đã xác nhận (06/11/2026): yêu cầu trong 7 ngày, đã học tối đa 20%, chưa cấp chứng chỉ; phản hồi trong 7 ngày làm việc

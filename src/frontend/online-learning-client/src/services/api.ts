@@ -69,14 +69,19 @@ export const cartService = {
 }
 
 export const orderService = {
-  quote: (courseIds: string[], couponCode?: string) =>
-    post<PriceQuote>('/api/orders/quote', { courseIds, couponCode: couponCode || null }),
-  create: (input: { courseIds?: string[]; fromCart?: boolean; couponCode?: string; note?: string }) =>
+  /** points: null = không dùng điểm; số = dùng đúng số điểm đó; 'max' = dùng tối đa cho phép. */
+  quote: (courseIds: string[], couponCode?: string, points: number | 'max' | null = null) =>
+    post<PriceQuote>('/api/orders/quote', {
+      courseIds, couponCode: couponCode || null,
+      usePoints: points !== null, points: typeof points === 'number' ? points : null,
+    }),
+  create: (input: { courseIds?: string[]; fromCart?: boolean; couponCode?: string; note?: string; points?: number | null }) =>
     post<Order>('/api/orders', {
       courseIds: input.courseIds ?? null,
       fromCart: input.fromCart ?? false,
       couponCode: input.couponCode || null,
       note: input.note || null,
+      usePoints: !!input.points, points: input.points || null,
     }),
   mine: (page = 1, status?: OrderStatus) => get<PagedResult<OrderListItem>>('/api/orders', { page, pageSize: 10, status }),
   get: (id: string) => get<Order>(`/api/orders/${id}`),

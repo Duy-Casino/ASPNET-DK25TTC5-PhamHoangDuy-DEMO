@@ -8,7 +8,7 @@ import { orderService } from '../../services/api'
 import { getErrorMessage } from '../../services/apiClient'
 import { paymentService, providerLabel, redirectToGateway, type PaymentProvider } from '../../services/paymentApi'
 import { PaymentMethodPicker, TestModeNotice } from '../../components/payment/PaymentMethods'
-import { formatDateTime, formatPrice } from '../../utils/format'
+import { formatDateTime, formatNumber, formatPrice } from '../../utils/format'
 import NotFoundPage from '../NotFoundPage'
 
 function useCountdown(until: string | undefined, active: boolean) {
@@ -138,6 +138,9 @@ export default function OrderDetailPage() {
           <div className="mt-2 flex"><dt>Tạm tính</dt><span className="dot-leader" /><dd>{formatPrice(order.subTotal, '0đ')}</dd></div>
           {order.discountAmount > 0 && (
             <div className="flex text-success"><dt>Giảm ({order.couponCode})</dt><span className="dot-leader" /><dd>-{formatPrice(order.discountAmount)}</dd></div>
+          )}
+          {order.pointsDiscountAmount > 0 && (
+            <div className="flex text-success"><dt>Điểm thưởng ({formatNumber(order.pointsUsed)} điểm)</dt><span className="dot-leader" /><dd>-{formatPrice(order.pointsDiscountAmount)}</dd></div>
           )}
           <div className="mt-2 flex bg-ink px-3 py-3 text-xl font-bold text-white">
             <dt>Tổng cộng</dt><dd className="ml-auto">{formatPrice(order.totalAmount, '0đ')}</dd>

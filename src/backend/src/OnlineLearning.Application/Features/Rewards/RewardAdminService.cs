@@ -174,12 +174,14 @@ public sealed class RewardAdminService(IAppDbContext db, IRewardService rewards,
         var rule = await db.PointRules.FirstOrDefaultAsync(x => x.Id == id, ct);
         if (rule is null) return Error.NotFound("Không tìm thấy nhiệm vụ.");
         // Quy tắc có công thức cần đủ tham số để không phát điểm sai
-        if (rule.Key is PointRuleKeys.Purchase or PointRuleKeys.RedeemVoucher && r.AmountUnit is not > 0)
+        if (rule.Key is PointRuleKeys.Purchase or PointRuleKeys.RedeemVoucher or PointRuleKeys.CheckoutPoints && r.AmountUnit is not > 0)
             return Error.Validation("Quy tắc này cần đơn vị tiền lớn hơn 0.");
         if (rule.Key == PointRuleKeys.CheckInStreak && r.Threshold is not > 0)
             return Error.Validation("Nhập số ngày của chuỗi điểm danh.");
-        if (rule.Key == PointRuleKeys.RedeemVoucher && r.Points <= 0)
+        if (rule.Key is PointRuleKeys.RedeemVoucher or PointRuleKeys.CheckoutPoints && r.Points <= 0)
             return Error.Validation("Số điểm mỗi đơn vị đổi phải lớn hơn 0.");
+        if (rule.Key == PointRuleKeys.CheckoutPoints && r.Threshold is not (>= 1 and <= 100))
+            return Error.Validation("Nhập phần trăm tối đa của đơn được trả bằng điểm (1–100).");
 
         rule.Name = r.Name.Trim();
         rule.Description = r.Description?.Trim();

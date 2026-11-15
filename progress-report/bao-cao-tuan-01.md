@@ -5,7 +5,7 @@
 | Đồ án | Website bán khóa học trực tuyến (EduViet) |
 | Sinh viên | Phạm Hoàng Duy, MSSV 170125375, lớp DK25TTC5 |
 | Thời gian | **Thứ Năm 05/11/2026 – Thứ Tư 11/11/2026** (tuần 1, tính từ ngày bắt đầu dự án 05/11/2026) |
-| Số liệu cập nhật đến | 09/11/2026 |
+| Trạng thái | Đã kết thúc (chốt số liệu ngày 11/11/2026) |
 | Commit trong tuần | 11 commit, từ `bd42410` đến `ff12fba` |
 
 ## 1. Tóm tắt tuần
@@ -16,7 +16,7 @@
 - Tổ chức repository theo quy định đồ án.
 - Kiểm thử cuối tuần: **backend 43/43, E2E 25/25** đạt.
 
-| Chỉ số | Đầu tuần (05/11, commit đầu) | Cuối kỳ báo cáo (09/11) |
+| Chỉ số | Đầu tuần (05/11, commit đầu) | Cuối tuần (11/11) |
 | --- | --- | --- |
 | Test backend | 30 | 43 |
 | Kịch bản E2E | 18 | 25 |
@@ -40,7 +40,7 @@
 | | `1bc9bcb` 11:40 | Thêm thông tin sinh viên vào README | 1 tệp | |
 | | `ff12fba` 11:51 | Tổ chức lại repository: `setup/`, `src/`, `progress-report/`, `thesis/`, `soft/`, `docker/` | 237 tệp (chủ yếu đổi chỗ) | 43/43 backend, 25/25 E2E |
 | | | Mời cộng tác viên theo dõi tiến độ trên GitHub | | |
-| Thứ Ba 10/11 – Thứ Tư 11/11 | | Chưa đến tại thời điểm lập báo cáo | | |
+| Thứ Ba 10/11 – Thứ Tư 11/11 | | Không có commit | | |
 
 ## 3. Các điều chỉnh trong tuần
 

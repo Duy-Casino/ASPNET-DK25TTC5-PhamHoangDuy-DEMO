@@ -1241,6 +1241,13 @@ namespace OnlineLearning.Infrastructure.Persistence.Migrations
                     b.Property<DateTime?>("PaidAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<decimal>("PointsDiscountAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("PointsUsed")
+                        .HasColumnType("int");
+
                     b.Property<string>("RefundReason")
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
@@ -1290,7 +1297,9 @@ namespace OnlineLearning.Infrastructure.Persistence.Migrations
                         {
                             t.HasCheckConstraint("CK_Orders_Discount", "[DiscountAmount] >= 0");
 
-                            t.HasCheckConstraint("CK_Orders_Math", "[TotalAmount] = [SubTotal] - [DiscountAmount]");
+                            t.HasCheckConstraint("CK_Orders_Math", "[TotalAmount] = [SubTotal] - [DiscountAmount] - [PointsDiscountAmount]");
+
+                            t.HasCheckConstraint("CK_Orders_Points", "[PointsUsed] >= 0 AND [PointsDiscountAmount] >= 0");
 
                             t.HasCheckConstraint("CK_Orders_SubTotal", "[SubTotal] >= 0");
 

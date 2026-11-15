@@ -3,7 +3,7 @@ import type { PagedResult } from '../types/common'
 
 // ---------------------------------------------------------------- Kiểu dữ liệu
 
-export type PointTransactionType = 'Earn' | 'Spend' | 'Revoke' | 'Adjust'
+export type PointTransactionType = 'Earn' | 'Spend' | 'Revoke' | 'Adjust' | 'Restore'
 export type ShareChannel = 'Facebook' | 'Zalo' | 'CopyLink' | 'Other'
 
 export interface CheckInDay { date: string; checked: boolean; isToday: boolean }
@@ -14,8 +14,10 @@ export interface CheckInStatus {
 export interface RewardTask { key: string; name: string; description: string | null; points: number; condition: string; enabled: boolean; doneToday: boolean }
 export interface ReferralInfo { code: string; referredCount: number; rewardedCount: number; pointsPerReferral: number; enabled: boolean }
 export interface RedeemConfig { enabled: boolean; pointsPerUnit: number; valuePerUnit: number; minPoints: number; options: number[] }
+/** Dùng điểm trừ trực tiếp khi thanh toán: pointsPerUnit điểm = amountPerUnit đồng, tối đa maxPercent % giá trị đơn. */
+export interface CheckoutConfig { enabled: boolean; pointsPerUnit: number; amountPerUnit: number; maxPercent: number }
 export interface PointSummary {
-  balance: number; totalEarned: number; totalSpent: number; checkIn: CheckInStatus; tasks: RewardTask[]; referral: ReferralInfo; redeem: RedeemConfig
+  balance: number; totalEarned: number; totalSpent: number; checkIn: CheckInStatus; tasks: RewardTask[]; referral: ReferralInfo; redeem: RedeemConfig; checkout: CheckoutConfig
 }
 export interface PointTransaction { id: string; points: number; balanceAfter: number; type: PointTransactionType; ruleKey: string | null; description: string; createdAt: string }
 export interface CheckInResult { pointsAwarded: number; streakBonus: number; streak: number; balance: number }

@@ -9,11 +9,12 @@ import { orderService } from '../../services/api'
 import { getErrorMessage } from '../../services/apiClient'
 import { paymentService, redirectToGateway, type PaymentProvider } from '../../services/paymentApi'
 import type { PriceQuote } from '../../types/api'
-import { formatPrice } from '../../utils/format'
+import { formatNumber, formatPrice } from '../../utils/format'
 
 /**
  * Thanh toán: ?course=<id> (mua ngay) hoặc lấy từ giỏ hàng.
- * Giá luôn do Backend tính (/api/orders/quote); client chỉ gửi danh sách khóa học + mã giảm giá.
+ * Giá luôn do Backend tính (/api/orders/quote); client chỉ gửi danh sách khóa học, mã giảm giá
+ * và lựa chọn dùng điểm thưởng (số điểm). Backend tự kiểm tra số dư và mức tối đa.
  */
 export default function CheckoutPage() {
   useDocumentTitle('Thanh toán')
@@ -31,6 +32,10 @@ export default function CheckoutPage() {
   const [quoteError, setQuoteError] = useState<string | null>(null)
   const [couponError, setCouponError] = useState<string | null>(null)
   const [quoting, setQuoting] = useState(false)
+  // Điểm thưởng: null = không dùng; 'max' = dùng tối đa; số = dùng đúng số điểm
+  const [points, setPoints] = useState<number | 'max' | null>(null)
+  const [pointsInput, setPointsInput] = useState('')
+  const [pointsError, setPointsError] = useState<string | null>(null)
   const [placing, setPlacing] = useState(false)
   const methods = useAsync(() => paymentService.methods(), [])
   const [method, setMethod] = useState<PaymentProvider | null>(null)
@@ -44,16 +49,27 @@ export default function CheckoutPage() {
     if (!key) return
     let cancelled = false
     setQuoting(true)
-    orderService.quote(key.split(','), coupon || undefined)
+    orderService.quote(key.split(','), coupon || undefined, points)
       .then((q) => {
         if (cancelled) return
         setQuote(q)
         setQuoteError(null)
         if (coupon) setCouponError(null)
+        if (points !== null) {
+          setPointsError(null)
+          setPointsInput(String(q.pointsUsed))
+        }
       })
       .catch((err) => {
         if (cancelled) return
-        if (coupon) {
+        if (typeof points === 'number') {
+          // Số điểm vượt mức cho phép: báo lỗi ở ô điểm, tính lại với mức tối đa
+          setPointsError(getErrorMessage(err))
+          setPoints('max')
+        } else if (points !== null && !coupon) {
+          setPointsError(getErrorMessage(err))
+          setPoints(null)
+        } else if (coupon) {
           // Mã không hợp lệ: báo lỗi ở ô mã, tính lại giá không mã
           setCouponError(getErrorMessage(err))
           setCoupon('')
@@ -65,7 +81,7 @@ export default function CheckoutPage() {
     return () => {
       cancelled = true
     }
-  }, [key, coupon])
+  }, [key, coupon, points])
 
   if (!singleCourse && !cartLoading && !placing && cart.count === 0) return <Navigate to="/gio-hang" replace />
 
@@ -73,13 +89,34 @@ export default function CheckoutPage() {
     e.preventDefault()
     setCouponError(null)
     setCoupon(couponInput.trim().toUpperCase())
+    // Giá sau mã thay đổi thì mức điểm tối đa cũng đổi: tính lại theo mức tối đa mới
+    setPoints((p) => (p === null ? null : 'max'))
+  }
+
+  const togglePoints = (on: boolean) => {
+    setPointsError(null)
+    setPoints(on ? 'max' : null)
+    if (!on) setPointsInput('')
+  }
+
+  const applyPoints = (e: FormEvent) => {
+    e.preventDefault()
+    const n = Number(pointsInput)
+    if (!Number.isInteger(n) || n < 1) {
+      setPointsError('Nhập số điểm là số nguyên lớn hơn 0.')
+      return
+    }
+    setPointsError(null)
+    setPoints(n)
   }
 
   const placeOrder = async () => {
     setPlacing(true)
     try {
       const order = await orderService.create(
-        singleCourse ? { courseIds: [singleCourse], couponCode: coupon } : { fromCart: true, couponCode: coupon },
+        singleCourse
+          ? { courseIds: [singleCourse], couponCode: coupon, points: quote?.pointsUsed || null }
+          : { fromCart: true, couponCode: coupon, points: quote?.pointsUsed || null },
       )
       if (order.status === 'Paid') {
         toast.success('Đăng ký thành công! Khóa học đã được thêm vào tài khoản của bạn.')
@@ -147,8 +184,58 @@ export default function CheckoutPage() {
               {quote?.couponMessage && (
                 <p className="mt-2 flex items-center gap-3 text-sm font-medium text-success">
                   {quote.couponMessage}
-                  <button type="button" className="text-ink-soft underline" onClick={() => { setCoupon(''); setCouponInput('') }}>Bỏ mã</button>
+                  <button type="button" className="text-ink-soft underline" onClick={() => { setCoupon(''); setCouponInput(''); setPoints((p) => (p === null ? null : 'max')) }}>Bỏ mã</button>
                 </p>
+              )}
+            </section>
+
+            <section aria-labelledby="points-h">
+              <h2 id="points-h" className="text-2xl font-semibold">Điểm thưởng</h2>
+              {!quote ? (
+                <Skeleton className="mt-4 h-16 max-w-md" />
+              ) : !quote.points.enabled ? (
+                <p className="mt-4 text-sm text-ink-soft">Tính năng dùng điểm khi thanh toán đang tạm dừng.</p>
+              ) : (
+                <div className="mt-4 max-w-md rounded-(--radius-card) bg-surface-2 p-4">
+                  <label className="flex cursor-pointer items-start gap-3">
+                    <input type="checkbox" className="peer sr-only" checked={points !== null}
+                      disabled={quote.points.maxUsable === 0 && points === null} onChange={(e) => togglePoints(e.target.checked)} />
+                    <span className="relative mt-0.5 h-6 w-11 shrink-0 rounded-full bg-surface-3 transition-colors peer-checked:bg-brand-600 peer-focus-visible:ring-4 peer-focus-visible:ring-brand-100 peer-disabled:opacity-50 after:absolute after:top-0.5 after:left-0.5 after:size-5 after:rounded-full after:bg-white after:transition-transform peer-checked:after:translate-x-5" aria-hidden="true" />
+                    <span>
+                      <span className="block font-semibold">Dùng điểm thưởng để giảm giá</span>
+                      <span className="block text-sm text-ink-soft">
+                        Bạn có <b className="tabular-nums">{formatNumber(quote.points.balance)}</b> điểm · {formatNumber(quote.points.pointsPerUnit)} điểm = {formatPrice(quote.points.amountPerUnit)} · tối đa {quote.points.maxPercent}% giá trị đơn
+                      </span>
+                    </span>
+                  </label>
+                  {quote.points.maxUsable === 0 && points === null && (
+                    <p className="mt-3 text-sm text-ink-soft">
+                      {quote.points.balance === 0 ? 'Bạn chưa có điểm thưởng. ' : 'Đơn hàng này chưa dùng được điểm. '}
+                      <Link to="/hoc-vien/diem-thuong" className="font-semibold text-brand-700 hover:underline">Cách nhận điểm</Link>
+                    </p>
+                  )}
+                  {points !== null && (
+                    <form onSubmit={applyPoints} className="mt-4 flex flex-col gap-2" noValidate>
+                      <label htmlFor="points" className="text-sm font-semibold">Số điểm sử dụng (tối đa {formatNumber(quote.points.maxUsable)})</label>
+                      <div className="flex gap-2">
+                        <input id="points" type="number" inputMode="numeric" min={1} max={quote.points.maxUsable} step={1} value={pointsInput}
+                          onChange={(e) => setPointsInput(e.target.value)} className="input tabular-nums"
+                          aria-invalid={!!pointsError} aria-describedby={pointsError ? 'points-err' : undefined} />
+                        <button type="submit" className="btn-soft shrink-0" disabled={quoting || !pointsInput}>Áp dụng</button>
+                      </div>
+                      <button type="button" className="self-start text-sm font-semibold text-brand-700 hover:underline disabled:opacity-50"
+                        disabled={quoting || quote.pointsUsed === quote.points.maxUsable} onClick={() => { setPointsError(null); setPoints('max') }}>
+                        Dùng tối đa {formatNumber(quote.points.maxUsable)} điểm
+                      </button>
+                    </form>
+                  )}
+                  {pointsError && <p id="points-err" className="mt-2 text-sm font-medium text-danger">{pointsError}</p>}
+                  {quote.pointsUsed > 0 && (
+                    <p className="mt-2 text-sm font-medium text-success">
+                      Dùng {formatNumber(quote.pointsUsed)} điểm, giảm {formatPrice(quote.pointsDiscountAmount)}. Điểm được hoàn lại nếu đơn bị hủy hoặc hết hạn.
+                    </p>
+                  )}
+                </div>
               )}
             </section>
 
@@ -178,6 +265,9 @@ export default function CheckoutPage() {
                 <div className="mt-2 flex"><dt>Tạm tính</dt><span className="dot-leader" /><dd>{formatPrice(quote.subTotal, '0đ')}</dd></div>
                 {quote.discountAmount > 0 && (
                   <div className="flex text-success"><dt>Giảm ({quote.couponCode})</dt><span className="dot-leader" /><dd>-{formatPrice(quote.discountAmount)}</dd></div>
+                )}
+                {quote.pointsDiscountAmount > 0 && (
+                  <div className="flex text-success"><dt>Điểm thưởng ({formatNumber(quote.pointsUsed)} điểm)</dt><span className="dot-leader" /><dd>-{formatPrice(quote.pointsDiscountAmount)}</dd></div>
                 )}
                 <div className="mt-2 flex bg-ink px-3 py-3 text-xl font-bold text-white">
                   <dt>Tổng cộng</dt><dd className="ml-auto">{formatPrice(quote.totalAmount, '0đ')}</dd>

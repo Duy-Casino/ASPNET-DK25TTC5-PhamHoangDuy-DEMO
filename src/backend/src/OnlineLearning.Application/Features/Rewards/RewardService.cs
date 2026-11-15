@@ -19,8 +19,10 @@ public sealed record CheckInStatusDto(bool Enabled, bool CheckedInToday, int Cur
 public sealed record RewardTaskDto(string Key, string Name, string? Description, int Points, string Condition, bool Enabled, bool DoneToday);
 public sealed record ReferralInfoDto(string Code, int ReferredCount, int RewardedCount, int PointsPerReferral, bool Enabled);
 public sealed record RedeemConfigDto(bool Enabled, int PointsPerUnit, decimal ValuePerUnit, int MinPoints, IReadOnlyList<int> Options);
+/// <summary>Cấu hình dùng điểm khi thanh toán: PointsPerUnit điểm = AmountPerUnit đồng, tối đa MaxPercent % giá trị đơn.</summary>
+public sealed record CheckoutConfigDto(bool Enabled, int PointsPerUnit, decimal AmountPerUnit, int MaxPercent);
 public sealed record PointSummaryDto(int Balance, int TotalEarned, int TotalSpent, CheckInStatusDto CheckIn,
-    IReadOnlyList<RewardTaskDto> Tasks, ReferralInfoDto Referral, RedeemConfigDto Redeem);
+    IReadOnlyList<RewardTaskDto> Tasks, ReferralInfoDto Referral, RedeemConfigDto Redeem, CheckoutConfigDto Checkout);
 public sealed record PointTransactionDto(Guid Id, int Points, int BalanceAfter, PointTransactionType Type, string? RuleKey,
     string Description, DateTime CreatedAt);
 public sealed record CheckInResultDto(int PointsAwarded, int StreakBonus, int Streak, int Balance);
@@ -66,6 +68,15 @@ public interface IRewardService
     Task StagePurchaseRewardsAsync(Order order, CancellationToken ct = default);
     /// <summary>Thu hồi điểm khi hoàn tiền. Gọi bên trong transaction hoàn tiền, trước SaveChanges.</summary>
     Task StageRefundRevocationAsync(Order order, Guid adminId, CancellationToken ct = default);
+    /// <summary>Trừ điểm đã chọn dùng cho đơn mới. Gọi trong transaction tạo đơn; false nếu số dư không còn đủ.</summary>
+    Task<bool> StageCheckoutDebitAsync(Order order, CancellationToken ct = default);
+    /// <summary>
+    /// Hoàn lại phần điểm đơn còn đang giữ (đơn bị hủy, hết hạn: refund=false; Admin hoàn tiền: refund=true).
+    /// Gọi trong transaction của người gọi. Tính theo sổ cái nên gọi lặp không hoàn hai lần.
+    /// </summary>
+    Task StageCheckoutRestoreAsync(Order order, bool refund, CancellationToken ct = default);
+    /// <summary>Đơn đã hết hạn (điểm đã hoàn) nhưng IPN thanh toán đến muộn: trừ lại điểm của đơn, tối đa bằng số dư hiện có.</summary>
+    Task StageCheckoutRedebitAsync(Order order, CancellationToken ct = default);
     /// <summary>Thưởng hoàn thành khóa học (mỗi khóa một lần). Tự mở transaction.</summary>
     Task AwardCourseCompletionAsync(Guid enrollmentId, CancellationToken ct = default);
     /// <summary>Gắn người giới thiệu cho tài khoản mới đăng ký (mã sai hoặc tự giới thiệu thì bỏ qua).</summary>
@@ -116,7 +127,15 @@ public sealed class RewardService(IAppDbContext db, IDateTimeProvider clock, INo
         }
 
         var applied = points;
-        if (points > 0)
+        if (points > 0 && type == PointTransactionType.Restore)
+        {
+            // Hoàn điểm đã dùng: giảm "tổng đã dùng" thay vì tăng "tổng tích lũy"
+            await db.UserPoints.Where(p => p.UserId == userId).ExecuteUpdateAsync(s => s
+                .SetProperty(p => p.Balance, p => p.Balance + points)
+                .SetProperty(p => p.TotalSpent, p => p.TotalSpent >= points ? p.TotalSpent - points : 0)
+                .SetProperty(p => p.UpdatedAt, now), ct);
+        }
+        else if (points > 0)
         {
             await db.UserPoints.Where(p => p.UserId == userId).ExecuteUpdateAsync(s => s
                 .SetProperty(p => p.Balance, p => p.Balance + points)
@@ -201,7 +220,7 @@ public sealed class RewardService(IAppDbContext db, IDateTimeProvider clock, INo
                 .Select(d => new CheckInDayDto(d, recent.Any(c => c.CheckInDate == d), d == today)).ToList());
 
         var sharedToday = await db.PointTransactions.AnyAsync(t => t.UserId == userId && t.ReferenceKey == $"share:{today:yyyy-MM-dd}", ct);
-        var tasks = rules.Values.Where(r => r.IsSystem && r.Key != PointRuleKeys.RedeemVoucher).OrderBy(r => r.SortOrder)
+        var tasks = rules.Values.Where(r => r.IsSystem && r.Key is not (PointRuleKeys.RedeemVoucher or PointRuleKeys.CheckoutPoints)).OrderBy(r => r.SortOrder)
             .Select(r => new RewardTaskDto(r.Key, r.Name, r.Description, r.Points, ConditionOf(r), r.IsActive,
                 r.Key switch
                 {
@@ -216,10 +235,13 @@ public sealed class RewardService(IAppDbContext db, IDateTimeProvider clock, INo
         var rewarded = await db.Referrals.CountAsync(r => r.ReferrerId == userId && r.RewardedAt != null, ct);
         rules.TryGetValue(PointRuleKeys.Referral, out var referralRule);
         rules.TryGetValue(PointRuleKeys.RedeemVoucher, out var redeem);
+        rules.TryGetValue(PointRuleKeys.CheckoutPoints, out var checkout);
 
         return new PointSummaryDto(account?.Balance ?? 0, account?.TotalEarned ?? 0, account?.TotalSpent ?? 0, checkIn, tasks,
             new ReferralInfoDto(code, referred, rewarded, referralRule?.Points ?? 0, referralRule?.IsActive == true),
-            RedeemConfigOf(redeem));
+            RedeemConfigOf(redeem),
+            new CheckoutConfigDto(checkout is { IsActive: true, Points: > 0, AmountUnit: > 0 }, checkout?.Points ?? 0, checkout?.AmountUnit ?? 0,
+                Math.Clamp(checkout?.Threshold ?? 100, 0, 100)));
     }
 
     private static RedeemConfigDto RedeemConfigOf(PointRule? r)
@@ -239,6 +261,7 @@ public sealed class RewardService(IAppDbContext db, IDateTimeProvider clock, INo
         PointRuleKeys.CourseShare => "Có người mở liên kết bạn chia sẻ, tối đa một lần mỗi ngày",
         PointRuleKeys.Referral => "Người được giới thiệu thanh toán thành công đơn đầu tiên",
         PointRuleKeys.RedeemVoucher => $"{r.Points} điểm = {Vnd.Format(r.AmountUnit ?? 0)} giảm giá",
+        PointRuleKeys.CheckoutPoints => $"{r.Points} điểm = {Vnd.Format(r.AmountUnit ?? 0)} khi thanh toán, tối đa {r.Threshold ?? 100}% giá trị đơn",
         _ => "Do quản trị viên trao thủ công",
     };
 
@@ -472,6 +495,52 @@ public sealed class RewardService(IAppDbContext db, IDateTimeProvider clock, INo
                 await ApplyAsync(referral.ReferrerId, -refEarned, PointTransactionType.Revoke, PointRuleKeys.Referral,
                     $"refund-referral:{order.Id}", $"Thu hồi thưởng giới thiệu do đơn {order.OrderCode} được hoàn tiền", adminId, true, ct);
         }
+    }
+
+    // ---- Dùng điểm khi thanh toán ----
+
+    private static string[] CheckoutRefs(Guid orderId) =>
+        [$"checkout:{orderId}", $"checkout-repay:{orderId}", $"checkout-restore:{orderId}", $"checkout-refund:{orderId}"];
+
+    /// <summary>Số điểm đơn đang giữ = điểm đã trừ cho đơn trừ đi điểm đã hoàn, theo sổ cái.</summary>
+    private async Task<int> HeldCheckoutPointsAsync(Order order, CancellationToken ct)
+    {
+        var refs = CheckoutRefs(order.Id);
+        var sum = await db.PointTransactions.Where(t => t.UserId == order.UserId && refs.Contains(t.ReferenceKey))
+            .Select(t => t.Points).ToListAsync(ct);
+        return -sum.Sum();
+    }
+
+    public async Task<bool> StageCheckoutDebitAsync(Order order, CancellationToken ct = default)
+    {
+        if (order.PointsUsed <= 0) return true;
+        var res = await ApplyAsync(order.UserId, -order.PointsUsed, PointTransactionType.Spend, PointRuleKeys.CheckoutPoints,
+            $"checkout:{order.Id}", $"Dùng {order.PointsUsed} điểm giảm {Vnd.Format(order.PointsDiscountAmount)} cho đơn {order.OrderCode}",
+            null, false, ct);
+        return res.Status == LedgerStatus.Applied;
+    }
+
+    public async Task StageCheckoutRestoreAsync(Order order, bool refund, CancellationToken ct = default)
+    {
+        if (order.PointsUsed <= 0) return;
+        var held = await HeldCheckoutPointsAsync(order, ct);
+        if (held <= 0) return;
+        var reason = refund ? "được hoàn tiền" : order.Status == OrderStatus.Expired ? "hết hạn thanh toán" : "đã hủy";
+        var res = await ApplyAsync(order.UserId, held, PointTransactionType.Restore, PointRuleKeys.CheckoutPoints,
+            $"{(refund ? "checkout-refund" : "checkout-restore")}:{order.Id}", $"Hoàn {held} điểm do đơn {order.OrderCode} {reason}",
+            null, false, ct);
+        if (res.Status == LedgerStatus.Applied)
+            notifications.Add(order.UserId, $"Hoàn {res.Points} điểm thưởng", $"Đơn {order.OrderCode} {reason} nên điểm đã dùng được trả lại.",
+                NotificationType.Points, "/hoc-vien/diem-thuong");
+    }
+
+    public async Task StageCheckoutRedebitAsync(Order order, CancellationToken ct = default)
+    {
+        if (order.PointsUsed <= 0 || await HeldCheckoutPointsAsync(order, ct) > 0) return;
+        var res = await ApplyAsync(order.UserId, -order.PointsUsed, PointTransactionType.Spend, PointRuleKeys.CheckoutPoints,
+            $"checkout-repay:{order.Id}", $"Dùng điểm cho đơn {order.OrderCode} (thanh toán sau khi đơn hết hạn)", null, true, ct);
+        if (res.Status != LedgerStatus.Applied || -res.Points < order.PointsUsed)
+            logger.LogWarning("Đơn {OrderCode} thanh toán muộn: chỉ trừ lại được {Points}/{Used} điểm", order.OrderCode, -res.Points, order.PointsUsed);
     }
 
     public async Task AwardCourseCompletionAsync(Guid enrollmentId, CancellationToken ct = default)

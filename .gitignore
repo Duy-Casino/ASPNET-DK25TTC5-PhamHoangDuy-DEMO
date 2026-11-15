@@ -39,3 +39,5 @@ blob-report/
 
 # Bản sao lưu DB demo SQLite
 *.db.bak-*
+*.db-shm.bak-*
+*.db-wal.bak-*

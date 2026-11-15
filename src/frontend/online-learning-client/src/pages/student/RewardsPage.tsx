@@ -17,7 +17,7 @@ const taskIcons: Record<string, LucideIcon> = {
   course_share: Share2, referral: Users,
 }
 const weekday = new Intl.DateTimeFormat('vi-VN', { weekday: 'short', timeZone: 'UTC' })
-const typeLabel: Record<PointTransaction['type'], string> = { Earn: 'Cộng điểm', Spend: 'Đổi điểm', Revoke: 'Thu hồi', Adjust: 'Điều chỉnh' }
+const typeLabel: Record<PointTransaction['type'], string> = { Earn: 'Cộng điểm', Spend: 'Dùng điểm', Revoke: 'Thu hồi', Adjust: 'Điều chỉnh', Restore: 'Hoàn điểm' }
 
 export function RewardsPage() {
   useDocumentTitle('Điểm thưởng của tôi')
@@ -267,6 +267,12 @@ function RedeemPanel({ s, vouchers, onDone }: { s: PointSummary; vouchers: Redem
       {!r.enabled ? <p className="text-ink-soft">Đổi điểm đang tạm dừng.</p> : (
         <div className="flex flex-col gap-5">
           <p className="text-sm text-ink-soft">{r.pointsPerUnit} điểm = {formatPrice(r.valuePerUnit)}. Mã chỉ dùng được bởi chính bạn, một lần, trong 90 ngày.</p>
+          {s.checkout.enabled && (
+            <p className="rounded-(--radius-card) bg-brand-50 p-3 text-sm">
+              <b>Hoặc trừ điểm trực tiếp khi thanh toán:</b> {formatNumber(s.checkout.pointsPerUnit)} điểm = {formatPrice(s.checkout.amountPerUnit)}, tối đa {s.checkout.maxPercent}% giá trị đơn.
+              Bật "Dùng điểm thưởng" ở trang thanh toán.
+            </p>
+          )}
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             {r.options.map((p) => {
               const value = (p / r.pointsPerUnit) * r.valuePerUnit

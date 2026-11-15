@@ -42,6 +42,49 @@ test.describe('Điểm thưởng', () => {
     await guest.close()
   })
 
+  test('học viên chọn dùng điểm thưởng để giảm giá khi thanh toán', async ({ page }) => {
+    await registerStudent(page, 'Người Dùng Điểm')
+    await page.goto('/hoc-vien/diem-thuong')
+    await page.getByRole('button', { name: 'Điểm danh +5' }).click()
+    await expect(page.getByRole('button', { name: 'Đã điểm danh hôm nay' })).toBeDisabled()
+    await expect(page.getByText(/Hoặc trừ điểm trực tiếp khi thanh toán/)).toBeVisible()
+
+    await page.goto('/khoa-hoc/excel-tu-co-ban-den-nang-cao')
+    await page.getByRole('button', { name: 'Thêm vào giỏ hàng' }).click()
+    await expect(page.getByRole('link', { name: 'Giỏ hàng, 1 khóa học' })).toBeVisible()
+    await page.goto('/thanh-toan')
+    const receipt = page.getByRole('complementary', { name: 'Hóa đơn' })
+    await expect(receipt.getByText('249.000đ').last()).toBeVisible()
+
+    // Mặc định không dùng điểm; bật lên thì dùng tối đa (5 điểm = 500đ)
+    const toggle = page.getByRole('checkbox', { name: /Dùng điểm thưởng để giảm giá/ })
+    await expect(toggle).not.toBeChecked()
+    await page.getByText('Dùng điểm thưởng để giảm giá').click()
+    await expect(toggle).toBeChecked()
+    await expect(receipt.getByText('Điểm thưởng (5 điểm)')).toBeVisible()
+    await expect(receipt.getByText('248.500đ')).toBeVisible()
+
+    // Nhập quá mức tối đa → báo lỗi, quay về mức tối đa
+    await page.getByLabel(/Số điểm sử dụng/).fill('50')
+    await page.getByRole('button', { name: 'Áp dụng' }).last().click()
+    await expect(page.getByText('Bạn chỉ dùng được tối đa 5 điểm cho đơn hàng này.')).toBeVisible()
+
+    // Tắt đi thì giá trở lại như cũ; bật lại rồi đặt hàng
+    await page.getByText('Dùng điểm thưởng để giảm giá').click()
+    await expect(receipt.getByText('Điểm thưởng (5 điểm)')).toHaveCount(0)
+    await page.getByText('Dùng điểm thưởng để giảm giá').click()
+    await expect(receipt.getByText('Điểm thưởng (5 điểm)')).toBeVisible()
+    await page.getByLabel(/Kênh thanh toán thử nghiệm/).check()
+    await page.getByRole('button', { name: 'Đặt hàng và thanh toán' }).click()
+    await page.waitForURL(/\/thanh-toan\/ket-qua/)
+    await expect(page.getByRole('heading', { name: 'Thanh toán thành công' })).toBeVisible()
+
+    // Lịch sử điểm: trừ 5 điểm cho đơn, cộng điểm mua hàng trên số tiền thật (248.500đ → 24 điểm)
+    await page.goto('/hoc-vien/diem-thuong')
+    await expect(page.getByText(/Dùng 5 điểm giảm 500đ cho đơn/)).toBeVisible()
+    await expect(page.getByText(/Mua khóa học, đơn .* \(248\.500đ\)/)).toBeVisible()
+  })
+
   test('admin xem tổng quan, cấu hình nhiệm vụ, điều chỉnh điểm có lý do và xem lịch sử', async ({ page, browser }) => {
     // Tạo học viên có giao dịch điểm
     const studentCtx = await browser.newContext()

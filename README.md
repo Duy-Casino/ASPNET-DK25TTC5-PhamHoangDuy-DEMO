@@ -12,7 +12,7 @@
 | Dự án | Website bán khóa học trực tuyến |
 | Repository | <https://github.com/Duy-Casino/ASPNET-DK25TTC5-PhamHoangDuy-DEMO> |
 
-Cập nhật lần cuối: **09/11/2026**. Nhật ký thay đổi xem mục [9](#9-nhật-ký-tiến-độ).
+Cập nhật lần cuối: **15/11/2026**. Nhật ký thay đổi xem mục [9](#9-nhật-ký-tiến-độ).
 
 EduViet là website mua và học khóa học trực tuyến, giao diện tiếng Việt, với bốn vai trò: khách, học viên, giảng viên và quản trị viên.
 
@@ -52,7 +52,7 @@ EduViet là website mua và học khóa học trực tuyến, giao diện tiến
 | **Chứng chỉ** | Tự cấp khi hoàn thành khóa; PDF A4 có mã QR, mã `EDV-YYYY-XXXXXXXX`; trang xác minh công khai `/xac-minh/:mã`; Admin thu hồi, khôi phục, cấp bù |
 | **Giảng viên** | Soạn khóa học, chương, bài, tài liệu, bài kiểm tra; gửi duyệt. Hồ sơ giảng dạy gồm kinh nghiệm, học vấn, chứng nhận, chuyên môn, ảnh đại diện; huy hiệu "Đã xác minh" do Admin cấp; thống kê học viên và đánh giá |
 | **Trao đổi** | Học viên nhắn tin hỏi giảng viên về khóa học, trạng thái đã đọc/chưa đọc, thông báo trên chuông |
-| **Điểm thưởng** | Tích điểm khi mua khóa (10 điểm/100.000đ), hoàn thành khóa, điểm danh hằng ngày, chuỗi 7 ngày, chia sẻ khóa học, giới thiệu bạn bè. Đổi điểm lấy mã giảm giá cá nhân. Admin cấu hình quy tắc, điều chỉnh điểm có lý do, xem thống kê, xuất CSV. Hoàn tiền thì thu hồi điểm |
+| **Điểm thưởng** | Tích điểm khi mua khóa (10 điểm/100.000đ), hoàn thành khóa, điểm danh hằng ngày, chuỗi 7 ngày, chia sẻ khóa học, giới thiệu bạn bè. Đổi điểm lấy mã giảm giá cá nhân, hoặc **tự chọn trừ điểm trực tiếp khi thanh toán** (1 điểm = 100đ, tối đa 50% đơn; điểm tự hoàn nếu đơn bị hủy, hết hạn, hoàn tiền). Admin cấu hình quy tắc, điều chỉnh điểm có lý do, xem thống kê, xuất CSV. Hoàn tiền thì thu hồi điểm |
 | **Dashboard** | Học viên: tiến độ, kết quả, chứng chỉ, thanh toán. Giảng viên: doanh thu, lượt đăng ký 12 tháng. Admin: tổng quan, biểu đồ, duyệt khóa học, phân quyền, đơn hàng, giao dịch |
 | **Nội dung & SEO** | Trang Giới thiệu, Liên hệ, chính sách (điều khoản, bảo mật, hoàn tiền); thẻ Open Graph, canonical, JSON-LD (Course, Person); `sitemap.xml`, `robots.txt`; giao diện responsive cho điện thoại |
 | **Bảo mật** | Rate limit, ProblemDetails tiếng Việt, header bảo mật, lọc HTML chống XSS, kiểm tra magic bytes khi tải tệp, URL video có chữ ký, phân quyền theo vai trò |
@@ -176,8 +176,8 @@ Luồng nên thử: đăng ký học viên → thêm khóa vào giỏ → thanh 
 
 | Tầng | Công cụ | Kết quả gần nhất |
 | --- | --- | --- |
-| Backend tích hợp | xUnit + WebApplicationFactory + SQLite in-memory | **43/43 đạt** |
-| End-to-end | Playwright (Chrome), 18 kịch bản desktop + 7 kịch bản điện thoại | **25/25 đạt** |
+| Backend tích hợp | xUnit + WebApplicationFactory + SQLite in-memory | **48/48 đạt** |
+| End-to-end | Playwright (Chrome), 19 kịch bản desktop + 7 kịch bản điện thoại | **26/26 đạt** |
 | Build | `dotnet build`, `npm run build` | Đạt |
 
 ```powershell
@@ -259,6 +259,7 @@ Mỗi khi hoàn thành một tính năng, thêm một dòng vào bảng này và
 | 09/11/2026 | Viết lại README theo trạng thái hiện tại của đồ án; thêm thông tin sinh viên | |
 | 09/11/2026 | Tổ chức lại repository theo quy định: `setup/`, `src/`, `progress-report/`, `thesis/`, `soft/`, `docker/`; script cài đặt; báo cáo tiến độ 01–04; tài liệu kỹ thuật bản HTML/PDF | 43/43 backend, 25/25 E2E |
 | 09/11/2026 | Báo cáo tiến độ theo tuần: lịch báo cáo, báo cáo tuần 01 (05/11–11/11/2026) gồm công việc theo ngày và 10 điều chỉnh trong tuần, mẫu báo cáo tuần | |
+| 15/11/2026 | Dùng điểm thưởng trừ khi thanh toán: học viên tự chọn bật/tắt và số điểm; trừ khi đặt hàng, hoàn khi hủy/hết hạn/hoàn tiền; Admin cấu hình tỷ lệ và % tối đa (migration `CheckoutPoints`, [tài liệu 14](thesis/html/14-diem-thuong.md#11-dùng-điểm-trừ-trực-tiếp-khi-thanh-toán)) | 48/48 backend, 26/26 E2E |
 
 ## 10. Hạn chế và việc còn lại
 

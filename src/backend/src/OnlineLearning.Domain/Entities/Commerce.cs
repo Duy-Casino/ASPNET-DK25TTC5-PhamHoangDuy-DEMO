@@ -36,6 +36,12 @@ public class Order : AuditableEntity
 
     public decimal SubTotal { get; set; }
     public decimal DiscountAmount { get; set; }
+
+    /// <summary>Số điểm thưởng dùng để trừ vào đơn và số tiền được giảm tương ứng.</summary>
+    public int PointsUsed { get; set; }
+    public decimal PointsDiscountAmount { get; set; }
+
+    /// <summary>TotalAmount = SubTotal - DiscountAmount - PointsDiscountAmount: số tiền thực trả qua cổng thanh toán.</summary>
     public decimal TotalAmount { get; set; }
 
     public OrderStatus Status { get; set; } = OrderStatus.Pending;

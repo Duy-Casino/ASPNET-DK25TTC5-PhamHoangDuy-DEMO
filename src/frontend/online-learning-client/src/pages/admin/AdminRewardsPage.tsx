@@ -15,7 +15,7 @@ const tabs: { key: Tab; label: string }[] = [
   { key: 'overview', label: 'Tổng quan' }, { key: 'balances', label: 'Điểm học viên' },
   { key: 'history', label: 'Lịch sử giao dịch' }, { key: 'rules', label: 'Nhiệm vụ & quy tắc' },
 ]
-const typeLabels: Record<PointTransactionType, string> = { Earn: 'Cộng điểm', Spend: 'Đổi điểm', Revoke: 'Thu hồi', Adjust: 'Điều chỉnh' }
+const typeLabels: Record<PointTransactionType, string> = { Earn: 'Cộng điểm', Spend: 'Dùng điểm', Revoke: 'Thu hồi', Adjust: 'Điều chỉnh', Restore: 'Hoàn điểm' }
 
 export function AdminRewardsPage() {
   useDocumentTitle('Quản lý điểm thưởng')
@@ -299,8 +299,8 @@ function RulesTab({ rules }: { rules: ReturnType<typeof useAsync<PointRule[]>> }
 }
 
 function RuleModal({ rule, onClose, onSaved }: { rule: PointRule | null; onClose: () => void; onSaved: () => void }) {
-  const needsAmount = rule?.key === 'purchase' || rule?.key === 'redeem_voucher'
-  const needsThreshold = rule?.key === 'checkin_streak' || rule?.key === 'redeem_voucher'
+  const needsAmount = rule?.key === 'purchase' || rule?.key === 'redeem_voucher' || rule?.key === 'checkout_points'
+  const needsThreshold = rule?.key === 'checkin_streak' || rule?.key === 'redeem_voucher' || rule?.key === 'checkout_points'
   const [f, setF] = useState({
     key: rule?.key ?? '', name: rule?.name ?? '', description: rule?.description ?? '', points: String(rule?.points ?? 10),
     amountUnit: rule?.amountUnit?.toString() ?? '', threshold: rule?.threshold?.toString() ?? '', isActive: rule?.isActive ?? true,
@@ -314,6 +314,7 @@ function RuleModal({ rule, onClose, onSaved }: { rule: PointRule | null; onClose
     purchase: { points: 'Số điểm cho mỗi đơn vị tiền', amount: 'Đơn vị tiền (đ)' },
     redeem_voucher: { points: 'Số điểm cho mỗi đơn vị đổi', amount: 'Giá trị voucher mỗi đơn vị (đ)', threshold: 'Số điểm tối thiểu mỗi lần đổi' },
     checkin_streak: { points: 'Điểm thưởng khi đủ chuỗi', threshold: 'Số ngày liên tục' },
+    checkout_points: { points: 'Số điểm cho mỗi đơn vị', amount: 'Số tiền được giảm mỗi đơn vị (đ)', threshold: 'Tối đa % giá trị đơn được trả bằng điểm' },
   }
   const l = labels[rule?.key ?? ''] ?? { points: 'Số điểm' }
 
@@ -350,6 +351,9 @@ function RuleModal({ rule, onClose, onSaved }: { rule: PointRule | null; onClose
         {needsThreshold && <Field label={l.threshold!} type="number" inputMode="numeric" min={1} value={f.threshold} onChange={set('threshold')} error={errors.threshold} />}
         <Field label="Thứ tự hiển thị" type="number" inputMode="numeric" value={f.sortOrder} onChange={set('sortOrder')} />
         <Toggle checked={f.isActive} label={f.isActive ? 'Đang bật' : 'Đang tắt'} onChange={(v) => setF((x) => ({ ...x, isActive: v }))} />
+        {rule?.key === 'checkout_points' && (
+          <p className="text-sm text-ink-soft">Ví dụ 1 điểm = 100đ, tối đa 50%: đơn 400.000đ dùng được tối đa 2.000 điểm (giảm 200.000đ). Điểm được trừ khi đặt hàng và tự hoàn nếu đơn bị hủy, hết hạn hoặc hoàn tiền.</p>
+        )}
         {rule?.key === 'purchase' && (
           <p className="text-sm text-ink-soft">Điểm = làm tròn xuống (số tiền thanh toán × điểm / đơn vị tiền). Ví dụ 10 điểm/100.000đ: đơn 249.000đ được 24 điểm.</p>
         )}

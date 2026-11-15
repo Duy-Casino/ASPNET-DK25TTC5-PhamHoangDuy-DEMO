@@ -38,7 +38,8 @@ public class OrderConfiguration : IEntityTypeConfiguration<Order>
             t.HasCheckConstraint("CK_Orders_SubTotal", "[SubTotal] >= 0");
             t.HasCheckConstraint("CK_Orders_Discount", "[DiscountAmount] >= 0");
             t.HasCheckConstraint("CK_Orders_Total", "[TotalAmount] >= 0");
-            t.HasCheckConstraint("CK_Orders_Math", "[TotalAmount] = [SubTotal] - [DiscountAmount]");
+            t.HasCheckConstraint("CK_Orders_Points", "[PointsUsed] >= 0 AND [PointsDiscountAmount] >= 0");
+            t.HasCheckConstraint("CK_Orders_Math", "[TotalAmount] = [SubTotal] - [DiscountAmount] - [PointsDiscountAmount]");
         });
 
         b.Property(x => x.OrderCode).HasMaxLength(20).IsUnicode(false).IsRequired();

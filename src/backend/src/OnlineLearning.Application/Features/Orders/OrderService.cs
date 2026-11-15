@@ -25,8 +25,10 @@ public sealed class OrderService(
     IAppDbContext db,
     IPricingService pricing,
     IOrderFulfillmentService fulfillment,
+    Rewards.IRewardService rewards,
     IDateTimeProvider clock,
-    IOptions<AppOptions> appOptions) : IOrderService
+    IOptions<AppOptions> appOptions,
+    ILogger<OrderService> logger) : IOrderService
 {
     public async Task<Result<OrderDto>> CreateAsync(Guid userId, CreateOrderRequest request, CancellationToken ct = default)
     {
@@ -35,9 +37,14 @@ public sealed class OrderService(
             : request.CourseIds?.ToList() ?? [];
         if (courseIds.Count == 0) return Error.Validation("Giỏ hàng trống.");
 
-        var priced = await pricing.CalculateAsync(userId, courseIds, request.CouponCode, ct);
+        // Tính giá, tạo đơn và trừ điểm (nếu dùng) trong cùng một transaction:
+        // số dư thay đổi giữa lúc báo giá và lúc đặt hàng thì đơn không được tạo
+        await using var tx = await db.Database.BeginTransactionAsync(ct);
+        var priced = await pricing.CalculateAsync(userId, courseIds, request.CouponCode, request.UsePoints, request.Points, ct);
         if (priced.IsFailure) return priced.Error!;
         var p = priced.Value!;
+        if (request.UsePoints && request.Points is { } wanted && wanted != p.PointsUsed)
+            return Error.Validation("Số điểm sử dụng không hợp lệ.");
 
         var now = clock.UtcNow;
         var order = new Order
@@ -48,6 +55,8 @@ public sealed class OrderService(
             CouponCode = p.Coupon?.Code,
             SubTotal = p.SubTotal,
             DiscountAmount = p.DiscountAmount,
+            PointsUsed = p.PointsUsed,
+            PointsDiscountAmount = p.PointsDiscountAmount,
             TotalAmount = p.TotalAmount,
             Status = OrderStatus.Pending,
             Note = request.Note?.Trim(),
@@ -64,7 +73,25 @@ public sealed class OrderService(
             }).ToList(),
         };
         db.Orders.Add(order);
-        await db.SaveChangesAsync(ct);
+        try
+        {
+            await db.SaveChangesAsync(ct);
+            if (!await rewards.StageCheckoutDebitAsync(order, ct))
+            {
+                await tx.RollbackAsync(ct);
+                db.ChangeTracker.Clear();
+                return Error.Conflict("Số dư điểm thưởng vừa thay đổi. Vui lòng kiểm tra lại số điểm và đặt hàng lại.");
+            }
+            await db.SaveChangesAsync(ct);
+            await tx.CommitAsync(ct);
+        }
+        catch (DbUpdateException ex)
+        {
+            logger.LogInformation(ex, "Không tạo được đơn hàng có dùng điểm (yêu cầu đồng thời)");
+            await tx.RollbackAsync(ct);
+            db.ChangeTracker.Clear();
+            return Error.Conflict("Đơn hàng đang được xử lý, vui lòng thử lại.");
+        }
 
         // FR-ORDER-08: đơn 0đ hoàn tất ngay, không qua cổng thanh toán
         if (order.TotalAmount == 0)
@@ -93,7 +120,7 @@ public sealed class OrderService(
             .FirstOrDefaultAsync(x => x.Id == orderId, ct);
         if (o is null || (!isAdmin && o.UserId != userId)) return Error.NotFound("Không tìm thấy đơn hàng.");
 
-        return new OrderDto(o.Id, o.OrderCode, o.Status, o.SubTotal, o.DiscountAmount, o.TotalAmount, o.CouponCode, o.Note,
+        return new OrderDto(o.Id, o.OrderCode, o.Status, o.SubTotal, o.DiscountAmount, o.PointsUsed, o.PointsDiscountAmount, o.TotalAmount, o.CouponCode, o.Note,
             o.CreatedAt, o.ExpiresAt, o.PaidAt, o.CancelledAt,
             o.Items.Select(i => new OrderItemDto(i.CourseId, i.CourseTitle, i.Course?.Slug, i.Course?.ThumbnailUrl,
                 i.OriginalPrice, i.Price, i.DiscountAllocated, i.FinalPrice)).ToList(),
@@ -103,13 +130,16 @@ public sealed class OrderService(
 
     public async Task<Result> CancelAsync(Guid orderId, Guid userId, CancellationToken ct = default)
     {
+        await using var tx = await db.Database.BeginTransactionAsync(ct);
         var order = await db.Orders.FirstOrDefaultAsync(o => o.Id == orderId && o.UserId == userId, ct);
         if (order is null) return Result.Failure(Error.NotFound("Không tìm thấy đơn hàng."));
         if (order.Status != OrderStatus.Pending) return Result.Failure(Error.Conflict("Chỉ hủy được đơn đang chờ thanh toán."));
 
         order.Status = OrderStatus.Cancelled;
         order.CancelledAt = clock.UtcNow;
+        await rewards.StageCheckoutRestoreAsync(order, refund: false, ct);
         await db.SaveChangesAsync(ct);
+        await tx.CommitAsync(ct);
         return Result.Success();
     }
 
@@ -132,10 +162,21 @@ public sealed class OrderService(
     public async Task<int> ExpireStaleOrdersAsync(CancellationToken ct = default)
     {
         var now = clock.UtcNow;
-        var stale = await db.Orders.Where(o => o.Status == OrderStatus.Pending && o.ExpiresAt < now).ToListAsync(ct);
-        foreach (var o in stale) o.Status = OrderStatus.Expired;
-        if (stale.Count > 0) await db.SaveChangesAsync(ct);
-        return stale.Count;
+        var staleIds = await db.Orders.Where(o => o.Status == OrderStatus.Pending && o.ExpiresAt < now).Select(o => o.Id).ToListAsync(ct);
+        var count = 0;
+        // Mỗi đơn một transaction: đơn hết hạn + hoàn điểm đã dùng đi cùng nhau
+        foreach (var id in staleIds)
+        {
+            await using var tx = await db.Database.BeginTransactionAsync(ct);
+            var o = await db.Orders.FirstOrDefaultAsync(x => x.Id == id && x.Status == OrderStatus.Pending, ct);
+            if (o is null) continue;
+            o.Status = OrderStatus.Expired;
+            await rewards.StageCheckoutRestoreAsync(o, refund: false, ct);
+            await db.SaveChangesAsync(ct);
+            await tx.CommitAsync(ct);
+            count++;
+        }
+        return count;
     }
 
     private async Task<string> UniqueOrderCodeAsync(DateTime now, CancellationToken ct)
@@ -218,6 +259,10 @@ public sealed class OrderFulfillmentService(
         payment.RawResponse = confirmation.RawResponse;
         payment.PaidAt = now;
 
+        // IPN đến muộn cho đơn đã hết hạn: điểm của đơn đã được hoàn lúc hết hạn, nên trừ lại
+        if (order.Status == OrderStatus.Expired)
+            await rewards.StageCheckoutRedebitAsync(order, ct);
+
         order.Status = OrderStatus.Paid;
         order.PaidAt = now;
 
@@ -299,6 +344,7 @@ public sealed class OrderFulfillmentService(
         }
 
         await rewards.StageRefundRevocationAsync(order, adminId, ct);
+        await rewards.StageCheckoutRestoreAsync(order, refund: true, ct);
         notifications.Add(order.UserId, "Đơn hàng đã được hoàn tiền",
             $"Đơn {order.OrderCode} đã được hoàn tiền. Quyền học các khóa trong đơn đã được thu hồi.", NotificationType.Order,
             $"/don-hang/{order.Id}");

@@ -93,6 +93,7 @@ public static class DbSeeder
             new PointRule { Key = PointRuleKeys.CourseShare, Name = "Chia sẻ khóa học", Description = "Chia sẻ liên kết khóa học qua Facebook, Zalo hoặc sao chép liên kết.", Points = 5, SortOrder = 5 },
             new PointRule { Key = PointRuleKeys.Referral, Name = "Giới thiệu bạn bè", Description = "Bạn bè đăng ký bằng mã của bạn và mua khóa học thành công.", Points = 50, SortOrder = 6 },
             new PointRule { Key = PointRuleKeys.RedeemVoucher, Name = "Đổi điểm lấy mã giảm giá", Description = "Mã giảm giá cá nhân, dùng một lần trong 90 ngày.", Points = 100, AmountUnit = 10_000, Threshold = 100, SortOrder = 7 },
+            new PointRule { Key = PointRuleKeys.CheckoutPoints, Name = "Dùng điểm khi thanh toán", Description = "Trừ điểm trực tiếp vào giá khóa học khi thanh toán. Ngưỡng là phần trăm tối đa của đơn được trả bằng điểm.", Points = 1, AmountUnit = 100, Threshold = 50, SortOrder = 8 },
         };
         var existing = await db.PointRules.Select(r => r.Key).ToListAsync(ct);
         var missing = defaults.Where(d => !existing.Contains(d.Key)).ToList();

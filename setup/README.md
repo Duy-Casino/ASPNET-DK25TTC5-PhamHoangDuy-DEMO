@@ -71,6 +71,7 @@ Chọn một trong hai cách tạo CSDL `OnlineLearningDb`:
   1. `database/migration-InitialCreate.sql`
   2. `database/migration-InstructorProfileAndMessaging.sql`
   3. `database/migration-RewardPoints.sql`
+  4. `database/migration-CheckoutPoints.sql`
 
   Các script đều idempotent, chạy lại không gây lỗi. `database/schema.sql` là bản tham chiếu đầy đủ, dùng để đọc hoặc vẽ ERD.
 
@@ -90,8 +91,8 @@ dotnet run
 | <http://localhost:5080/api/health> | `{"status":"ok", ...}` |
 | <http://localhost:5080/swagger> | Trang Swagger liệt kê các endpoint |
 | <http://localhost:5173> | Trang chủ có danh sách khóa học |
-| `cd src\backend; dotnet test` | 43/43 test đạt |
-| `cd src\frontend\online-learning-client; $env:E2E_CHANNEL="chrome"; npm run test:e2e` | 25/25 kịch bản đạt |
+| `cd src\backend; dotnet test` | 48/48 test đạt |
+| `cd src\frontend\online-learning-client; $env:E2E_CHANNEL="chrome"; npm run test:e2e` | 26/26 kịch bản đạt |
 
 ## 5. Lỗi thường gặp
 

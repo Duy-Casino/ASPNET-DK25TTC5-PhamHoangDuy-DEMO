@@ -23,7 +23,8 @@ public enum QuestionType { SingleChoice, MultipleChoice, TrueFalse }
 public enum NotificationType { System, Order, Course, Certificate, Review, Message, Points }
 
 /// <summary>Loại giao dịch điểm.</summary>
-public enum PointTransactionType { Earn, Spend, Revoke, Adjust }
+/// <summary>Restore: hoàn lại điểm đã dùng khi thanh toán (đơn bị hủy, hết hạn hoặc hoàn tiền).</summary>
+public enum PointTransactionType { Earn, Spend, Revoke, Adjust, Restore }
 
 public enum ShareChannel { Facebook, Zalo, CopyLink, Other }
 

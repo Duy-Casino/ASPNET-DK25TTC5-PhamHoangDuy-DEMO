@@ -21,7 +21,7 @@ section.doc{page-break-before:always}
 <h1>EduViet: Website bán khóa học trực tuyến</h1>
 <p><strong>Tài liệu kỹ thuật</strong></p>
 <p>Sinh viên thực hiện: Phạm Hoàng Duy · MSSV 170125375 · Lớp DK25TTC5</p>
-<p>Tạo ngày 09/11/2026 từ thesis/html/*.md</p>
+<p>Tạo ngày 15/11/2026 từ thesis/html/*.md</p>
 </div>
 <h2>Mục lục</h2><ol class="toc"><li><a href="#doc-01-phan-tich-yeu-cau">01 — Phân tích yêu cầu &amp; đặc tả nghiệp vụ</a></li><li><a href="#doc-02-kien-truc">02 — Kiến trúc hệ thống</a></li><li><a href="#doc-03-thiet-ke-database">03 — Thiết kế cơ sở dữ liệu (SQL Server)</a></li><li><a href="#doc-04-cai-dat-moi-truong">04 — Chạy dự án trên máy tính</a></li><li><a href="#doc-05-design-system">05 — Design system</a></li><li><a href="#doc-06-backend-api">06 — Backend API (Giai đoạn 2)</a></li><li><a href="#doc-07-frontend">07 — Frontend (Giai đoạn 3)</a></li><li><a href="#doc-08-hoc-tap-va-dashboard">08 — Học trực tuyến, kiểm tra và dashboard (Giai đoạn 4)</a></li><li><a href="#doc-09-thanh-toan-va-luu-tru">09 — Thanh toán &amp; lưu trữ tệp (Giai đoạn 5)</a></li><li><a href="#doc-10-chung-chi">10 — Chứng chỉ PDF &amp; trang xác minh (Giai đoạn 6)</a></li><li><a href="#doc-11-trien-khai">11 — Triển khai lên môi trường thực tế</a></li><li><a href="#doc-12-bao-cao-kiem-thu">12 — Báo cáo kiểm thử (Giai đoạn 7)</a></li><li><a href="#doc-13-design-system">13 — Design system giao diện</a></li><li><a href="#doc-14-diem-thuong">14 — Điểm thưởng (Reward Points)</a></li></ol>
 <section class="doc" id="doc-01-phan-tich-yeu-cau"><h1 id="01-phan-tich-yeu-cau-ac-ta-nghiep-vu">01 — Phân tích yêu cầu &amp; đặc tả nghiệp vụ</h1>
@@ -2475,6 +2475,7 @@ dotnet user-secrets set &quot;Cloudinary:ApiSecret&quot; &quot;&lt;api secret&gt
 - [ ] Migration <code>InstructorProfileAndMessaging</code> (hồ sơ giảng viên, tin nhắn) được áp dụng tự động khi <code>Database__MigrateOnStartup=true</code>; DBA chạy tay thì dùng <code>setup/database/migration-InstructorProfileAndMessaging.sql</code> (idempotent)</p>
 <ul>
 <li>[ ] Migration <code>RewardPoints</code> (điểm thưởng) được áp dụng tự động; chạy tay thì dùng <code>setup/database/migration-RewardPoints.sql</code>. Rà lại số điểm từng nhiệm vụ tại Quản trị › Điểm thưởng trước khi mở cho học viên</li>
+<li>[ ] Migration <code>CheckoutPoints</code> (dùng điểm khi thanh toán) được áp dụng tự động; chạy tay thì dùng <code>setup/database/migration-CheckoutPoints.sql</code>. Kiểm tra tỷ lệ quy đổi và % tối đa của quy tắc "Dùng điểm khi thanh toán"</li>
 </ul>
 <p><strong>Nội dung &amp; SEO</strong>
 - [x] Điều khoản hoàn tiền đã xác nhận (06/11/2026): yêu cầu trong 7 ngày, đã học tối đa 20%, chưa cấp chứng chỉ; phản hồi trong 7 ngày làm việc
@@ -2504,14 +2505,14 @@ dotnet user-secrets set &quot;Cloudinary:ApiSecret&quot; &quot;&lt;api secret&gt
 <tr>
 <td>Backend tích hợp</td>
 <td>xUnit + WebApplicationFactory + SQLite in-memory</td>
-<td>43</td>
-<td><strong>43/43 đạt</strong></td>
+<td>48</td>
+<td><strong>48/48 đạt</strong></td>
 </tr>
 <tr>
 <td>End-to-end</td>
 <td>Playwright (Chrome) + API demo + Vite</td>
-<td>25 (18 desktop, 7 điện thoại)</td>
-<td><strong>25/25 đạt</strong></td>
+<td>26 (19 desktop, 7 điện thoại)</td>
+<td><strong>26/26 đạt</strong></td>
 </tr>
 <tr>
 <td>Giao diện</td>
@@ -2570,7 +2571,7 @@ dotnet user-secrets set &quot;Cloudinary:ApiSecret&quot; &quot;&lt;api secret&gt
 </tr>
 <tr>
 <td>Điểm thưởng</td>
-<td>Xem <code>14-diem-thuong.md</code> mục 4 (7 kịch bản: làm tròn, IPN lặp, giới thiệu, hoàn tiền, điểm danh đồng thời + chuỗi, chia sẻ chống gian lận, đổi điểm, quyền Admin, CSV)</td>
+<td>Xem <code>14-diem-thuong.md</code> mục 4 (7 kịch bản: làm tròn, IPN lặp, giới thiệu, hoàn tiền, điểm danh đồng thời + chuỗi, chia sẻ chống gian lận, đổi điểm, quyền Admin, CSV) và 5 kịch bản dùng điểm khi thanh toán (<code>CheckoutPointsTests</code>: giới hạn số dư và %, trừ khi đặt, hoàn khi hủy/hết hạn/hoàn tiền, IPN muộn, đơn 0đ)</td>
 </tr>
 <tr>
 <td>Chứng chỉ</td>
@@ -2605,7 +2606,7 @@ dotnet user-secrets set &quot;Cloudinary:ApiSecret&quot; &quot;&lt;api secret&gt
 </tr>
 <tr>
 <td><code>rewards.spec.ts</code></td>
-<td>Học viên điểm danh, nhiệm vụ, lịch sử, chia sẻ tạo liên kết riêng, mã giới thiệu được nhớ khi đăng ký; Admin xem tổng quan, sửa nhiệm vụ, điều chỉnh điểm có lý do, lịch sử</td>
+<td>Học viên điểm danh, nhiệm vụ, lịch sử, chia sẻ tạo liên kết riêng, mã giới thiệu được nhớ khi đăng ký; Admin xem tổng quan, sửa nhiệm vụ, điều chỉnh điểm có lý do, lịch sử; học viên bật/tắt dùng điểm ở trang thanh toán, nhập quá mức bị báo lỗi, thanh toán và thấy giao dịch trừ điểm</td>
 </tr>
 <tr>
 <td><code>mobile.spec.ts</code></td>
@@ -2809,8 +2810,92 @@ dotnet user-secrets set &quot;Cloudinary:ApiSecret&quot; &quot;&lt;api secret&gt
 <td>100 điểm = 10.000đ, tối thiểu 100</td>
 <td>Tạo mã giảm giá cá nhân (<code>Coupon.RestrictedToUserId</code>), dùng một lần, hạn 90 ngày. Chỉ chủ sở hữu dùng được.</td>
 </tr>
+<tr>
+<td>Dùng điểm khi thanh toán (<code>checkout_points</code>)</td>
+<td>1 điểm = 100đ, tối đa 50% giá trị đơn</td>
+<td>Học viên <strong>tự chọn</strong> có dùng hay không ở trang thanh toán. Trừ sau mã giảm giá. Điểm bị trừ khi đặt hàng và tự hoàn khi đơn bị hủy, hết hạn hoặc hoàn tiền. Xem mục 1.1.</td>
+</tr>
 </tbody>
 </table>
+<h3 id="11-dung-iem-tru-truc-tiep-khi-thanh-toan">1.1. Dùng điểm trừ trực tiếp khi thanh toán</h3>
+<p><strong>Cách dùng:</strong> ở trang thanh toán, mục <strong>Điểm thưởng</strong>, bật "Dùng điểm thưởng để giảm giá". Hệ thống tự điền số điểm tối đa dùng được. Học viên có thể nhập số điểm ít hơn rồi bấm <strong>Áp dụng</strong>, hoặc tắt đi để thanh toán toàn bộ bằng tiền. Hóa đơn tạm tính hiện dòng "Điểm thưởng (N điểm)".</p>
+<p><strong>Cách tính</strong> (cấu hình tại Quản trị › Điểm thưởng › Nhiệm vụ &amp; quy tắc › "Dùng điểm khi thanh toán"):</p>
+<table>
+<thead>
+<tr>
+<th>Tham số quy tắc</th>
+<th>Ý nghĩa</th>
+<th>Mặc định</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Số điểm (<code>Points</code>) và số tiền (<code>AmountUnit</code>)</td>
+<td><code>Points</code> điểm đổi được <code>AmountUnit</code> đồng</td>
+<td>1 điểm = 100đ, bằng tỷ lệ đổi mã giảm giá</td>
+</tr>
+<tr>
+<td>Ngưỡng (<code>Threshold</code>)</td>
+<td>Phần trăm tối đa của đơn (sau mã giảm giá) được trả bằng điểm, từ 1 đến 100</td>
+<td>50%</td>
+</tr>
+</tbody>
+</table>
+<pre><code>Giá sau mã      = Tạm tính − Giảm theo mã
+Tối đa dùng được = min(Số dư, floor(floor(Giá sau mã × Ngưỡng% ) × Points / AmountUnit))
+Tiền giảm        = floor(Số điểm dùng × AmountUnit / Points)
+Tổng thanh toán  = Giá sau mã − Tiền giảm
+</code></pre>
+<p>Ví dụ khóa 390.000đ, số dư 3.000 điểm: dùng tối đa 1.950 điểm, giảm 195.000đ, còn trả 195.000đ. Nếu chỉ dùng 500 điểm thì giảm 50.000đ, trả 340.000đ.</p>
+<p><strong>Vòng đời điểm của đơn:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Sự kiện</th>
+<th>Xử lý điểm</th>
+<th>Mã tham chiếu trong sổ cái</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Đặt hàng có dùng điểm</td>
+<td>Trừ điểm trong <strong>cùng transaction</strong> tạo đơn. Số dư không đủ (đã tiêu ở nơi khác sau khi báo giá) thì đơn không được tạo</td>
+<td><code>checkout:{orderId}</code> (Spend)</td>
+</tr>
+<tr>
+<td>Học viên hủy đơn chờ thanh toán</td>
+<td>Hoàn lại đủ điểm</td>
+<td><code>checkout-restore:{orderId}</code> (Restore)</td>
+</tr>
+<tr>
+<td>Đơn hết hạn thanh toán</td>
+<td>Hoàn lại đủ điểm (job hết hạn, mỗi đơn một transaction)</td>
+<td><code>checkout-restore:{orderId}</code> (Restore)</td>
+</tr>
+<tr>
+<td>IPN hợp lệ đến muộn cho đơn đã hết hạn</td>
+<td>Đơn vẫn được ghi nhận đã thanh toán; trừ lại điểm, tối đa bằng số dư hiện có</td>
+<td><code>checkout-repay:{orderId}</code> (Spend)</td>
+</tr>
+<tr>
+<td>Thanh toán thành công</td>
+<td>Điểm mua hàng chỉ tính trên <strong>số tiền thật</strong> đã trả, không tính phần trả bằng điểm</td>
+<td><code>purchase:{orderId}</code></td>
+</tr>
+<tr>
+<td>Admin hoàn tiền</td>
+<td>Hoàn lại điểm đã dùng, đồng thời thu hồi điểm mua hàng của đơn</td>
+<td><code>checkout-refund:{orderId}</code> (Restore)</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>Số điểm hoàn được tính từ sổ cái (đã trừ trừ đi đã hoàn), nên gọi lặp không hoàn hai lần.</li>
+<li>Hoàn điểm giảm "Tổng đã dùng" thay vì tăng "Tổng tích lũy", để thống kê không bị thổi phồng.</li>
+<li>Nếu điểm trả hết giá trị đơn (Admin đặt ngưỡng 100%), đơn 0đ hoàn tất ngay, không qua cổng thanh toán và không có điểm mua hàng.</li>
+<li>Phần giảm bằng điểm được phân bổ vào từng dòng đơn hàng (<code>DiscountAllocated</code>, <code>FinalPrice</code>), nên tổng <code>FinalPrice</code> luôn bằng <code>TotalAmount</code>. Doanh thu giảng viên tính theo <code>FinalPrice</code>, tức số tiền thực thu, giống cách tính với mã giảm giá.</li>
+<li>Frontend chỉ gửi <code>usePoints</code> và số điểm muốn dùng. Backend tự đọc số dư và quy tắc trong DB, tự tính tiền giảm. Số điểm vượt mức cho phép trả lỗi 400 kèm thông báo tiếng Việt.</li>
+</ul>
 <h3 id="lam-tron-iem-mua-hang">Làm tròn điểm mua hàng</h3>
 <p><code>Số điểm = floor(Số tiền thanh toán hợp lệ × Điểm / Đơn vị tiền)</code>, tức <strong>làm tròn xuống tới điểm nguyên</strong>. Số tiền tính là tổng đã thanh toán sau mã giảm giá (<code>Order.TotalAmount</code>).</p>
 <p>Ví dụ với 10 điểm/100.000đ:</p>
@@ -2913,6 +2998,7 @@ dotnet user-secrets set &quot;Cloudinary:ApiSecret&quot; &quot;&lt;api secret&gt
 <li><code>Orders.RefundedAt</code>, <code>Orders.RefundReason</code></li>
 <li><code>Coupons.RestrictedToUserId</code></li>
 </ul>
+<p>Migration <code>CheckoutPoints</code> thêm <code>Orders.PointsUsed</code>, <code>Orders.PointsDiscountAmount</code>; check constraint <code>CK_Orders_Points</code> (không âm) và <code>CK_Orders_Math</code> đổi thành <code>TotalAmount = SubTotal − DiscountAmount − PointsDiscountAmount</code>.</p>
 <h3 id="api">API</h3>
 <table>
 <thead>
@@ -2954,6 +3040,16 @@ dotnet user-secrets set &quot;Cloudinary:ApiSecret&quot; &quot;&lt;api secret&gt
 <td>Đổi điểm <code>{ points }</code></td>
 </tr>
 <tr>
+<td>POST</td>
+<td><code>/api/orders/quote</code></td>
+<td>Báo giá; thêm <code>{ usePoints, points }</code> (points để trống = dùng tối đa). Kết quả có <code>pointsUsed</code>, <code>pointsDiscountAmount</code>, <code>points</code> (số dư, tối đa dùng được, tỷ lệ, % tối đa)</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/orders</code></td>
+<td>Đặt hàng; thêm <code>{ usePoints, points }</code></td>
+</tr>
+<tr>
 <td>GET</td>
 <td><code>/api/rewards/redemptions</code></td>
 <td>Mã đã đổi</td>
@@ -2985,7 +3081,7 @@ dotnet user-secrets set &quot;Cloudinary:ApiSecret&quot; &quot;&lt;api secret&gt
 <pre><code class="language-powershell">cd src\backend
 dotnet ef database update -p src\OnlineLearning.Infrastructure -s src\OnlineLearning.API
 </code></pre>
-<p>DBA có thể chạy script idempotent <code>setup/database/migration-RewardPoints.sql</code>. Các quy tắc mặc định được seed tự động khi API khởi động; seed chỉ thêm quy tắc còn thiếu, không ghi đè cấu hình Admin đã chỉnh.</p>
+<p>DBA có thể chạy script idempotent <code>setup/database/migration-RewardPoints.sql</code>, rồi <code>setup/database/migration-CheckoutPoints.sql</code>. Các quy tắc mặc định được seed tự động khi API khởi động; seed chỉ thêm quy tắc còn thiếu, không ghi đè cấu hình Admin đã chỉnh.</p>
 <p><strong>Chế độ demo SQLite.</strong> Chế độ này tạo DB bằng <code>EnsureCreated</code> nên không tự nâng cấp schema. Dừng API, đổi tên hoặc xóa <code>src/backend/src/OnlineLearning.API/eduviet-demo.db</code>, rồi chạy:</p>
 <pre><code class="language-powershell">cd src\backend\src\OnlineLearning.API
 dotnet run --launch-profile demo-sqlite
@@ -3006,6 +3102,8 @@ npm run dev
 <h2 id="4-kiem-thu">4. Kiểm thử</h2>
 <ul>
 <li><strong>Backend, <code>RewardTests</code>:</strong> làm tròn điểm; IPN lặp không cộng trùng; thưởng giới thiệu; hoàn tiền thu hồi cả điểm mua hàng lẫn thưởng giới thiệu; điểm danh một lần mỗi ngày, kể cả hai yêu cầu đồng thời; chuỗi 7 ngày và reset sau khi bỏ lỡ; chia sẻ chỉ thưởng khi người khác mở và tối đa một lần mỗi ngày; hoàn thành khóa chỉ thưởng một lần; đổi điểm tạo mã cá nhân và không âm điểm; điều chỉnh thủ công bắt buộc lý do; quyền Admin; xuất CSV.</li>
-<li><strong>E2E, <code>rewards.spec.ts</code>:</strong> học viên điểm danh, xem nhiệm vụ và lịch sử, chia sẻ tạo liên kết riêng, khách mở liên kết và mã giới thiệu được nhớ khi đăng ký; Admin xem tổng quan, sửa nhiệm vụ, điều chỉnh điểm có lý do, xem lịch sử, và học viên thấy được điều chỉnh.</li>
+<li><strong>Backend, <code>CheckoutPointsTests</code> (5 test):</strong> báo giá không dùng / dùng tối đa / dùng số điểm cụ thể, giới hạn theo số dư và theo %; vượt mức bị từ chối; đặt hàng trừ điểm và hủy đơn hoàn điểm (không hoàn hai lần); thanh toán chỉ cộng điểm trên tiền thật, hoàn tiền trả lại điểm đã dùng; đơn hết hạn hoàn điểm và IPN muộn trừ lại; Admin tắt tính năng, kiểm tra ngưỡng, trả 100% bằng điểm tạo đơn 0đ.</li>
+<li><strong>E2E, <code>rewards.spec.ts</code>:</strong> học viên bật/tắt dùng điểm ở trang thanh toán, nhập quá mức bị báo lỗi, thanh toán và thấy giao dịch trừ điểm trong lịch sử.</li>
+<li><strong>E2E, <code>rewards.spec.ts</code> (các kịch bản trước):</strong> học viên điểm danh, xem nhiệm vụ và lịch sử, chia sẻ tạo liên kết riêng, khách mở liên kết và mã giới thiệu được nhớ khi đăng ký; Admin xem tổng quan, sửa nhiệm vụ, điều chỉnh điểm có lý do, xem lịch sử, và học viên thấy được điều chỉnh.</li>
 </ul></section>
 </body></html>

@@ -282,6 +282,16 @@ export interface PriceLine {
   finalPrice: number
 }
 
+/** Dùng điểm khi thanh toán: pointsPerUnit điểm = amountPerUnit đồng, tối đa maxPercent % giá trị đơn. */
+export interface CheckoutPoints {
+  enabled: boolean
+  balance: number
+  maxUsable: number
+  pointsPerUnit: number
+  amountPerUnit: number
+  maxPercent: number
+}
+
 export interface PriceQuote {
   lines: PriceLine[]
   subTotal: number
@@ -289,6 +299,9 @@ export interface PriceQuote {
   totalAmount: number
   couponCode: string | null
   couponMessage: string | null
+  pointsUsed: number
+  pointsDiscountAmount: number
+  points: CheckoutPoints
 }
 
 export interface OrderItem {
@@ -318,6 +331,8 @@ export interface Order {
   status: OrderStatus
   subTotal: number
   discountAmount: number
+  pointsUsed: number
+  pointsDiscountAmount: number
   totalAmount: number
   couponCode: string | null
   note: string | null

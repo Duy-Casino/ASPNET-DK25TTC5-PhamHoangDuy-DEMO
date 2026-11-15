@@ -10,7 +10,9 @@ public static class PointRuleKeys
     public const string CourseShare = "course_share";
     public const string Referral = "referral";
     public const string RedeemVoucher = "redeem_voucher";
+    /// <summary>Dùng điểm trừ trực tiếp vào giá khi thanh toán: Points điểm = AmountUnit đồng, tối đa Threshold % giá trị đơn.</summary>
+    public const string CheckoutPoints = "checkout_points";
 
     public static readonly string[] System =
-        [Purchase, CourseCompletion, DailyCheckIn, CheckInStreak, CourseShare, Referral, RedeemVoucher];
+        [Purchase, CourseCompletion, DailyCheckIn, CheckInStreak, CourseShare, Referral, RedeemVoucher, CheckoutPoints];
 }

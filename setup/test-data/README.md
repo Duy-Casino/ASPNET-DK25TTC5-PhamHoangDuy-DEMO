@@ -6,8 +6,8 @@ Dữ liệu thử **được sinh bằng code**, không lưu dưới dạng tệ
 | --- | --- |
 | `src/backend/src/OnlineLearning.Infrastructure/Persistence/Seed/SampleData.cs` | Danh sách khóa học, chương, bài, giảng viên, học viên mẫu |
 | `src/backend/src/OnlineLearning.Infrastructure/Persistence/Seed/DbSeeder.cs` | Nạp vai trò, danh mục, tài khoản, đơn hàng, đánh giá, mã giảm giá, hồ sơ giảng viên, tin nhắn, quy tắc điểm thưởng |
-| `src/backend/tests/OnlineLearning.IntegrationTests/` | Dữ liệu riêng cho 43 test backend (SQLite in-memory, tạo mới mỗi test) |
-| `src/frontend/online-learning-client/e2e/` | 25 kịch bản E2E, mỗi lần chạy dùng một DB SQLite mới với dữ liệu mẫu ở trên |
+| `src/backend/tests/OnlineLearning.IntegrationTests/` | Dữ liệu riêng cho 48 test backend (SQLite in-memory, tạo mới mỗi test) |
+| `src/frontend/online-learning-client/e2e/` | 26 kịch bản E2E, mỗi lần chạy dùng một DB SQLite mới với dữ liệu mẫu ở trên |
 
 Dữ liệu mẫu được nạp khi chạy chế độ demo (`--launch-profile demo-sqlite`) hoặc khi bật `Seed:RunOnStartup=true`.
 
@@ -57,5 +57,6 @@ Kèm theo: khoảng 40 đơn hàng trong 12 tháng (để biểu đồ doanh thu
 | Ngày | Backend | E2E |
 | --- | --- | --- |
 | 09/11/2026 | 43/43 đạt | 25/25 đạt |
+| 15/11/2026 | 48/48 đạt | 26/26 đạt |
 
 Chi tiết kịch bản: [`thesis/html/12-bao-cao-kiem-thu.md`](../../thesis/html/12-bao-cao-kiem-thu.md).

@@ -11,20 +11,25 @@ public sealed record CartItemDto(Guid CourseId, CourseSummaryDto Course, DateTim
 public sealed record CartDto(IReadOnlyList<CartItemDto> Items, int Count, decimal SubTotal, decimal OriginalTotal);
 
 // ---------- Pricing / coupon ----------
-public sealed record PriceQuoteRequest(IReadOnlyList<Guid> CourseIds, string? CouponCode);
+/// <summary>UsePoints: học viên chọn trừ điểm thưởng. Points: số điểm muốn dùng; để trống thì dùng tối đa cho phép.</summary>
+public sealed record PriceQuoteRequest(IReadOnlyList<Guid> CourseIds, string? CouponCode, bool UsePoints = false, int? Points = null);
 public sealed record PriceLineDto(Guid CourseId, string Title, decimal OriginalPrice, decimal Price, decimal DiscountAllocated, decimal FinalPrice);
-public sealed record PriceQuoteDto(IReadOnlyList<PriceLineDto> Lines, decimal SubTotal, decimal DiscountAmount, decimal TotalAmount, string? CouponCode, string? CouponMessage);
+/// <summary>Thông tin dùng điểm cho đơn đang báo giá. MaxUsable = min(số dư, số điểm ứng với MaxPercent % giá trị đơn sau mã giảm giá).</summary>
+public sealed record CheckoutPointsDto(bool Enabled, int Balance, int MaxUsable, int PointsPerUnit, decimal AmountPerUnit, int MaxPercent);
+public sealed record PriceQuoteDto(IReadOnlyList<PriceLineDto> Lines, decimal SubTotal, decimal DiscountAmount, decimal TotalAmount, string? CouponCode, string? CouponMessage,
+    int PointsUsed, decimal PointsDiscountAmount, CheckoutPointsDto Points);
 
 // ---------- Orders ----------
 /// <summary>Frontend chỉ gửi danh sách khóa học (hoặc lấy từ giỏ) + mã giảm giá. Không gửi giá.</summary>
-public sealed record CreateOrderRequest(IReadOnlyList<Guid>? CourseIds, bool FromCart, string? CouponCode, string? Note);
+public sealed record CreateOrderRequest(IReadOnlyList<Guid>? CourseIds, bool FromCart, string? CouponCode, string? Note,
+    bool UsePoints = false, int? Points = null);
 
 public sealed record OrderItemDto(Guid CourseId, string CourseTitle, string? CourseSlug, string? ThumbnailUrl,
     decimal OriginalPrice, decimal Price, decimal DiscountAllocated, decimal FinalPrice);
 public sealed record PaymentDto(Guid Id, PaymentProvider Provider, decimal Amount, PaymentStatus Status, string TransactionRef,
     string? ProviderTransactionId, string? BankCode, string? ResponseCode, DateTime CreatedAt, DateTime? PaidAt);
-public sealed record OrderDto(Guid Id, string OrderCode, OrderStatus Status, decimal SubTotal, decimal DiscountAmount, decimal TotalAmount,
-    string? CouponCode, string? Note, DateTime CreatedAt, DateTime ExpiresAt, DateTime? PaidAt, DateTime? CancelledAt,
+public sealed record OrderDto(Guid Id, string OrderCode, OrderStatus Status, decimal SubTotal, decimal DiscountAmount,
+    int PointsUsed, decimal PointsDiscountAmount, decimal TotalAmount, string? CouponCode, string? Note, DateTime CreatedAt, DateTime ExpiresAt, DateTime? PaidAt, DateTime? CancelledAt,
     IReadOnlyList<OrderItemDto> Items, IReadOnlyList<PaymentDto> Payments);
 public sealed record OrderListItemDto(Guid Id, string OrderCode, OrderStatus Status, decimal TotalAmount, int ItemCount,
     string FirstCourseTitle, DateTime CreatedAt, DateTime? PaidAt);
@@ -70,6 +75,7 @@ public sealed class PriceQuoteRequestValidator : AbstractValidator<PriceQuoteReq
     {
         RuleFor(x => x.CourseIds).NotEmpty().WithMessage("Chưa chọn khóa học.").Must(l => l.Count <= 50);
         RuleFor(x => x.CouponCode).MaximumLength(50);
+        RuleFor(x => x.Points).InclusiveBetween(1, 10_000_000).When(x => x.UsePoints && x.Points.HasValue).WithMessage("Số điểm không hợp lệ.");
     }
 }
 
@@ -81,6 +87,7 @@ public sealed class CreateOrderRequestValidator : AbstractValidator<CreateOrderR
         RuleFor(x => x.CourseIds).Must(l => l is null || l.Count <= 50);
         RuleFor(x => x.CouponCode).MaximumLength(50);
         RuleFor(x => x.Note).MaximumLength(500);
+        RuleFor(x => x.Points).InclusiveBetween(1, 10_000_000).When(x => x.UsePoints && x.Points.HasValue).WithMessage("Số điểm không hợp lệ.");
     }
 }
 
