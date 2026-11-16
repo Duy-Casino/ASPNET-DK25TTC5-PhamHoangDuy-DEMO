@@ -10,7 +10,7 @@ Ngày bắt đầu dự án là **Thứ Năm 05/11/2026**, ngày có commit đ�
 | Tuần | Thời gian | Tệp báo cáo | Trạng thái | Nội dung chính | Kiểm thử cuối tuần |
 | --- | --- | --- | --- | --- | --- |
 | 01 | 05/11/2026 – 11/11/2026 | [bao-cao-tuan-01.md](bao-cao-tuan-01.md) | Đã kết thúc | Chức năng lõi (giai đoạn 1–7), điều chỉnh giao diện 2 lần, chính sách và SEO, tính năng giảng viên, điểm thưởng, tổ chức repository | 43/43 backend, 25/25 E2E |
-| 02 | 12/11/2026 – 18/11/2026 | [bao-cao-tuan-02.md](bao-cao-tuan-02.md) | Đang diễn ra, cập nhật đến 15/11 | Dùng điểm thưởng trừ khi thanh toán (học viên tự chọn), hoàn điểm khi hủy/hết hạn/hoàn tiền | 48/48 backend, 26/26 E2E |
+| 02 | 12/11/2026 – 18/11/2026 | [bao-cao-tuan-02.md](bao-cao-tuan-02.md) | Đang diễn ra, cập nhật đến 16/11 | Dùng điểm thưởng trừ khi thanh toán (học viên tự chọn), hoàn điểm khi hủy/hết hạn/hoàn tiền; báo cáo đồ án theo mẫu khoa | 48/48 backend, 26/26 E2E |
 | 03 | 19/11/2026 – 25/11/2026 | `bao-cao-tuan-03.md` | Chưa đến | | |
 | 04 | 26/11/2026 – 02/12/2026 | `bao-cao-tuan-04.md` | Chưa đến | | |
 | 05 | 03/12/2026 – 09/12/2026 | `bao-cao-tuan-05.md` | Chưa đến | | |
