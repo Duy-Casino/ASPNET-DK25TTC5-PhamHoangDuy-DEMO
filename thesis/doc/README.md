@@ -20,10 +20,10 @@ Bản PDF gộp bìa chính, bìa phụ và báo cáo: [`../pdf/BaoCao_DoAn_Pham
 | Chương 3. Kết quả nghiên cứu | Giao diện chức năng của khách, học viên, giảng viên, quản trị viên; Swagger; điện thoại; kết quả kiểm thử |
 | Chương 4. Kết luận và hướng phát triển | Kết quả đạt được, hạn chế, hướng phát triển |
 
-## Việc cần làm trước khi nộp
+## Lưu ý khi chỉnh sửa
 
-- Điền **học vị và họ tên giảng viên hướng dẫn** ở bìa (`[ThS./TS.] [Họ tên]`) và ở đầu trang của báo cáo (`[ThS./TS.] [Họ tên GVHD]`). Trong Word: Ctrl+H thay chuỗi trên.
-- Sau khi sửa, nhấn Ctrl+A rồi F9 để cập nhật mục lục và danh mục hình, bảng.
+- Giảng viên hướng dẫn: **TS. Nguyễn Nhứt Lam** (đã điền ở bìa và đầu trang).
+- Nếu sửa nội dung trong Word, nhấn Ctrl+A rồi F9 để cập nhật mục lục và danh mục hình, bảng.
 
 ## Chụp lại ảnh chức năng
 
@@ -32,4 +32,6 @@ Bản PDF gộp bìa chính, bìa phụ và báo cáo: [`../pdf/BaoCao_DoAn_Pham
 ```powershell
 cd src\frontend\online-learning-client
 $env:E2E_CHANNEL="chrome"; npx playwright test -c playwright.docs.config.ts
+# Kịch bản soạn khóa học (ảnh 45–53) cần thư mục chứa anh-bia-git.png, bai-1-cai-dat-git.mp4, huong-dan-cai-dat-git.pdf:
+$env:DOCS_ASSETS="<thư mục tệp mẫu>"; npx playwright test -c playwright.docs.config.ts docs-shots/khoa-hoc.spec.ts
 ```

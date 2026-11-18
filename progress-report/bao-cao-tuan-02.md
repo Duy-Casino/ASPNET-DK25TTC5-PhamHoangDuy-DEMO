@@ -5,7 +5,7 @@
 | Đồ án | Website bán khóa học trực tuyến (EduViet) |
 | Sinh viên | Phạm Hoàng Duy, MSSV 170125375, lớp DK25TTC5 |
 | Thời gian | **Thứ Năm 12/11/2026 – Thứ Tư 18/11/2026** |
-| Trạng thái | Đang diễn ra, số liệu cập nhật đến 16/11/2026 |
+| Trạng thái | Đã kết thúc (chốt số liệu ngày 18/11/2026) |
 | Commit trong tuần | `5fa7490` "Dùng điểm thưởng trừ khi thanh toán" (15/11) |
 
 ## 1. Tóm tắt tuần
@@ -26,7 +26,8 @@
 | Thứ Năm 12/11 – Thứ Bảy 14/11 | | Không có commit | |
 | Chủ Nhật 15/11 | `5fa7490` | Backend: báo giá có điểm, trừ điểm khi đặt hàng, hoàn điểm khi hủy/hết hạn/hoàn tiền, trừ lại khi IPN đến muộn; migration `CheckoutPoints` và script SQL. Frontend: mục "Điểm thưởng" ở trang thanh toán, dòng giảm bằng điểm ở hóa đơn và chi tiết đơn, cấu hình quy tắc ở trang Admin | 48/48 backend, 26/26 E2E |
 | Thứ Hai 16/11 | Báo cáo đồ án | Đối chiếu repository với quy định đồ án; viết báo cáo "Xây dựng website chia sẻ khóa học trực tuyến" theo mẫu 220064 (bìa, nhận xét, mục lục tự động, 4 chương, tài liệu tham khảo IEEE, phụ lục); vẽ 15 sơ đồ (ERD, use case, tuần tự, trạng thái, kiến trúc, triển khai); chụp tự động 44 ảnh chức năng có địa chỉ và thời gian; sinh `full-schema.sql` đủ 41 bảng | 48/48 backend, 26/26 E2E |
-| Thứ Ba 17/11 – Thứ Tư 18/11 | | Chưa đến tại thời điểm lập báo cáo | |
+| Thứ Ba 17/11 | | Không có commit | |
+| Thứ Tư 18/11 | Báo cáo đồ án (bổ sung) | Thêm luồng soạn và chia sẻ khóa học có 9 ảnh mới (tạo, cập nhật, tải ảnh bìa, video, tài liệu, bài kiểm tra, gửi duyệt, Admin duyệt, công khai); mục 2.7 đoạn mã tiêu biểu; mục 3.7 tổng hợp kết quả; rà soát chính tả; điền GVHD TS. Nguyễn Nhứt Lam; nội dung giữ 49 trang | 48/48 backend, 26/26 E2E |
 
 ## 3. Chức năng mới: dùng điểm khi thanh toán
 
@@ -61,7 +62,7 @@ Chi tiết: [`thesis/html/14-diem-thuong.md`](../thesis/html/14-diem-thuong.md#1
 | Việc | Đầu ra |
 | --- | --- |
 | ~~Viết báo cáo đồ án theo mẫu khoa~~ (xong 16/11) | `thesis/doc/BaoCao_DoAn_PhamHoangDuy_170125375.docx`, `thesis/pdf/BaoCao_DoAn_PhamHoangDuy_170125375.pdf` |
-| Điền tên giảng viên hướng dẫn vào bìa và đầu trang báo cáo | Báo cáo hoàn chỉnh |
+| ~~Điền tên giảng viên hướng dẫn vào bìa và đầu trang báo cáo~~ (xong 18/11) | Báo cáo hoàn chỉnh |
 | Làm slide và video demo | `thesis/abs/` |
 | Thử chạy trên SQL Server thật (4 script trong `setup/database/`) | Ghi kết quả vào báo cáo kiểm thử |
 | Kiểm tra CI GitHub Actions | CI đạt |

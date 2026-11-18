@@ -7,6 +7,7 @@
 | Họ và tên | **Phạm Hoàng Duy** |
 | Mã sinh viên | 170125375 |
 | Lớp | DK25TTC5 |
+| Giảng viên hướng dẫn | TS. Nguyễn Nhứt Lam |
 | Email | duyph250994@tvu-onschool.edu.vn |
 | Số điện thoại | 0327607672 |
 | Dự án | Website bán khóa học trực tuyến |
@@ -14,7 +15,7 @@
 | Báo cáo đồ án | [Word](thesis/doc/README.md) · [PDF](thesis/pdf/BaoCao_DoAn_PhamHoangDuy_170125375.pdf) |
 | Repository | <https://github.com/Duy-Casino/ASPNET-DK25TTC5-PhamHoangDuy-DEMO> |
 
-Cập nhật lần cuối: **16/11/2026**. Nhật ký thay đổi xem mục [9](#9-nhật-ký-tiến-độ).
+Cập nhật lần cuối: **18/11/2026**. Nhật ký thay đổi xem mục [9](#9-nhật-ký-tiến-độ).
 
 EduViet là website mua và học khóa học trực tuyến, giao diện tiếng Việt, với bốn vai trò: khách, học viên, giảng viên và quản trị viên.
 
@@ -263,6 +264,7 @@ Mỗi khi hoàn thành một tính năng, thêm một dòng vào bảng này và
 | 09/11/2026 | Báo cáo tiến độ theo tuần: lịch báo cáo, báo cáo tuần 01 (05/11–11/11/2026) gồm công việc theo ngày và 10 điều chỉnh trong tuần, mẫu báo cáo tuần | |
 | 15/11/2026 | Dùng điểm thưởng trừ khi thanh toán: học viên tự chọn bật/tắt và số điểm; trừ khi đặt hàng, hoàn khi hủy/hết hạn/hoàn tiền; Admin cấu hình tỷ lệ và % tối đa (migration `CheckoutPoints`, [tài liệu 14](thesis/html/14-diem-thuong.md#11-dùng-điểm-trừ-trực-tiếp-khi-thanh-toán)) | 48/48 backend, 26/26 E2E |
 | 16/11/2026 | Báo cáo đồ án đề tài "Xây dựng website chia sẻ khóa học trực tuyến" theo mẫu và quy định của khoa: bìa, 4 chương, 15 sơ đồ, 32 ảnh chức năng, 25 bảng; bản Word (.docx, .doc) trong [`thesis/doc/`](thesis/doc/README.md) và PDF trong `thesis/pdf/`. Thêm `setup/database/full-schema.sql` (đủ 41 bảng) | 48/48 backend, 26/26 E2E |
+| 18/11/2026 | Báo cáo: thêm luồng soạn và chia sẻ khóa học (tạo, cập nhật, tải ảnh bìa, video, tài liệu, bài kiểm tra, gửi duyệt, duyệt, công khai) với 9 ảnh mới; mục 2.7 đoạn mã tiêu biểu; mục 3.7 tổng hợp kết quả; rà soát chính tả; điền GVHD TS. Nguyễn Nhứt Lam | 48/48 backend, 26/26 E2E |
 
 ## 10. Hạn chế và việc còn lại
 
