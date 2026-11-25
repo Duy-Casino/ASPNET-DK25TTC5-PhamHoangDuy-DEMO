@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
-  Award, BarChart3, Gift, CreditCard, BookOpen, ClipboardList, FolderTree, IdCard, LayoutDashboard, LogOut, Menu, MessageSquare, MessagesSquare, Receipt, ShieldCheck,
-  Tag, User, Users, X, type LucideIcon,
+  Award, BarChart3, Gift, CreditCard, BookOpen, ClipboardList, FolderTree, IdCard, LayoutDashboard, LogOut, Menu, MessageSquare, MessagesSquare, Receipt, ShieldCheck, Tag, User, Users, X, type LucideIcon, Wallet, Banknote, RotateCcw,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Avatar, Logo } from '../components/ui'
@@ -30,6 +29,7 @@ const areas: Record<'student' | 'instructor' | 'admin', { title: string; items: 
       { to: '/giang-day', label: 'Tổng quan', icon: BarChart3, end: true },
       { to: '/giang-day/khoa-hoc', label: 'Khóa học', icon: BookOpen },
       { to: '/giang-day/hoc-vien', label: 'Học viên', icon: Users },
+      { to: '/giang-day/doanh-thu', label: 'Doanh thu', icon: Wallet },
       { to: '/giang-day/danh-gia', label: 'Đánh giá', icon: MessageSquare },
       { to: '/giang-day/tin-nhan', label: 'Tin nhắn', icon: MessagesSquare, badge: 'messages' },
       { to: '/giang-day/ho-so', label: 'Hồ sơ giảng viên', icon: IdCard },
@@ -44,6 +44,8 @@ const areas: Record<'student' | 'instructor' | 'admin', { title: string; items: 
       { to: '/quan-tri/danh-muc', label: 'Danh mục', icon: FolderTree },
       { to: '/quan-tri/don-hang', label: 'Đơn hàng', icon: Receipt },
       { to: '/quan-tri/giao-dich', label: 'Giao dịch', icon: CreditCard },
+      { to: '/quan-tri/hoan-tien', label: 'Yêu cầu hoàn tiền', icon: RotateCcw },
+      { to: '/quan-tri/chi-tra', label: 'Chi trả giảng viên', icon: Banknote },
       { to: '/quan-tri/chung-chi', label: 'Chứng chỉ', icon: Award },
       { to: '/quan-tri/diem-thuong', label: 'Điểm thưởng', icon: Gift },
       { to: '/quan-tri/ma-giam-gia', label: 'Mã giảm giá', icon: Tag },

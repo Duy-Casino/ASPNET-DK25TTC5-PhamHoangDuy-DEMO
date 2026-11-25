@@ -38,6 +38,10 @@ public static class DependencyInjection
         services.AddScoped<Features.Messaging.IMessagingService, Features.Messaging.MessagingService>();
         services.AddScoped<Features.Rewards.IRewardService, Features.Rewards.RewardService>();
         services.AddScoped<Features.Rewards.IRewardAdminService, Features.Rewards.RewardAdminService>();
+        services.AddScoped<Features.Revenue.IRevenueService, Features.Revenue.RevenueService>();
+        services.AddScoped<IRefundRequestService, RefundRequestService>();
+        services.AddScoped<IInvoiceService, InvoiceService>();
+        services.AddScoped<IOrderEmailService, OrderEmailService>();
 
         return services;
     }

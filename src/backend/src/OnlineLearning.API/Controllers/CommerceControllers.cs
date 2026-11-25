@@ -33,7 +33,7 @@ public sealed class CartController(ICartService cart) : ApiControllerBase
 
 [Route("api/orders")]
 [Authorize]
-public sealed class OrdersController(IOrderService orders, IPricingService pricing) : ApiControllerBase
+public sealed class OrdersController(IOrderService orders, IPricingService pricing, IRefundRequestService refunds, IInvoiceService invoices) : ApiControllerBase
 {
     /// <summary>Xem trước giá + kiểm tra mã giảm giá (giá tính hoàn toàn ở Backend).</summary>
     [HttpPost("quote")]
@@ -56,6 +56,25 @@ public sealed class OrdersController(IOrderService orders, IPricingService prici
     [HttpPost("{id:guid}/cancel")]
     public async Task<IActionResult> Cancel(Guid id, CancellationToken ct) =>
         FromResult(await orders.CancelAsync(id, User.GetUserId(), ct));
+
+    /// <summary>Tình trạng hoàn tiền của đơn: còn được yêu cầu không, lý do nếu không, các yêu cầu đã gửi.</summary>
+    [HttpGet("{id:guid}/refund-request")]
+    public async Task<IActionResult> RefundStatus(Guid id, CancellationToken ct) =>
+        FromResult(await refunds.GetStatusAsync(User.GetUserId(), id, ct));
+
+    /// <summary>Gửi yêu cầu hoàn tiền theo Chính sách hoàn tiền (trong hạn, học chưa vượt mức, chưa có chứng chỉ).</summary>
+    [HttpPost("{id:guid}/refund-request")]
+    public async Task<IActionResult> RequestRefund(Guid id, CreateRefundRequest request, CancellationToken ct) =>
+        FromResult(await refunds.CreateAsync(User.GetUserId(), id, request, ct));
+
+    /// <summary>Tải biên nhận thanh toán PDF (đơn đã thanh toán hoặc đã hoàn tiền).</summary>
+    [HttpGet("{id:guid}/invoice")]
+    public async Task<IActionResult> Invoice(Guid id, CancellationToken ct)
+    {
+        var result = await invoices.GetPdfAsync(id, User.GetUserId(), User.IsInRole(Roles.Admin), ct);
+        if (result.IsFailure) return Problem(result.Error!);
+        return File(result.Value.Pdf, "application/pdf", result.Value.FileName);
+    }
 }
 
 [Route("api/notifications")]

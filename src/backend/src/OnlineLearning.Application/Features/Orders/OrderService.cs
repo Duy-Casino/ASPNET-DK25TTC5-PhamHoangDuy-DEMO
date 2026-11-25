@@ -19,6 +19,8 @@ public interface IOrderService
     Task<Result> CancelAsync(Guid orderId, Guid userId, CancellationToken ct = default);
     Task<PagedResult<AdminOrderListItemDto>> ListAllAsync(OrderQuery query, CancellationToken ct = default);
     Task<int> ExpireStaleOrdersAsync(CancellationToken ct = default);
+    /// <summary>Xuất danh sách đơn (theo bộ lọc) ra CSV cho Admin đối soát doanh thu.</summary>
+    Task<byte[]> ExportCsvAsync(OrderQuery query, CancellationToken ct = default);
 }
 
 public sealed class OrderService(
@@ -143,7 +145,7 @@ public sealed class OrderService(
         return Result.Success();
     }
 
-    public Task<PagedResult<AdminOrderListItemDto>> ListAllAsync(OrderQuery q, CancellationToken ct = default)
+    private IQueryable<Order> FilterAll(OrderQuery q)
     {
         var query = db.Orders.AsNoTracking().AsQueryable();
         if (q.Status is { } s) query = query.Where(o => o.Status == s);
@@ -152,8 +154,53 @@ public sealed class OrderService(
             var kw = q.Keyword.Trim();
             query = query.Where(o => o.OrderCode.Contains(kw) || o.User.Email!.Contains(kw) || o.User.FullName.Contains(kw));
         }
+        // Lọc theo ngày tạo đơn (giờ Việt Nam, bao gồm cả ngày cuối)
+        if (q.From is { } from) { var f = from.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc).AddHours(-7); query = query.Where(o => o.CreatedAt >= f); }
+        if (q.To is { } to) { var t = to.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc).AddDays(1).AddHours(-7); query = query.Where(o => o.CreatedAt < t); }
+        return query;
+    }
 
-        return query.OrderByDescending(o => o.CreatedAt)
+    public async Task<byte[]> ExportCsvAsync(OrderQuery q, CancellationToken ct = default)
+    {
+        var rows = await FilterAll(q).OrderByDescending(o => o.CreatedAt).Take(50_000)
+            .Select(o => new
+            {
+                o.OrderCode, o.CreatedAt, o.PaidAt, o.RefundedAt, o.Status, o.User.FullName, o.User.Email,
+                Courses = o.Items.Select(i => i.CourseTitle).ToList(),
+                o.SubTotal, o.DiscountAmount, o.CouponCode, o.PointsUsed, o.PointsDiscountAmount, o.TotalAmount,
+                Payment = o.Payments.Where(p => p.Status == PaymentStatus.Success).OrderBy(p => p.PaidAt)
+                    .Select(p => new { p.Provider, p.TransactionRef, p.ProviderTransactionId }).FirstOrDefault(),
+            })
+            .ToListAsync(ct);
+
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine("Mã đơn,Ngày tạo (UTC+7),Ngày thanh toán,Ngày hoàn tiền,Trạng thái,Học viên,Email,Khóa học,Số khóa,Tạm tính,Mã giảm giá,Giảm theo mã,Điểm dùng,Giảm bằng điểm,Thực thu,Cổng thanh toán,Mã giao dịch,Mã giao dịch cổng");
+        foreach (var o in rows)
+        {
+            sb.Append(CsvExport.Field(o.OrderCode)).Append(',').Append(CsvExport.Time(o.CreatedAt)).Append(',')
+              .Append(CsvExport.Time(o.PaidAt)).Append(',').Append(CsvExport.Time(o.RefundedAt)).Append(',')
+              .Append(StatusText(o.Status)).Append(',').Append(CsvExport.Field(o.FullName)).Append(',').Append(CsvExport.Field(o.Email)).Append(',')
+              .Append(CsvExport.Field(string.Join("; ", o.Courses))).Append(',').Append(o.Courses.Count).Append(',')
+              .Append(CsvExport.Money(o.SubTotal)).Append(',').Append(CsvExport.Field(o.CouponCode)).Append(',').Append(CsvExport.Money(o.DiscountAmount)).Append(',')
+              .Append(o.PointsUsed).Append(',').Append(CsvExport.Money(o.PointsDiscountAmount)).Append(',').Append(CsvExport.Money(o.TotalAmount)).Append(',')
+              .Append(o.Payment is null ? "" : CsvExport.Field(PaymentText.Provider(o.Payment.Provider))).Append(',')
+              .Append(CsvExport.Field(o.Payment?.TransactionRef)).Append(',').Append(CsvExport.Field(o.Payment?.ProviderTransactionId)).AppendLine();
+        }
+        return CsvExport.ToBytes(sb);
+    }
+
+    private static string StatusText(OrderStatus s) => s switch
+    {
+        OrderStatus.Pending => "Chờ thanh toán",
+        OrderStatus.Paid => "Đã thanh toán",
+        OrderStatus.Cancelled => "Đã hủy",
+        OrderStatus.Expired => "Hết hạn",
+        _ => "Đã hoàn tiền",
+    };
+
+    public Task<PagedResult<AdminOrderListItemDto>> ListAllAsync(OrderQuery q, CancellationToken ct = default)
+    {
+        return FilterAll(q).OrderByDescending(o => o.CreatedAt)
             .Select(o => new AdminOrderListItemDto(o.Id, o.OrderCode, o.Status, o.User.FullName, o.User.Email!,
                 o.SubTotal, o.DiscountAmount, o.TotalAmount, o.CouponCode, o.Items.Count, o.CreatedAt, o.PaidAt))
             .ToPagedResultAsync(q.Page, q.PageSize, ct);
@@ -210,11 +257,14 @@ public interface IOrderFulfillmentService
     /// thu hồi quyền học của đơn và thu hồi điểm thưởng tương ứng. Không hoàn đơn đã cấp chứng chỉ.
     /// </summary>
     Task<Result> RefundAsync(Guid orderId, Guid adminId, string reason, CancellationToken ct = default);
+
+    /// <summary>Như <see cref="RefundAsync"/> nhưng không mở transaction và không SaveChanges (người gọi quản lý).</summary>
+    Task<Result> StageRefundAsync(Guid orderId, Guid adminId, string reason, CancellationToken ct = default);
 }
 
 public sealed class OrderFulfillmentService(
     IAppDbContext db, IDateTimeProvider clock, INotificationService notifications, Rewards.IRewardService rewards,
-    ILogger<OrderFulfillmentService> logger)
+    Revenue.IRevenueService revenue, IOrderEmailService emails, ILogger<OrderFulfillmentService> logger)
     : IOrderFulfillmentService
 {
     public Task<Result> CompleteFreeOrderAsync(Guid orderId, CancellationToken ct = default) =>
@@ -307,19 +357,35 @@ public sealed class OrderFulfillmentService(
         // nên IPN gửi lặp (đơn đã Paid ở trên) không bao giờ cộng điểm lần hai
         await rewards.StagePurchaseRewardsAsync(order, ct);
 
+        // Thu nhập giảng viên: ghi sổ cùng transaction, unique (OrderItemId, Type) chặn ghi lặp
+        await revenue.StageSaleEarningsAsync(order, now, ct);
+
         await db.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
 
         logger.LogInformation("Đơn {OrderCode} thanh toán thành công qua {Provider}", order.OrderCode, confirmation.Provider);
+        await emails.SendReceiptAsync(order.Id, ct);
         return Result.Success();
     }
 
     public async Task<Result> RefundAsync(Guid orderId, Guid adminId, string reason, CancellationToken ct = default)
     {
+        await using var tx = await db.Database.BeginTransactionAsync(ct);
+        var result = await StageRefundAsync(orderId, adminId, reason, ct);
+        if (result.IsFailure) return result;
+
+        await db.SaveChangesAsync(ct);
+        await tx.CommitAsync(ct);
+        logger.LogInformation("Admin {AdminId} hoàn tiền đơn {OrderId}", adminId, orderId);
+        await emails.SendRefundedAsync(orderId, ct);
+        return Result.Success();
+    }
+
+    public async Task<Result> StageRefundAsync(Guid orderId, Guid adminId, string reason, CancellationToken ct = default)
+    {
         if (string.IsNullOrWhiteSpace(reason) || reason.Trim().Length < 5)
             return Result.Failure(Error.Validation("Bắt buộc ghi lý do hoàn tiền (ít nhất 5 ký tự)."));
 
-        await using var tx = await db.Database.BeginTransactionAsync(ct);
         var order = await db.Orders.FirstOrDefaultAsync(o => o.Id == orderId, ct);
         if (order is null) return Result.Failure(Error.NotFound("Không tìm thấy đơn hàng."));
         if (order.Status == OrderStatus.Refunded) return Result.Failure(Error.Conflict("Đơn hàng đã được hoàn tiền trước đó."));
@@ -345,13 +411,20 @@ public sealed class OrderFulfillmentService(
 
         await rewards.StageRefundRevocationAsync(order, adminId, ct);
         await rewards.StageCheckoutRestoreAsync(order, refund: true, ct);
+        await revenue.StageRefundReversalAsync(order, now, ct);
+
+        // Yêu cầu hoàn tiền đang chờ của đơn (nếu có) được đóng là "Đã duyệt"
+        var pending = await db.RefundRequests.Where(r => r.OrderId == order.Id && r.Status == RefundRequestStatus.Pending).ToListAsync(ct);
+        foreach (var r in pending)
+        {
+            r.Status = RefundRequestStatus.Approved;
+            r.ProcessedAt = now;
+            r.ProcessedById = adminId;
+        }
+
         notifications.Add(order.UserId, "Đơn hàng đã được hoàn tiền",
             $"Đơn {order.OrderCode} đã được hoàn tiền. Quyền học các khóa trong đơn đã được thu hồi.", NotificationType.Order,
             $"/don-hang/{order.Id}");
-
-        await db.SaveChangesAsync(ct);
-        await tx.CommitAsync(ct);
-        logger.LogInformation("Admin {AdminId} hoàn tiền đơn {OrderCode}", adminId, order.OrderCode);
         return Result.Success();
     }
 }

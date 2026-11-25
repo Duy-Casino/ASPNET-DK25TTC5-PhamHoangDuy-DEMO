@@ -45,6 +45,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<PointRedemption> PointRedemptions => Set<PointRedemption>();
     public DbSet<ReferralCode> ReferralCodes => Set<ReferralCode>();
     public DbSet<Referral> Referrals => Set<Referral>();
+    public DbSet<InstructorEarning> InstructorEarnings => Set<InstructorEarning>();
+    public DbSet<InstructorPayout> InstructorPayouts => Set<InstructorPayout>();
+    public DbSet<RefundRequest> RefundRequests => Set<RefundRequest>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -97,6 +100,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
         configurationBuilder.Properties<DiscountType>().HaveConversion<string>().HaveMaxLength(20);
         configurationBuilder.Properties<QuestionType>().HaveConversion<string>().HaveMaxLength(20);
         configurationBuilder.Properties<NotificationType>().HaveConversion<string>().HaveMaxLength(20);
+        configurationBuilder.Properties<EarningType>().HaveConversion<string>().HaveMaxLength(20);
+        configurationBuilder.Properties<PayoutStatus>().HaveConversion<string>().HaveMaxLength(20);
+        configurationBuilder.Properties<RefundRequestStatus>().HaveConversion<string>().HaveMaxLength(20);
     }
 
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)

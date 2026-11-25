@@ -46,11 +46,14 @@ public static class DependencyInjection
             .Validate(o => o.SecretKey.Length >= 32, "Jwt:SecretKey phải dài ít nhất 32 ký tự (đặt bằng User Secrets hoặc biến môi trường).")
             .ValidateOnStart();
         services.Configure<AppOptions>(configuration.GetSection(AppOptions.SectionName));
+        services.Configure<Application.Features.Revenue.RevenueOptions>(configuration.GetSection(Application.Features.Revenue.RevenueOptions.SectionName));
+        services.Configure<Application.Features.Orders.InvoiceOptions>(configuration.GetSection(Application.Features.Orders.InvoiceOptions.SectionName));
         services.Configure<SmtpOptions>(configuration.GetSection(SmtpOptions.SectionName));
 
         services.AddSingleton<IDateTimeProvider, SystemDateTimeProvider>();
         services.AddSingleton<IJwtTokenService, JwtTokenService>();
         services.AddSingleton<Application.Features.Certificates.ICertificatePdfGenerator, Certificates.QuestPdfCertificateGenerator>();
+        services.AddSingleton<Application.Features.Orders.IInvoicePdfGenerator, Certificates.QuestPdfInvoiceGenerator>();
         services.AddScoped<IEmailSender, SmtpEmailSender>();
 
         // ---------- Thanh toán ----------

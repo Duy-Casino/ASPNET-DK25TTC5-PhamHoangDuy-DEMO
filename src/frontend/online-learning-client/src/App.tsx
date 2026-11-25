@@ -59,6 +59,10 @@ const AdminCategoriesPage = lazy(() => admin().then((m) => ({ default: m.AdminCa
 const AdminOrdersPage = lazy(() => admin().then((m) => ({ default: m.AdminOrdersPage })))
 const AdminCouponsPage = lazy(() => admin().then((m) => ({ default: m.AdminCouponsPage })))
 const AdminPaymentsPage = lazy(() => import('./pages/admin/AdminPaymentsPage'))
+const revenueAdmin = () => import('./pages/admin/AdminRevenuePages')
+const AdminPayoutsPage = lazy(() => revenueAdmin().then((m) => ({ default: m.AdminPayoutsPage })))
+const AdminRefundRequestsPage = lazy(() => revenueAdmin().then((m) => ({ default: m.AdminRefundRequestsPage })))
+const InstructorEarningsPage = lazy(() => import('./pages/instructor/InstructorEarningsPage').then((m) => ({ default: m.InstructorEarningsPage })))
 
 function PageLoader() {
   return (
@@ -121,6 +125,7 @@ export default function App() {
           <Route path="khoa-hoc" element={<InstructorCoursesPage />} />
           <Route path="khoa-hoc/:id" element={<CourseEditorPage />} />
           <Route path="hoc-vien" element={<InstructorStudentsPage />} />
+          <Route path="doanh-thu" element={<InstructorEarningsPage />} />
           <Route path="danh-gia" element={<InstructorReviewsPage />} />
           <Route path="ho-so" element={<InstructorProfilePage />} />
           <Route path="tin-nhan" element={<MessagesPage area="instructor" />} />
@@ -135,6 +140,8 @@ export default function App() {
           <Route path="don-hang" element={<AdminOrdersPage />} />
           <Route path="ma-giam-gia" element={<AdminCouponsPage />} />
           <Route path="giao-dich" element={<AdminPaymentsPage />} />
+          <Route path="hoan-tien" element={<AdminRefundRequestsPage />} />
+          <Route path="chi-tra" element={<AdminPayoutsPage />} />
           <Route path="chung-chi" element={<AdminCertificatesPage />} />
           <Route path="diem-thuong" element={<AdminRewardsPage />} />
         </Route>

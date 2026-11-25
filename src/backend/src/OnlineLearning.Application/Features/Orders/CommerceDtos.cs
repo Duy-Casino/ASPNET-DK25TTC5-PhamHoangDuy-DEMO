@@ -38,6 +38,9 @@ public sealed class OrderQuery : PagedQuery
 {
     public OrderStatus? Status { get; set; }
     public string? Keyword { get; set; }
+    /// <summary>Lọc đơn tạo từ ngày (giờ Việt Nam) — dùng cho Admin.</summary>
+    public DateOnly? From { get; set; }
+    public DateOnly? To { get; set; }
 }
 
 public sealed record AdminOrderListItemDto(Guid Id, string OrderCode, OrderStatus Status, string UserFullName, string UserEmail,

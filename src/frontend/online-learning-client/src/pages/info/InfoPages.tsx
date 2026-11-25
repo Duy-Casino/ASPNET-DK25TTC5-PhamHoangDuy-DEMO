@@ -178,7 +178,8 @@ const policies: Record<string, { title: string; icon: typeof FileText; summary: 
           </ul>
         </Section>
         <Section title="3. Cách gửi yêu cầu">
-          <p>Gửi email tới <a href={`mailto:${site.email}`} className="font-semibold text-brand-700 hover:underline">{site.email}</a> từ địa chỉ email đăng ký tài khoản, kèm <b className="text-ink">mã đơn hàng</b> (xem tại <Link to="/tai-khoan/don-hang" className="font-semibold text-brand-700 hover:underline">Lịch sử mua hàng</Link>) và lý do yêu cầu.</p>
+          <p>Mở đơn hàng tại <Link to="/tai-khoan/don-hang" className="font-semibold text-brand-700 hover:underline">Lịch sử mua hàng</Link>, bấm <b className="text-ink">Yêu cầu hoàn tiền</b> và nêu lý do. Hệ thống tự kiểm tra các điều kiện ở mục 1 và cho biết trạng thái xử lý ngay trên trang đơn hàng.</p>
+          <p>Nếu gặp khó khăn, bạn có thể gửi email tới <a href={`mailto:${site.email}`} className="font-semibold text-brand-700 hover:underline">{site.email}</a> kèm <b className="text-ink">mã đơn hàng</b>.</p>
         </Section>
         <Section title="4. Xử lý và hoàn tiền">
           <p>Yêu cầu được phản hồi trong vòng {site.refundProcessingDays} ngày làm việc. Khi được chấp nhận, quyền truy cập khóa học bị thu hồi, đơn hàng chuyển sang trạng thái "Đã hoàn tiền" và tiền được hoàn về phương thức thanh toán ban đầu (VNPay hoặc MoMo). Thời gian tiền về tài khoản phụ thuộc ngân hàng hoặc ví.</p>

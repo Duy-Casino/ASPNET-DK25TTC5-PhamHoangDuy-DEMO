@@ -52,6 +52,9 @@ public sealed class TestApp : WebApplicationFactory<Program>, IAsyncLifetime
             // Không gọi MoMo thật: trả về payUrl giả lập
             services.AddHttpClient<OnlineLearning.Infrastructure.Payments.MoMoGateway>()
                 .ConfigurePrimaryHttpMessageHandler(() => new FakeMoMoHandler());
+            // Ghi lại email thay vì gửi thật
+            services.RemoveAll<OnlineLearning.Application.Common.Interfaces.IEmailSender>();
+            services.AddSingleton<OnlineLearning.Application.Common.Interfaces.IEmailSender>(Emails);
         });
     }
 
@@ -89,6 +92,9 @@ public sealed class TestApp : WebApplicationFactory<Program>, IAsyncLifetime
     /// <summary>Lệch giờ hệ thống trong test. Nhớ đặt lại TimeSpan.Zero sau khi dùng.</summary>
     public TestClock Clock { get; } = new();
 
+    /// <summary>Email hệ thống đã "gửi" trong phiên kiểm thử.</summary>
+    public FakeEmailSender Emails { get; } = new();
+
     public HttpClient Anonymous() => CreateClient(new WebApplicationFactoryClientOptions { HandleCookies = true });
 
     public async Task<HttpClient> LoginAsync(string email, string password = Password)
@@ -112,6 +118,19 @@ public sealed class TestClock : OnlineLearning.Application.Common.Interfaces.IDa
 {
     public TimeSpan Offset { get; set; }
     public DateTime UtcNow => DateTime.UtcNow + Offset;
+}
+
+public sealed class FakeEmailSender : OnlineLearning.Application.Common.Interfaces.IEmailSender
+{
+    public sealed record Sent(string To, string Subject, string Body);
+    private readonly System.Collections.Concurrent.ConcurrentQueue<Sent> _sent = new();
+    public IReadOnlyList<Sent> All => [.. _sent];
+
+    public Task SendAsync(string to, string subject, string htmlBody, CancellationToken ct = default)
+    {
+        _sent.Enqueue(new Sent(to, subject, htmlBody));
+        return Task.CompletedTask;
+    }
 }
 
 [CollectionDefinition(nameof(ApiCollection))]

@@ -1,13 +1,14 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { CheckCircle2, Clock } from 'lucide-react'
+import { CheckCircle2, Clock, FileDown, RotateCcw } from 'lucide-react'
 import { toast } from 'sonner'
-import { ErrorState, OrderStatusBadge, Skeleton, Spinner } from '../../components/ui'
+import { ErrorState, OrderStatusBadge, Skeleton, Spinner, TextArea } from '../../components/ui'
 import { useAsync, useDocumentTitle } from '../../hooks/useAsync'
 import { orderService } from '../../services/api'
 import { getErrorMessage } from '../../services/apiClient'
 import { paymentService, providerLabel, redirectToGateway, type PaymentProvider } from '../../services/paymentApi'
 import { PaymentMethodPicker, TestModeNotice } from '../../components/payment/PaymentMethods'
+import { refundService, refundStatusLabel, refundStatusStyle } from '../../services/revenueApi'
 import { formatDateTime, formatNumber, formatPrice } from '../../utils/format'
 import NotFoundPage from '../NotFoundPage'
 
@@ -32,6 +33,7 @@ export default function OrderDetailPage() {
   const methods = useAsync(() => paymentService.methods(), [])
   const [method, setMethod] = useState<PaymentProvider | null>(null)
   const [paying, setPaying] = useState(false)
+  const [downloading, setDownloading] = useState(false)
   useDocumentTitle(order ? `Đơn ${order.orderCode}` : 'Đơn hàng')
   const countdown = useCountdown(order?.expiresAt, order?.status === 'Pending')
 
@@ -67,6 +69,18 @@ export default function OrderDetailPage() {
   }
 
   const paid = order.status === 'Paid'
+  const hasReceipt = order.status === 'Paid' || order.status === 'Refunded'
+
+  const downloadInvoice = async () => {
+    setDownloading(true)
+    try {
+      await refundService.downloadInvoice(order.id, order.orderCode)
+    } catch (err) {
+      toast.error(getErrorMessage(err))
+    } finally {
+      setDownloading(false)
+    }
+  }
 
   return (
     <div className="container-page grid gap-12 py-12 md:py-16 lg:grid-cols-[1fr_440px]">
@@ -116,7 +130,14 @@ export default function OrderDetailPage() {
 
         {order.payments.some((p) => p.provider === 'Test') && <TestModeNotice className="max-w-xl" />}
 
+        {hasReceipt && order.totalAmount > 0 && <RefundSection orderId={order.id} />}
+
         <div className="flex flex-wrap gap-3">
+          {hasReceipt && (
+            <button type="button" className="btn-outline" onClick={downloadInvoice} disabled={downloading}>
+              {downloading ? <Spinner className="size-4" /> : <FileDown className="size-4" aria-hidden="true" />} Tải biên nhận (PDF)
+            </button>
+          )}
           <Link to="/tai-khoan/don-hang" className="btn-soft">Lịch sử mua hàng</Link>
           <Link to="/khoa-hoc" className="btn-ghost">Xem thêm khóa học</Link>
         </div>
@@ -158,5 +179,75 @@ export default function OrderDetailPage() {
         )}
       </aside>
     </div>
+  )
+}
+
+/** Yêu cầu hoàn tiền theo Chính sách hoàn tiền: hiện trạng thái các yêu cầu và form gửi nếu còn đủ điều kiện. */
+function RefundSection({ orderId }: { orderId: string }) {
+  const { data, error, reload } = useAsync(() => refundService.status(orderId), [orderId])
+  const [open, setOpen] = useState(false)
+  const [reason, setReason] = useState('')
+  const [fieldError, setFieldError] = useState<string | null>(null)
+  const [sending, setSending] = useState(false)
+
+  // Admin xem đơn của người khác: API trả 404, không hiện phần này
+  if (error || !data) return null
+  const latest = data.requests[0]
+  if (!data.canRequest && !latest) return null
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault()
+    if (reason.trim().length < 10) { setFieldError('Vui lòng nêu lý do (ít nhất 10 ký tự).'); return }
+    setSending(true)
+    setFieldError(null)
+    try {
+      await refundService.request(orderId, reason.trim())
+      toast.success('Đã gửi yêu cầu hoàn tiền. EduViet sẽ phản hồi trong vòng 7 ngày làm việc.')
+      setOpen(false)
+      reload()
+    } catch (err) {
+      setFieldError(getErrorMessage(err))
+    } finally {
+      setSending(false)
+    }
+  }
+
+  return (
+    <section className="card max-w-xl p-5" aria-label="Hoàn tiền">
+      <h2 className="flex items-center gap-2 font-bold"><RotateCcw className="size-5 text-ink-soft" aria-hidden="true" />Hoàn tiền</h2>
+      {latest && (
+        <div className="mt-3 text-sm">
+          <p>
+            Yêu cầu gửi lúc {formatDateTime(latest.createdAt)}:{' '}
+            <span className={`inline-flex rounded-(--radius-control) px-2 py-0.5 font-semibold ${refundStatusStyle[latest.status]}`}>{refundStatusLabel[latest.status]}</span>
+          </p>
+          <p className="mt-1 text-ink-soft">Lý do: {latest.reason}</p>
+          {latest.adminNote && <p className="mt-1 text-ink-soft">Phản hồi: {latest.adminNote}</p>}
+        </div>
+      )}
+      {data.canRequest && !open && (
+        <div className="mt-3 text-sm text-ink-soft">
+          <p>
+            Bạn có thể yêu cầu hoàn tiền {data.deadline && <>đến <b className="text-ink">{formatDateTime(data.deadline)}</b></>} nếu học không quá{' '}
+            {formatNumber(data.maxProgressPercent)}% nội dung (hiện {formatNumber(data.currentProgressPercent)}%).{' '}
+            <Link to="/chinh-sach/hoan-tien" className="font-semibold text-brand-700 hover:underline">Xem chính sách</Link>
+          </p>
+          <button type="button" className="btn-soft mt-3" onClick={() => setOpen(true)}>Yêu cầu hoàn tiền</button>
+        </div>
+      )}
+      {data.canRequest && open && (
+        <form className="mt-3 flex flex-col gap-3" onSubmit={submit} noValidate>
+          <TextArea label="Lý do yêu cầu hoàn tiền" rows={3} maxLength={1000} value={reason} onChange={(e) => setReason(e.target.value)} error={fieldError ?? undefined} />
+          <p className="text-sm text-ink-soft">Khi được chấp nhận, quyền học các khóa trong đơn bị thu hồi và tiền được hoàn về phương thức thanh toán ban đầu.</p>
+          <div className="flex gap-2">
+            <button type="submit" className="btn-primary" disabled={sending}>{sending && <Spinner className="size-4" />}Gửi yêu cầu</button>
+            <button type="button" className="btn-ghost" onClick={() => setOpen(false)}>Hủy</button>
+          </div>
+        </form>
+      )}
+      {!data.canRequest && latest?.status !== 'Pending' && data.blockedReason && latest?.status !== 'Approved' && (
+        <p className="mt-2 text-sm text-ink-muted">{data.blockedReason}</p>
+      )}
+    </section>
   )
 }

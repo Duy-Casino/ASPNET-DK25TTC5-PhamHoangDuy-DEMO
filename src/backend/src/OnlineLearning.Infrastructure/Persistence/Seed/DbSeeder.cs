@@ -25,7 +25,10 @@ public static class DbSeeder
         var logger = sp.GetRequiredService<ILoggerFactory>().CreateLogger(nameof(DbSeeder));
         var config = sp.GetRequiredService<IConfiguration>();
 
-        if (DependencyInjection.IsSqliteDemo(config)) await db.Database.EnsureCreatedAsync(ct);
+        if (DependencyInjection.IsSqliteDemo(config))
+        {
+            if (!await db.Database.EnsureCreatedAsync(ct)) await AddMissingSqliteTablesAsync(db, logger, ct);
+        }
         else if (migrate) await db.Database.MigrateAsync(ct);
 
         await SeedRolesAsync(sp.GetRequiredService<RoleManager<AppRole>>());
@@ -70,6 +73,12 @@ public static class DbSeeder
 
         await SeedInstructorAvatarsAsync(db, ct);
 
+        if (!await db.InstructorEarnings.AnyAsync(ct) && await db.Orders.AnyAsync(o => o.Status == OrderStatus.Paid, ct))
+        {
+            await SeedInstructorEarningsAsync(db, config, ct);
+            logger.LogInformation("Đã ghi sổ thu nhập giảng viên cho các đơn mẫu.");
+        }
+
         if (!await db.InstructorExperiences.AnyAsync(ct))
         {
             await SeedInstructorProfilesAsync(db, ct);
@@ -77,6 +86,78 @@ public static class DbSeeder
         }
 
         logger.LogInformation("Seed dữ liệu hoàn tất.");
+    }
+
+    /// <summary>
+    /// Chế độ demo SQLite tạo schema bằng EnsureCreated, không có migration: khi phiên bản mới thêm bảng,
+    /// file DB demo cũ thiếu bảng đó. Tạo các bảng (và chỉ mục của chúng) còn thiếu, giữ nguyên dữ liệu đang có.
+    /// </summary>
+    private static async Task AddMissingSqliteTablesAsync(AppDbContext db, ILogger logger, CancellationToken ct)
+    {
+        var existing = (await db.Database.SqlQueryRaw<string>("SELECT name AS Value FROM sqlite_master WHERE type = 'table'").ToListAsync(ct))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var missing = db.Model.GetEntityTypes().Select(e => e.GetTableName()).OfType<string>().Distinct()
+            .Where(t => !existing.Contains(t)).ToList();
+        if (missing.Count == 0) return;
+
+        static string? TableOf(string stmt, string keyword)
+        {
+            var i = stmt.IndexOf(keyword, StringComparison.Ordinal);
+            if (i < 0) return null;
+            var start = stmt.IndexOf('"', i + keyword.Length);
+            var end = start < 0 ? -1 : stmt.IndexOf('"', start + 1);
+            return end > start ? stmt[(start + 1)..end] : null;
+        }
+
+        var statements = db.Database.GenerateCreateScript()
+            .Split(";" + Environment.NewLine, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(x => x.TrimEnd(';'))
+            .Where(x => x.Length > 0)
+            .ToList();
+        foreach (var stmt in statements)
+        {
+            var table = stmt.StartsWith("CREATE TABLE", StringComparison.Ordinal) ? TableOf(stmt, "CREATE TABLE")
+                : stmt.Contains(" INDEX ", StringComparison.Ordinal) ? TableOf(stmt, " ON ")
+                : null;
+            if (table is not null && missing.Contains(table)) await db.Database.ExecuteSqlRawAsync(stmt, ct);
+        }
+        logger.LogInformation("DB demo: đã tạo thêm {Count} bảng mới: {Tables}", missing.Count, string.Join(", ", missing));
+    }
+
+    /// <summary>
+    /// Sổ thu nhập giảng viên cho các đơn đã thanh toán có sẵn (đơn mẫu tạo trực tiếp, không qua luồng thanh toán),
+    /// kèm một lần chi trả mẫu cho giảng viên có thu nhập cao nhất để màn hình rút tiền có dữ liệu.
+    /// </summary>
+    private static async Task SeedInstructorEarningsAsync(AppDbContext db, IConfiguration config, CancellationToken ct)
+    {
+        var share = config.GetValue("Revenue:InstructorSharePercent", 70m);
+        var holdDays = config.GetValue("Revenue:HoldDays", 7);
+        var orders = await db.Orders.Include(o => o.Items)
+            .Where(o => o.Status == OrderStatus.Paid && o.PaidAt != null).ToListAsync(ct);
+        var rows = orders.SelectMany(o => Application.Features.Revenue.EarningLedger.BuildSales(o, o.PaidAt!.Value, share, holdDays)).ToList();
+        db.InstructorEarnings.AddRange(rows);
+
+        var now = DateTime.UtcNow;
+        var top = rows.Where(r => r.AvailableAt <= now).GroupBy(r => r.InstructorId)
+            .Select(g => new { InstructorId = g.Key, Available = g.Sum(r => r.Amount) })
+            .OrderByDescending(x => x.Available).FirstOrDefault();
+        if (top is not null && top.Available >= 400_000)
+        {
+            db.InstructorPayouts.Add(new InstructorPayout
+            {
+                InstructorId = top.InstructorId,
+                Amount = Math.Floor(top.Available / 2 / 100_000) * 100_000,
+                Status = PayoutStatus.Paid,
+                BankName = "Vietcombank",
+                BankAccountNumber = "0011000123456",
+                BankAccountName = "TAI KHOAN MAU",
+                TransferReference = "FT26300DEMO01",
+                AdminNote = "Chi trả mẫu (dữ liệu demo)",
+                CreatedAt = now.AddDays(-20),
+                ProcessedAt = now.AddDays(-19),
+            });
+        }
+        await db.SaveChangesAsync(ct);
     }
 
     /// <summary>

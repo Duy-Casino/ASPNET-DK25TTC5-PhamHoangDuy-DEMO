@@ -42,6 +42,9 @@ public interface IAppDbContext
     DbSet<PointRedemption> PointRedemptions { get; }
     DbSet<ReferralCode> ReferralCodes { get; }
     DbSet<Referral> Referrals { get; }
+    DbSet<InstructorEarning> InstructorEarnings { get; }
+    DbSet<InstructorPayout> InstructorPayouts { get; }
+    DbSet<RefundRequest> RefundRequests { get; }
 
     DatabaseFacade Database { get; }
 

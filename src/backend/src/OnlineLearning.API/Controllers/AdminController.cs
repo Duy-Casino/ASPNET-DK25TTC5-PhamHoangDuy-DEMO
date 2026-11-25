@@ -105,6 +105,11 @@ public sealed class AdminController(
     public async Task<IActionResult> GetOrder(Guid id, CancellationToken ct) =>
         FromResult(await orders.GetAsync(id, User.GetUserId(), isAdmin: true, ct));
 
+    /// <summary>Xuất đơn hàng (theo bộ lọc trạng thái, từ khóa, khoảng ngày) ra CSV mở bằng Excel.</summary>
+    [HttpGet("orders/export")]
+    public async Task<IActionResult> ExportOrders([FromQuery] OrderQuery query, CancellationToken ct) =>
+        File(await orders.ExportCsvAsync(query, ct), "text/csv; charset=utf-8", $"don-hang-{DateTime.UtcNow.AddHours(7):yyyyMMdd-HHmm}.csv");
+
     // ---------- Đánh giá ----------
     [HttpPut("reviews/{id:guid}/hidden")]
     public async Task<IActionResult> SetReviewHidden(Guid id, [FromBody] SetHiddenRequest request, CancellationToken ct) =>

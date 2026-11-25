@@ -48,7 +48,10 @@ EduViet là website mua và học khóa học trực tuyến, giao diện tiến
 | --- | --- |
 | **Tài khoản** | Đăng ký, đăng nhập, JWT 15 phút + refresh token xoay vòng trong cookie HttpOnly, phát hiện dùng lại token, quên/đặt lại mật khẩu, xác nhận email, hồ sơ, đổi mật khẩu, khóa sau 5 lần sai |
 | **Khóa học** | Danh mục 2 cấp; tìm kiếm, lọc theo lĩnh vực, cấp độ, giá, đánh giá; sắp xếp, phân trang; trang chi tiết có đề cương, video học thử, đánh giá và phân bố sao |
-| **Mua hàng** | Giỏ hàng, báo giá tính ở server (chống sửa giá), mã giảm giá, đơn 0đ, chặn mua trùng, đơn quá hạn tự hủy, lịch sử đơn hàng |
+| **Mua hàng** | Giỏ hàng, báo giá tính ở server (chống sửa giá), mã giảm giá, đơn 0đ, chặn mua trùng, đơn quá hạn tự hủy, lịch sử đơn hàng. **Email xác nhận thanh toán** và **biên nhận PDF** tải tại trang đơn hàng |
+| **Hoàn tiền** | Học viên **tự gửi yêu cầu hoàn tiền** tại trang đơn hàng; hệ thống kiểm tra đúng Chính sách hoàn tiền (trong 7 ngày, học không quá 20%, chưa có chứng chỉ, đơn có phí). Admin duyệt (thu hồi quyền học, điểm thưởng, thu nhập giảng viên; gửi email) hoặc từ chối có lý do |
+| **Doanh thu giảng viên** | Giảng viên nhận **70%** số tiền học viên thực trả (cấu hình được). Sổ thu nhập ghi theo từng khóa bán được, hoàn tiền ghi dòng trừ tương ứng; tiền rút được sau 7 ngày (hết hạn hoàn tiền). Giảng viên **gửi yêu cầu rút tiền** về tài khoản ngân hàng (tối thiểu 100.000đ); Admin chuyển khoản rồi xác nhận "Đã chi" kèm mã giao dịch, hoặc từ chối |
+| **Báo cáo** | Admin xem doanh thu nền tảng, số phải trả từng giảng viên; **xuất CSV** đơn hàng (lọc trạng thái, khoảng ngày) và chi trả giảng viên để đối soát bằng Excel |
 | **Thanh toán** | VNPay (HMAC-SHA512) và MoMo (HMAC-SHA256) sandbox. Kiểm tra chữ ký và số tiền ở IPN, idempotency, chỉ cấp quyền học qua IPN chứ không qua trang redirect. Có thêm kênh thử nghiệm không thu tiền thật |
 | **Học trực tuyến** | Trình học video nhớ vị trí, tự hoàn thành bài, tài liệu đính kèm, tiến độ theo bài bắt buộc; bài chưa mua bị chặn (403) |
 | **Bài kiểm tra** | Trắc nghiệm một hoặc nhiều đáp án, đúng/sai; chấm ở server; giới hạn lượt và thời gian; xem đáp án và giải thích sau khi nộp |
@@ -170,17 +173,19 @@ Thanh toán thử: ở trang thanh toán, chọn **Kênh thử nghiệm**. Đơn
 | --- | --- | --- |
 | Khách | `/`, `/khoa-hoc`, `/khoa-hoc/:slug`, `/giang-vien/:id`, `/xac-minh/:mã` | Tìm và lọc khóa học, xem học thử, xem hồ sơ giảng viên, xác minh chứng chỉ |
 | Học viên | `/hoc-vien`, `/hoc/:slug`, `/gio-hang`, `/hoc-vien/tin-nhan`, `/hoc-vien/diem-thuong` | Mua khóa học, học, làm bài kiểm tra, nhận chứng chỉ, nhắn giảng viên, điểm danh, đổi điểm |
-| Giảng viên | `/giang-day`, `/giang-day/ho-so`, `/giang-day/tin-nhan` | Tạo khóa học, gửi duyệt, sửa hồ sơ giảng dạy, trả lời tin nhắn và đánh giá |
-| Quản trị viên | `/quan-tri`, `/quan-tri/diem-thuong` | Duyệt khóa học, quản lý người dùng, đơn hàng, hoàn tiền, mã giảm giá, chứng chỉ, điểm thưởng |
+| Giảng viên | `/giang-day`, `/giang-day/ho-so`, `/giang-day/tin-nhan`, `/giang-day/doanh-thu` | Tạo khóa học, gửi duyệt, sửa hồ sơ giảng dạy, trả lời tin nhắn và đánh giá, xem thu nhập và rút tiền |
+| Quản trị viên | `/quan-tri`, `/quan-tri/diem-thuong`, `/quan-tri/hoan-tien`, `/quan-tri/chi-tra` | Duyệt khóa học, quản lý người dùng, đơn hàng (xuất CSV), duyệt yêu cầu hoàn tiền, chi trả giảng viên, mã giảm giá, chứng chỉ, điểm thưởng |
 
 Luồng nên thử: đăng ký học viên → thêm khóa vào giỏ → thanh toán qua kênh thử nghiệm → vào học → hoàn thành bài và bài kiểm tra → tải chứng chỉ → mở trang xác minh. Mỗi bước cũng cộng điểm thưởng tương ứng.
+
+Luồng vận hành bán hàng: học viên mua khóa → mở đơn hàng, tải biên nhận PDF, bấm "Yêu cầu hoàn tiền" → Admin vào `/quan-tri/hoan-tien` duyệt → giảng viên vào `/giang-day/doanh-thu` thấy dòng bán và dòng hoàn, gửi yêu cầu rút tiền → Admin vào `/quan-tri/chi-tra` xác nhận đã chuyển.
 
 ## 6. Kiểm thử
 
 | Tầng | Công cụ | Kết quả gần nhất |
 | --- | --- | --- |
-| Backend tích hợp | xUnit + WebApplicationFactory + SQLite in-memory | **48/48 đạt** |
-| End-to-end | Playwright (Chrome), 19 kịch bản desktop + 7 kịch bản điện thoại | **26/26 đạt** |
+| Backend tích hợp | xUnit + WebApplicationFactory + SQLite in-memory | **55/55 đạt** |
+| End-to-end | Playwright (Chrome), 20 kịch bản desktop + 7 kịch bản điện thoại | **27/27 đạt** |
 | Build | `dotnet build`, `npm run build` | Đạt |
 
 ```powershell
@@ -266,6 +271,7 @@ Mỗi khi hoàn thành một tính năng, thêm một dòng vào bảng này và
 | 16/11/2026 | Báo cáo đồ án đề tài "Xây dựng website chia sẻ khóa học trực tuyến" theo mẫu và quy định của khoa: bìa, 4 chương, 15 sơ đồ, 32 ảnh chức năng, 25 bảng; bản Word (.docx, .doc) trong [`thesis/doc/`](thesis/doc/README.md) và PDF trong `thesis/pdf/`. Thêm `setup/database/full-schema.sql` (đủ 41 bảng) | 48/48 backend, 26/26 E2E |
 | 18/11/2026 | Báo cáo: thêm luồng soạn và chia sẻ khóa học (tạo, cập nhật, tải ảnh bìa, video, tài liệu, bài kiểm tra, gửi duyệt, duyệt, công khai) với 9 ảnh mới; mục 2.7 đoạn mã tiêu biểu; mục 3.7 tổng hợp kết quả; rà soát chính tả; điền GVHD TS. Nguyễn Nhứt Lam | 48/48 backend, 26/26 E2E |
 | 18/11/2026 | Bài thuyết trình PowerPoint 15 slide có giọng thuyết minh (giọng nam tiếng Việt, tự chuyển slide) và video MP4 dài 9 phút 16 giây trong [`thesis/abs/`](thesis/abs/README.md) | 48/48 backend, 26/26 E2E |
+| 25/11/2026 | Vận hành bán hàng: thu nhập giảng viên (70%, giữ 7 ngày) và yêu cầu rút tiền, Admin xác nhận chi; học viên tự yêu cầu hoàn tiền theo chính sách, Admin duyệt/từ chối; email xác nhận thanh toán; biên nhận PDF; xuất CSV đơn hàng và chi trả. Thêm 3 bảng (44 bảng), migration `InstructorPayouts` ([báo cáo tuần 03](progress-report/bao-cao-tuan-03.md)) | 55/55 backend, 27/27 E2E |
 
 ## 10. Hạn chế và việc còn lại
 

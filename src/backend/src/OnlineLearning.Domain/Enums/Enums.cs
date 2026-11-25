@@ -30,3 +30,12 @@ public enum ShareChannel { Facebook, Zalo, CopyLink, Other }
 
 /// <summary>Loại mục trong hồ sơ giảng viên.</summary>
 public enum ExperienceType { Work, Education, Certification }
+
+/// <summary>Dòng sổ thu nhập giảng viên: bán khóa học (+) hoặc hoàn tiền (−).</summary>
+public enum EarningType { Sale, Refund }
+
+/// <summary>Trạng thái yêu cầu rút tiền của giảng viên.</summary>
+public enum PayoutStatus { Requested, Paid, Rejected, Cancelled }
+
+/// <summary>Trạng thái yêu cầu hoàn tiền của học viên.</summary>
+public enum RefundRequestStatus { Pending, Approved, Rejected }

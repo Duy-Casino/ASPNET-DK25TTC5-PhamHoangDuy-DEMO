@@ -84,3 +84,25 @@ public static class ContentSanitizer
         catch (JsonException) { return []; }
     }
 }
+
+/// <summary>Ghi tệp CSV mở được bằng Excel (UTF-8 có BOM, dấu phẩy).</summary>
+public static class CsvExport
+{
+    /// <summary>Trích một ô an toàn: bọc ngoặc kép và vô hiệu hóa công thức Excel (=, +, -, @).</summary>
+    public static string Field(string? value)
+    {
+        if (string.IsNullOrEmpty(value)) return "";
+        var v = value.Replace("\"", "\"\"");
+        if (v[0] is '=' or '+' or '-' or '@' or '\t' or '\r') v = "'" + v;
+        return $"\"{v}\"";
+    }
+
+    public static string Money(decimal value) => value.ToString("0", System.Globalization.CultureInfo.InvariantCulture);
+
+    /// <summary>Thời gian UTC → giờ Việt Nam dạng yyyy-MM-dd HH:mm:ss.</summary>
+    public static string Time(DateTime? utc) =>
+        utc is { } t ? t.AddHours(7).ToString("yyyy-MM-dd HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture) : "";
+
+    public static byte[] ToBytes(System.Text.StringBuilder sb) =>
+        [.. System.Text.Encoding.UTF8.GetPreamble(), .. System.Text.Encoding.UTF8.GetBytes(sb.ToString())];
+}

@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { Pencil, Plus, Trash2 } from 'lucide-react'
+import { Download, Pencil, Plus, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { CountChart, DataTable, Modal, PageHeader, Panel, RevenueChart, SelectField, StatCard, StatusBadge, Toggle } from '../../components/dashboard'
 import { Avatar, EmptyState, ErrorState, Field, OrderStatusBadge, Pagination, Skeleton, Spinner, TextArea } from '../../components/ui'
@@ -9,6 +9,7 @@ import { useAuth } from '../../hooks/useAuth'
 import { getErrorMessage, getFieldErrors } from '../../services/apiClient'
 import { adminService } from '../../services/dashboardApi'
 import { adminRewardService } from '../../services/rewardApi'
+import { adminRevenueService } from '../../services/revenueApi'
 import type { Category } from '../../types/api'
 import type { CourseStatus, OrderStatus } from '../../types/common'
 import { courseStatusLabel } from '../../types/common'
@@ -329,10 +330,30 @@ export function AdminOrdersPage() {
     { v: 'Refunded', l: 'Đã hoàn tiền' },
   ]
   const [refunding, setRefunding] = useState<{ id: string; orderCode: string } | null>(null)
+  const [from, setFrom] = useState('')
+  const [to, setTo] = useState('')
+  const [exporting, setExporting] = useState(false)
+  const exportCsv = async () => {
+    setExporting(true)
+    try {
+      await adminRevenueService.exportOrders({ status, keyword: q || undefined, from: from || undefined, to: to || undefined })
+    } catch (err) {
+      toast.error(getErrorMessage(err))
+    } finally {
+      setExporting(false)
+    }
+  }
   return (
     <div className="flex flex-col gap-8">
-      <PageHeader title="Đơn hàng" description="Giao dịch qua cổng thanh toán được bổ sung ở Giai đoạn 5." />
+      <PageHeader title="Đơn hàng" description="Xuất CSV (mở bằng Excel) theo bộ lọc hiện tại để đối soát doanh thu." />
       <Panel>
+        <div className="mb-4 flex flex-wrap items-end gap-3 border-b border-line pb-4">
+          <Field label="Từ ngày" type="date" value={from} max={to || undefined} onChange={(e) => setFrom(e.target.value)} />
+          <Field label="Đến ngày" type="date" value={to} min={from || undefined} onChange={(e) => setTo(e.target.value)} />
+          <button type="button" className="btn-outline" onClick={exportCsv} disabled={exporting}>
+            {exporting ? <Spinner className="size-4" /> : <Download className="size-4" aria-hidden="true" />} Xuất CSV
+          </button>
+        </div>
         <div className="mb-6 flex flex-wrap items-end gap-3">
           <div className="flex flex-wrap gap-2" role="tablist">
             {statuses.map((s) => (
