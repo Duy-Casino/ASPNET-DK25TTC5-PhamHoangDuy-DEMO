@@ -104,6 +104,7 @@ function UserMenu() {
             </>
           )}
           {user.roles.includes('Admin') && <MenuLink to="/quan-tri" onClick={() => setOpen(false)}>Quản trị hệ thống</MenuLink>}
+          {!user.roles.includes('Instructor') && !user.roles.includes('Admin') && <MenuLink to="/dang-ky-giang-day" onClick={() => setOpen(false)}>Trở thành giảng viên</MenuLink>}
           <MenuLink to="/tai-khoan" onClick={() => setOpen(false)}>Hồ sơ cá nhân</MenuLink>
           <MenuLink to="/tai-khoan/don-hang" onClick={() => setOpen(false)}>Lịch sử mua hàng</MenuLink>
           <button type="button" role="menuitem" onClick={doLogout} className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-danger hover:bg-danger-50">
@@ -468,6 +469,7 @@ function Footer() {
           <li><Link className={lnk} to="/lien-he">Liên hệ</Link></li>
           <li><Link className={lnk} to="/hoc-vien">Khóa học của tôi</Link></li>
           <li><Link className={lnk} to="/tai-khoan/don-hang">Lịch sử mua hàng</Link></li>
+          <li><Link className={lnk} to="/dang-ky-giang-day">Trở thành giảng viên</Link></li>
         </FooterCol>
         <FooterCol title="Chính sách">
           <li><Link className={lnk} to="/chinh-sach/dieu-khoan">Điều khoản sử dụng</Link></li>

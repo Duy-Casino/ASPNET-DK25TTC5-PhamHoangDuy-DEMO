@@ -54,7 +54,7 @@ public sealed class RefundRequestService(
     IOrderEmailService emails,
     INotificationService notifications,
     IDateTimeProvider clock,
-    IOptions<RevenueOptions> options,
+    IOptionsSnapshot<RevenueOptions> options,
     ILogger<RefundRequestService> logger) : IRefundRequestService
 {
     private RevenueOptions O => options.Value;

@@ -50,6 +50,9 @@ public static class DependencyInjection
         services.AddScoped<Features.Learning.ILessonQaService, Features.Learning.LessonQaService>();
         services.AddScoped<Features.Learning.IStudyReminderService, Features.Learning.StudyReminderService>();
         services.AddScoped<Features.Learning.ILearningAdminService, Features.Learning.LearningAdminService>();
+        services.AddScoped<IAdminToolsService, AdminToolsService>();
+        services.AddScoped<ISettingsService, SettingsService>();
+        services.AddScoped<IReportService, ReportService>();
 
         return services;
     }

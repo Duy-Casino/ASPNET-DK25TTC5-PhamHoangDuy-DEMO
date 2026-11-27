@@ -418,7 +418,7 @@ public interface ICartReminderService
 }
 
 public sealed class CartReminderService(
-    IAppDbContext db, IEmailSender sender, IDateTimeProvider clock, IOptions<CartReminderOptions> options, IOptions<AppOptions> app,
+    IAppDbContext db, IEmailSender sender, IDateTimeProvider clock, IOptionsSnapshot<CartReminderOptions> options, IOptions<AppOptions> app,
     ILogger<CartReminderService> logger) : ICartReminderService
 {
     private static readonly CultureInfo Vi = CultureInfo.GetCultureInfo("vi-VN");

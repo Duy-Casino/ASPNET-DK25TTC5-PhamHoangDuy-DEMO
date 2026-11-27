@@ -1,11 +1,12 @@
 import { useState, type FormEvent, type ReactNode } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
-import { ArrowLeft, CheckCircle2, Circle, UserPlus } from 'lucide-react'
+import { ArrowLeft, CheckCircle2, Circle, Download, UserPlus } from 'lucide-react'
 import { toast } from 'sonner'
 import { DataTable, Modal, PageHeader, Panel, ProgressBar } from '../../components/dashboard'
 import { EmptyState, ErrorState, Field, Pagination, Skeleton, Spinner, TextArea } from '../../components/ui'
 import { useAsync, useDebounce, useDocumentTitle } from '../../hooks/useAsync'
 import { catalogService } from '../../services/api'
+import { adminToolsService } from '../../services/adminToolsApi'
 import { getErrorMessage } from '../../services/apiClient'
 import {
   adminLearningService, learningStateLabel, learningStateStyle, supportStatusLabel, supportStatusStyle, supportTypeLabel,
@@ -47,6 +48,8 @@ export function AdminLearningPage() {
       <PageHeader title="Tiến độ học tập"
         description={o ? `Tỷ lệ hoàn thành ${o.completionRate}% · ${o.failedAttempts30Days} lượt kiểm tra chưa đạt trong 30 ngày · ${o.openSupportRequests} yêu cầu hỗ trợ đang chờ` : undefined}
         actions={<>
+          <button type="button" className="btn-soft" onClick={() => adminToolsService.exportEnrollments({ state: state || undefined, keyword: q || undefined }).catch((err) => toast.error(getErrorMessage(err)))}>
+            <Download className="size-4" aria-hidden="true" />Xuất CSV</button>
           <Link to="/quan-tri/ho-tro-hoc-tap" className="btn-soft">Yêu cầu hỗ trợ{o?.openSupportRequests ? ` (${o.openSupportRequests})` : ''}</Link>
           <button type="button" className="btn-primary" onClick={() => setEnrolling(true)}><UserPlus className="size-4" aria-hidden="true" />Cấp quyền học</button>
         </>} />

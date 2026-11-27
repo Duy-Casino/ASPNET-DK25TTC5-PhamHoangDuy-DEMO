@@ -116,6 +116,7 @@ public interface ILearningAdminService
     Task<LearningOverviewDto> GetOverviewAsync(CancellationToken ct = default);
     Task<PagedResult<AdminEnrollmentDto>> ListAsync(AdminEnrollmentQuery query, CancellationToken ct = default);
     Task<Result<AdminEnrollmentDetailDto>> GetDetailAsync(Guid enrollmentId, CancellationToken ct = default);
+    Task<byte[]> ExportCsvAsync(AdminEnrollmentQuery query, CancellationToken ct = default);
 
     Task<Result> GrantAttemptsAsync(Guid adminId, Guid enrollmentId, GrantAttemptsRequest request, CancellationToken ct = default);
     Task<Result> SetLessonAsync(Guid adminId, Guid enrollmentId, SetLessonRequest request, CancellationToken ct = default);
@@ -231,6 +232,36 @@ public sealed class LearningAdminService(
                 : classified.Where(c => c.State == q.State).ToList();
         var items = classified.Skip((q.Page - 1) * q.PageSize).Take(q.PageSize).Select(ToDto).ToList();
         return new PagedResult<AdminEnrollmentDto>(items, q.Page, q.PageSize, classified.Count);
+    }
+
+    public async Task<byte[]> ExportCsvAsync(AdminEnrollmentQuery q, CancellationToken ct = default)
+    {
+        q.Page = 1;
+        q.PageSize = 100;
+        var all = new List<AdminEnrollmentDto>();
+        while (true)
+        {
+            var page = await ListAsync(q, ct);
+            all.AddRange(page.Items);
+            if (q.Page >= page.TotalPages || all.Count >= 50_000) break;
+            q.Page++;
+        }
+        var labels = new Dictionary<string, string>
+        {
+            [LearningStates.NotStarted] = "Chưa bắt đầu", [LearningStates.InProgress] = "Đang học", [LearningStates.Completed] = "Hoàn thành",
+            [LearningStates.Stuck] = "Hết lượt, chưa đạt", [LearningStates.Inactive] = "Bỏ dở > 14 ngày",
+            [LearningStates.NoCertificate] = "Đủ điều kiện, chưa có chứng chỉ", [LearningStates.Revoked] = "Đã thu hồi",
+        };
+        var sb = new System.Text.StringBuilder("Học viên,Email,Khóa học,Nguồn,Tiến độ (%),Bài bắt buộc đã xong,Tổng bài bắt buộc,Kiểm tra cuối khóa,Điểm cao nhất,Lượt đã làm,Tình trạng,Chứng chỉ,Ngày ghi danh (UTC+7),Lần học gần nhất\n");
+        foreach (var e in all)
+            sb.Append(Common.Helpers.CsvExport.Field(e.FullName)).Append(',').Append(Common.Helpers.CsvExport.Field(e.Email)).Append(',')
+              .Append(Common.Helpers.CsvExport.Field(e.CourseTitle)).Append(',').Append(Common.Helpers.CsvExport.Field(e.Source)).Append(',')
+              .Append(e.ProgressPercent.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture)).Append(',').Append(e.CompletedLessons).Append(',').Append(e.RequiredLessons).Append(',')
+              .Append(e.FinalAttemptsUsed == 0 ? "Chưa làm" : e.FinalPassed ? "Đạt" : "Chưa đạt").Append(',')
+              .Append(e.FinalBestScore?.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture) ?? "").Append(',').Append(e.FinalAttemptsUsed).Append(',')
+              .Append(labels.GetValueOrDefault(e.State, e.State)).Append(',').Append(e.HasCertificate ? "Có" : "Chưa").Append(',')
+              .Append(Common.Helpers.CsvExport.Time(e.EnrolledAt)).Append(',').Append(Common.Helpers.CsvExport.Time(e.LastAccessedAt)).AppendLine();
+        return Common.Helpers.CsvExport.ToBytes(sb);
     }
 
     public async Task<Result<AdminEnrollmentDetailDto>> GetDetailAsync(Guid enrollmentId, CancellationToken ct = default)

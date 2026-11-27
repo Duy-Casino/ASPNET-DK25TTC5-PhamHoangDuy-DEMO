@@ -6,6 +6,8 @@ import {
 import { PageHeader } from '../../components/ui'
 import { site } from '../../config/site'
 import { useSeo } from '../../hooks/useSeo'
+import { useAsync } from '../../hooks/useAsync'
+import { publicSettingsService } from '../../services/adminToolsApi'
 import NotFoundPage from '../NotFoundPage'
 
 /* ------------------------------------------------------------------ */
@@ -166,8 +168,8 @@ const policies: Record<string, { title: string; icon: typeof FileText; summary: 
         <Section title="1. Điều kiện hoàn tiền">
           <p>Bạn có thể yêu cầu hoàn tiền một khóa học khi đáp ứng đồng thời:</p>
           <ul className="list-disc space-y-1 pl-6">
-            <li>Yêu cầu được gửi trong vòng <b className="text-ink">{site.refundDays} ngày</b> kể từ ngày thanh toán thành công.</li>
-            <li>Bạn đã học không quá <b className="text-ink">{site.refundMaxProgressPercent}%</b> nội dung khóa học.</li>
+            <li>Yêu cầu được gửi trong vòng <b className="text-ink"><RefundSetting field="refundRequestDays" fallback={site.refundDays} /> ngày</b> kể từ ngày thanh toán thành công.</li>
+            <li>Bạn đã học không quá <b className="text-ink"><RefundSetting field="refundMaxProgressPercent" fallback={site.refundMaxProgressPercent} />%</b> nội dung khóa học.</li>
             <li>Chưa được cấp chứng chỉ cho khóa học đó.</li>
           </ul>
         </Section>
@@ -223,6 +225,12 @@ const policies: Record<string, { title: string; icon: typeof FileText; summary: 
       </>
     ),
   },
+}
+
+/** Giá trị chính sách hoàn tiền lấy từ Cài đặt hệ thống (Admin chỉnh được), mặc định theo cấu hình tĩnh. */
+function RefundSetting({ field, fallback }: { field: 'refundRequestDays' | 'refundMaxProgressPercent'; fallback: number }) {
+  const { data } = useAsync(() => publicSettingsService.get(), [])
+  return <>{data?.[field] ?? fallback}</>
 }
 
 export function PolicyPage() {

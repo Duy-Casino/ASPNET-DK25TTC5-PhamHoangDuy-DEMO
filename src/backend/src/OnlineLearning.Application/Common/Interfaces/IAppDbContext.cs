@@ -55,6 +55,10 @@ public interface IAppDbContext
     DbSet<QuizAttemptGrant> QuizAttemptGrants { get; }
     DbSet<LearningSupportRequest> LearningSupportRequests { get; }
     DbSet<LearningActionLog> LearningActionLogs { get; }
+    DbSet<InstructorApplication> InstructorApplications { get; }
+    DbSet<AdminAuditLog> AdminAuditLogs { get; }
+    DbSet<SystemSetting> SystemSettings { get; }
+    DbSet<Announcement> Announcements { get; }
 
     DatabaseFacade Database { get; }
 

@@ -56,7 +56,12 @@ public static class DependencyInjection
         services.AddSingleton<IJwtTokenService, JwtTokenService>();
         services.AddSingleton<Application.Features.Certificates.ICertificatePdfGenerator, Certificates.QuestPdfCertificateGenerator>();
         services.AddSingleton<Application.Features.Orders.IInvoicePdfGenerator, Certificates.QuestPdfInvoiceGenerator>();
-        services.AddScoped<IEmailSender, SmtpEmailSender>();
+        services.AddSingleton<Operations.EmailStatusTracker>();
+        services.AddSingleton<Operations.JobStatusRegistry>();
+        services.AddSingleton<Application.Features.Admin.IRuntimeSettings, Operations.RuntimeSettings>();
+        services.AddScoped<SmtpEmailSender>();
+        services.AddScoped<IEmailSender, Operations.TrackingEmailSender>();
+        services.AddScoped<Application.Features.Admin.ISystemStatusService, Operations.SystemStatusService>();
 
         // ---------- Thanh toán ----------
         services.Configure<Application.Features.Payments.PaymentOptions>(configuration.GetSection(Application.Features.Payments.PaymentOptions.SectionName));

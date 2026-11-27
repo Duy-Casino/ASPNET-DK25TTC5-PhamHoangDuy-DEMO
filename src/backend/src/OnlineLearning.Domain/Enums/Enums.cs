@@ -47,3 +47,8 @@ public enum GiftStatus { Pending, Sent, Redeemed, Cancelled }
 public enum SupportRequestType { QuizRetake, VideoIssue, ProgressIssue, CertificateIssue, Other }
 
 public enum SupportRequestStatus { Open, Resolved, Rejected }
+
+public enum InstructorApplicationStatus { Pending, Approved, Rejected }
+
+/// <summary>Nhóm nhận thông báo hàng loạt.</summary>
+public enum AnnouncementAudience { Everyone, Students, Instructors, CourseStudents }

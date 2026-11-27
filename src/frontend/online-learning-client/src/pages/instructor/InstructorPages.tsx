@@ -8,6 +8,8 @@ import { useAsync, useDebounce, useDocumentTitle } from '../../hooks/useAsync'
 import { catalogService } from '../../services/api'
 import { getErrorMessage, getFieldErrors } from '../../services/apiClient'
 import { instructorService } from '../../services/dashboardApi'
+import { lessonStatsService } from '../../services/adminToolsApi'
+import { LessonStatsModal } from '../../components/LessonStatsModal'
 import type { CourseStatus } from '../../types/common'
 import { courseStatusLabel } from '../../types/common'
 import { formatDate, formatDateTime, formatNumber, formatPrice } from '../../utils/format'
@@ -58,6 +60,7 @@ export function InstructorCoursesPage() {
   const [status, setStatus] = useState<CourseStatus | ''>('')
   const [page, setPage] = useState(1)
   const [creating, setCreating] = useState(false)
+  const [statsOf, setStatsOf] = useState<{ id: string; title: string } | null>(null)
   const { data, loading, error, reload } = useAsync(() => instructorService.courses(status || undefined, page), [status, page])
 
   return (
@@ -94,12 +97,18 @@ export function InstructorCoursesPage() {
                   </div>
                   <span className="btn-soft">Soạn nội dung</span>
                 </Link>
+                {c.enrollmentCount > 0 && (
+                  <button type="button" className="mt-1 ml-4 text-sm font-semibold text-brand-700 hover:underline" onClick={() => setStatsOf({ id: c.id, title: c.title })}>
+                    Xem tỷ lệ hoàn thành từng bài
+                  </button>
+                )}
               </li>
             ))}
           </ul>
         )}
       <Pagination page={page} totalPages={data?.totalPages ?? 1} onChange={setPage} />
       {creating && <CreateCourseModal onClose={() => setCreating(false)} />}
+      {statsOf && <LessonStatsModal courseId={statsOf.id} title={statsOf.title} load={lessonStatsService.get} onClose={() => setStatsOf(null)} />}
     </div>
   )
 }

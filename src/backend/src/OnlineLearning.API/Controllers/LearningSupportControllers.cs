@@ -33,6 +33,10 @@ public sealed class AdminLearningController(ILearningAdminService service) : Api
     public async Task<ActionResult<PagedResult<AdminEnrollmentDto>>> Enrollments([FromQuery] AdminEnrollmentQuery query, CancellationToken ct) =>
         Ok(await service.ListAsync(query, ct));
 
+    [HttpGet("enrollments/export")]
+    public async Task<IActionResult> Export([FromQuery] AdminEnrollmentQuery query, CancellationToken ct) =>
+        File(await service.ExportCsvAsync(query, ct), "text/csv; charset=utf-8", $"tien-do-hoc-tap-{DateTime.UtcNow.AddHours(7):yyyyMMdd-HHmm}.csv");
+
     [HttpGet("enrollments/{id:guid}")]
     public async Task<IActionResult> Detail(Guid id, CancellationToken ct) => FromResult(await service.GetDetailAsync(id, ct));
 

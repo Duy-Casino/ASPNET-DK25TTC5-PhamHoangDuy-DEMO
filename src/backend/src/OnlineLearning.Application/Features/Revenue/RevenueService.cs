@@ -133,7 +133,7 @@ public sealed class RevenueService(
     IAppDbContext db,
     IDateTimeProvider clock,
     INotificationService notifications,
-    IOptions<RevenueOptions> options,
+    IOptionsSnapshot<RevenueOptions> options,
     ILogger<RevenueService> logger) : IRevenueService
 {
     private RevenueOptions O => options.Value;

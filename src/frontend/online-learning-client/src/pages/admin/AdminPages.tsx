@@ -10,6 +10,7 @@ import { getErrorMessage, getFieldErrors } from '../../services/apiClient'
 import { adminService } from '../../services/dashboardApi'
 import { adminRewardService } from '../../services/rewardApi'
 import { adminRevenueService } from '../../services/revenueApi'
+import { adminToolsService } from '../../services/adminToolsApi'
 import type { Category } from '../../types/api'
 import type { CourseStatus, OrderStatus } from '../../types/common'
 import { courseStatusLabel } from '../../types/common'
@@ -162,7 +163,9 @@ export function AdminUsersPage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <PageHeader title="Người dùng" description="Phân quyền và khóa/mở khóa tài khoản." />
+      <PageHeader title="Người dùng" description="Phân quyền và khóa/mở khóa tài khoản."
+        actions={<button type="button" className="btn-soft" onClick={() => adminToolsService.exportUsers({ keyword: q || undefined, role: role || undefined }).catch((err) => toast.error(getErrorMessage(err)))}>
+          <Download className="size-4" aria-hidden="true" />Xuất CSV</button>} />
       <Panel>
         <div className="mb-6 grid gap-4 sm:grid-cols-[1fr_220px]">
           <Field label="Tìm kiếm" type="search" value={keyword} onChange={(e) => { setKeyword(e.target.value); setPage(1) }} placeholder="Tên, email hoặc số điện thoại" />

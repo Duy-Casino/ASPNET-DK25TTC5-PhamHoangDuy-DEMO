@@ -16,6 +16,8 @@ using OnlineLearning.Infrastructure.Persistence.Seed;
 
 var builder = WebApplication.CreateBuilder(args);
 var isTesting = builder.Environment.IsEnvironment("Testing");
+// Cài đặt Admin chỉnh trên giao diện (bảng SystemSettings) ghi đè appsettings.json
+OnlineLearning.Infrastructure.Operations.SystemSettingsConfigurationExtensions.AddSystemSettings(builder.Configuration);
 
 // ---------- Tầng ứng dụng ----------
 builder.Services.AddApplication();
@@ -47,7 +49,7 @@ builder.Services
 builder.Services.AddAuthorization();
 
 // ---------- MVC, validation, lỗi ----------
-builder.Services.AddControllers(o => o.Filters.Add<ValidationFilter>())
+builder.Services.AddControllers(o => { o.Filters.Add<ValidationFilter>(); o.Filters.Add<AdminAuditFilter>(); })
     .AddJsonOptions(o => o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
@@ -165,6 +167,8 @@ else if (!isTesting && app.Configuration.GetValue("Database:MigrateOnStartup", f
     await scope.ServiceProvider.GetRequiredService<AppDbContext>().Database.MigrateAsync();
     await DbSeeder.SeedRolesAndCategoriesAsync(app.Services);
 }
+
+await OnlineLearning.Infrastructure.Operations.RuntimeSettings.LoadAsync(app.Services);
 
 app.Run();
 

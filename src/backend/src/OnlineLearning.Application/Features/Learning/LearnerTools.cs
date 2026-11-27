@@ -255,7 +255,7 @@ public interface IStudyReminderService
 
 public sealed class StudyReminderService(
     IAppDbContext db, IEmailSender sender, INotificationService notifications, IDateTimeProvider clock,
-    IOptions<StudyReminderOptions> options, IOptions<AppOptions> app, ILogger<StudyReminderService> logger) : IStudyReminderService
+    IOptionsSnapshot<StudyReminderOptions> options, IOptions<AppOptions> app, ILogger<StudyReminderService> logger) : IStudyReminderService
 {
     private static readonly HtmlEncoder Html = HtmlEncoder.Create(UnicodeRanges.All);
 

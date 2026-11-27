@@ -6,7 +6,7 @@
 | Sinh viên | Phạm Hoàng Duy, MSSV 170125375, lớp DK25TTC5 |
 | Thời gian | **Thứ Năm 26/11/2026 – Thứ Tư 02/12/2026** |
 | Trạng thái | Đang thực hiện (cập nhật ngày 27/11/2026) |
-| Commit trong tuần | `93b7c29` Tăng doanh số, `ddf01f5` Tiện ích người học (27/11); quản lý học tập (27/11) |
+| Commit trong tuần | `93b7c29` Tăng doanh số, `ddf01f5` Tiện ích người học (27/11); quản lý học tập (27/11); công cụ quản trị (27/11) |
 
 ## 1. Tóm tắt tuần
 
@@ -15,14 +15,15 @@
 - Rà soát trải nghiệm người học: phát hiện **video bài học mẫu không phát được** (máy chủ ngoài trả 403, trang chỉ hiện khung đen). Đã đóng gói video mẫu cùng Frontend và thêm thông báo lỗi kèm nút tải lại.
 - Thêm **tiện ích người học**: hỏi đáp theo từng bài học, ghi chú gắn mốc thời gian video, email nhắc học khi bỏ dở, tùy chọn tắt email nhắc nhở. CSDL thêm 3 bảng (51 bảng), migration thứ 7 `LearnerTools`.
 - Rà soát khu vực Admin: **chưa có trang nào theo dõi tiến độ học** và học viên **hết lượt bài kiểm tra cuối khóa thì bị kẹt** (không ai được báo, không ai cấp thêm lượt được). Đã bổ sung trang **Tiến độ học tập**, quy trình xử lý khi chưa đạt bài cuối khóa, các thao tác xử lý sự cố và trang **Hỗ trợ học tập**. CSDL thêm 3 bảng (54 bảng), migration thứ 8 `LearningSupport`.
-- Kiểm thử: **backend 69/69, E2E 30/30** đạt.
+- Rà soát toàn bộ công cụ Admin, bổ sung **8 công cụ quản trị**: báo cáo theo khoảng ngày, kiểm duyệt đánh giá, đăng ký làm giảng viên, thông báo hàng loạt, nhật ký quản trị, cài đặt hệ thống có hiệu lực ngay, trạng thái hệ thống, xuất CSV người dùng/tiến độ. CSDL thêm 4 bảng (58 bảng), migration thứ 9 `AdminTools`.
+- Kiểm thử: **backend 76/76, E2E 31/31** đạt.
 
 | Chỉ số | Cuối tuần 03 | Hiện tại (27/11) |
 | --- | --- | --- |
-| Test backend | 55 | 69 |
-| Kịch bản E2E | 27 | 30 |
-| Bảng dữ liệu | 44 | 54 |
-| Migration CSDL | 5 | 8 (thêm `SalesGrowth`, `LearnerTools`, `LearningSupport`) |
+| Test backend | 55 | 76 |
+| Kịch bản E2E | 27 | 31 |
+| Bảng dữ liệu | 44 | 58 |
+| Migration CSDL | 5 | 9 (thêm `SalesGrowth`, `LearnerTools`, `LearningSupport`, `AdminTools`) |
 
 ## 2. Công việc theo ngày
 
@@ -78,6 +79,19 @@
 | Cấp quyền học thủ công | Thanh toán ngoài hệ thống, cổng thanh toán lỗi |
 
 Học viên có nút **"Báo sự cố"** trên thanh trình học (video không phát, tiến độ không lưu, chưa nhận chứng chỉ, khác) và xem được trạng thái, phản hồi của từng yêu cầu.
+
+### Công cụ quản trị
+
+| Chức năng | Mô tả |
+| --- | --- |
+| Báo cáo | `/quan-tri/bao-cao`: doanh thu thực, hoàn tiền, ghi danh, người dùng mới theo khoảng ngày; biểu đồ theo tháng; khóa học bán chạy (tỷ lệ hoàn thành, đánh giá, số hoàn tiền); giảng viên nổi bật; xuất CSV. Nút "Bài học" cho biết tỷ lệ học viên hoàn thành từng bài và bài bị bỏ dở nhiều nhất; giảng viên xem được cho khóa của mình |
+| Kiểm duyệt đánh giá | `/quan-tri/danh-gia`: lọc theo số sao, trạng thái hiển thị, từ khóa; ẩn/hiện đánh giá |
+| Đăng ký làm giảng viên | Người dùng gửi hồ sơ tại `/dang-ky-giang-day` (liên kết ở menu tài khoản và chân trang). Admin duyệt tại `/quan-tri/dang-ky-giang-vien`: duyệt thì tự cấp vai trò Giảng viên, chép chức danh/giới thiệu sang hồ sơ giảng viên; từ chối phải ghi lý do, người dùng gửi lại được |
+| Thông báo hàng loạt | `/quan-tri/thong-bao`: chọn nhóm người nhận (tất cả, học viên, giảng viên, học viên một khóa), xem trước số người nhận, xác nhận trước khi gửi; tùy chọn gửi email (bỏ qua người đã tắt email nhắc nhở); lịch sử đã gửi |
+| Nhật ký quản trị | Bộ lọc toàn cục ghi mọi yêu cầu thay đổi dữ liệu dưới `/api/admin` (người làm, thao tác, dữ liệu gửi lên, mã kết quả, IP), cả thao tác thất bại. Trang `/quan-tri/nhat-ky` lọc theo từ khóa, kết quả, ngày; xuất CSV |
+| Cài đặt hệ thống | `/quan-tri/cai-dat`: tỷ lệ chia doanh thu, số ngày giữ tiền, mức rút tối thiểu, chính sách hoàn tiền, thông tin bên bán trên biên nhận, bật/tắt và thời gian email nhắc. Lưu vào bảng `SystemSettings`, nạp vào cấu hình đang chạy nên có hiệu lực ngay; trang Chính sách hoàn tiền hiển thị theo giá trị mới; "Về mặc định" xóa giá trị ghi đè |
+| Trạng thái hệ thống | `/quan-tri/he-thong`: CSDL (migration chưa áp dụng), SMTP, từng cổng thanh toán, lưu trữ tệp; 3 công việc nền với lần chạy gần nhất, kết quả và nút "Chạy ngay"; 20 email gần nhất (địa chỉ được che) và số lỗi 24 giờ |
+| Xuất CSV | Người dùng (theo bộ lọc vai trò, từ khóa) và tiến độ học tập (theo tình trạng) |
 
 ## 4. Các điều chỉnh trong tuần
 

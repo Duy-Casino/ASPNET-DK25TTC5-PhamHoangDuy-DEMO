@@ -6,7 +6,7 @@ using OnlineLearning.Application.Features.Orders;
 namespace OnlineLearning.Infrastructure.BackgroundJobs;
 
 /// <summary>FR-ORDER-09: định kỳ chuyển đơn Pending quá hạn sang Expired.</summary>
-public sealed class OrderExpiryService(IServiceScopeFactory scopeFactory, ILogger<OrderExpiryService> logger) : BackgroundService
+public sealed class OrderExpiryService(IServiceScopeFactory scopeFactory, ILogger<OrderExpiryService> logger, Operations.JobStatusRegistry jobs) : BackgroundService
 {
     private static readonly TimeSpan Interval = TimeSpan.FromMinutes(5);
 
@@ -21,6 +21,7 @@ public sealed class OrderExpiryService(IServiceScopeFactory scopeFactory, ILogge
                 var orders = scope.ServiceProvider.GetRequiredService<IOrderService>();
                 var expired = await orders.ExpireStaleOrdersAsync(stoppingToken);
                 if (expired > 0) logger.LogInformation("Đã hết hạn {Count} đơn hàng chờ thanh toán", expired);
+                jobs.Record("order-expiry", true, $"Đã chuyển {expired} đơn sang hết hạn");
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {
@@ -29,6 +30,7 @@ public sealed class OrderExpiryService(IServiceScopeFactory scopeFactory, ILogge
             catch (Exception ex)
             {
                 logger.LogError(ex, "Lỗi khi xử lý đơn hết hạn");
+                jobs.Record("order-expiry", false, ex.Message);
             }
         } while (await timer.WaitForNextTickAsync(stoppingToken));
     }

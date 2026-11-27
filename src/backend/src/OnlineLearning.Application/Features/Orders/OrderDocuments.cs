@@ -58,7 +58,7 @@ public interface IInvoiceService
     Task<Result<(byte[] Pdf, string FileName)>> GetPdfAsync(Guid orderId, Guid userId, bool isAdmin, CancellationToken ct = default);
 }
 
-public sealed class InvoiceService(IAppDbContext db, IInvoicePdfGenerator generator, IOptions<InvoiceOptions> invoice, IOptions<AppOptions> app)
+public sealed class InvoiceService(IAppDbContext db, IInvoicePdfGenerator generator, IOptionsSnapshot<InvoiceOptions> invoice, IOptions<AppOptions> app)
     : IInvoiceService
 {
     public async Task<Result<(byte[] Pdf, string FileName)>> GetPdfAsync(Guid orderId, Guid userId, bool isAdmin, CancellationToken ct = default)
@@ -107,7 +107,7 @@ public interface IOrderEmailService
 }
 
 public sealed class OrderEmailService(
-    IAppDbContext db, IEmailSender sender, IOptions<InvoiceOptions> invoice, IOptions<AppOptions> app, ILogger<OrderEmailService> logger)
+    IAppDbContext db, IEmailSender sender, IOptionsSnapshot<InvoiceOptions> invoice, IOptions<AppOptions> app, ILogger<OrderEmailService> logger)
     : IOrderEmailService
 {
     public async Task SendReceiptAsync(Guid orderId, CancellationToken ct = default)

@@ -1,14 +1,14 @@
 import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
-  Award, BarChart3, Gift, CreditCard, BookOpen, ClipboardList, FolderTree, IdCard, LayoutDashboard, LogOut, Menu, MessageSquare, MessagesSquare, Receipt, ShieldCheck, Tag, User, Users, X, type LucideIcon, Wallet, Banknote, RotateCcw, Heart, Layers, MessageCircleQuestion, GraduationCap, LifeBuoy,
+  Award, BarChart3, Gift, CreditCard, BookOpen, ClipboardList, FolderTree, IdCard, LayoutDashboard, LogOut, Menu, MessageSquare, MessagesSquare, Receipt, ShieldCheck, Tag, User, Users, X, type LucideIcon, Wallet, Banknote, RotateCcw, Heart, Layers, MessageCircleQuestion, GraduationCap, LifeBuoy, Star, UserCheck, Megaphone, LineChart, History, Settings, Activity,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Avatar, Logo } from '../components/ui'
 import { useAuth } from '../hooks/useAuth'
 import { messagingService } from '../services/api'
 
-interface NavItem { to: string; label: string; icon: LucideIcon; end?: boolean; badge?: 'messages' }
+interface NavItem { to: string; label: string; icon: LucideIcon; end?: boolean; badge?: 'messages'; group?: string }
 
 const areas: Record<'student' | 'instructor' | 'admin', { title: string; items: NavItem[] }> = {
   student: {
@@ -41,19 +41,26 @@ const areas: Record<'student' | 'instructor' | 'admin', { title: string; items: 
     title: 'Quản trị',
     items: [
       { to: '/quan-tri', label: 'Tổng quan', icon: LayoutDashboard, end: true },
-      { to: '/quan-tri/khoa-hoc', label: 'Duyệt khóa học', icon: ShieldCheck },
-      { to: '/quan-tri/nguoi-dung', label: 'Người dùng', icon: Users },
-      { to: '/quan-tri/hoc-tap', label: 'Tiến độ học tập', icon: GraduationCap },
-      { to: '/quan-tri/ho-tro-hoc-tap', label: 'Hỗ trợ học tập', icon: LifeBuoy },
+      { to: '/quan-tri/bao-cao', label: 'Báo cáo', icon: LineChart },
+      { to: '/quan-tri/khoa-hoc', label: 'Duyệt khóa học', icon: ShieldCheck, group: 'Nội dung & người dùng' },
       { to: '/quan-tri/danh-muc', label: 'Danh mục', icon: FolderTree },
-      { to: '/quan-tri/don-hang', label: 'Đơn hàng', icon: Receipt },
+      { to: '/quan-tri/danh-gia', label: 'Đánh giá', icon: Star },
+      { to: '/quan-tri/nguoi-dung', label: 'Người dùng', icon: Users },
+      { to: '/quan-tri/dang-ky-giang-vien', label: 'Đăng ký giảng viên', icon: UserCheck },
+      { to: '/quan-tri/hoc-tap', label: 'Tiến độ học tập', icon: GraduationCap, group: 'Học tập' },
+      { to: '/quan-tri/ho-tro-hoc-tap', label: 'Hỗ trợ học tập', icon: LifeBuoy },
+      { to: '/quan-tri/chung-chi', label: 'Chứng chỉ', icon: Award },
+      { to: '/quan-tri/don-hang', label: 'Đơn hàng', icon: Receipt, group: 'Bán hàng' },
       { to: '/quan-tri/giao-dich', label: 'Giao dịch', icon: CreditCard },
       { to: '/quan-tri/hoan-tien', label: 'Yêu cầu hoàn tiền', icon: RotateCcw },
       { to: '/quan-tri/chi-tra', label: 'Chi trả giảng viên', icon: Banknote },
-      { to: '/quan-tri/chung-chi', label: 'Chứng chỉ', icon: Award },
-      { to: '/quan-tri/diem-thuong', label: 'Điểm thưởng', icon: Gift },
       { to: '/quan-tri/ma-giam-gia', label: 'Mã giảm giá', icon: Tag },
       { to: '/quan-tri/combo', label: 'Combo', icon: Layers },
+      { to: '/quan-tri/diem-thuong', label: 'Điểm thưởng', icon: Gift },
+      { to: '/quan-tri/thong-bao', label: 'Gửi thông báo', icon: Megaphone, group: 'Hệ thống' },
+      { to: '/quan-tri/nhat-ky', label: 'Nhật ký quản trị', icon: History },
+      { to: '/quan-tri/cai-dat', label: 'Cài đặt', icon: Settings },
+      { to: '/quan-tri/he-thong', label: 'Trạng thái hệ thống', icon: Activity },
     ],
   },
 }
@@ -98,8 +105,9 @@ export default function DashboardLayout({ area }: { area: keyof typeof areas }) 
           ))}
         </div>
       )}
-      <nav aria-label={areas[area].title} className="flex flex-col gap-1">
-        {areas[area].items.map(({ to, label, icon: Icon, end, badge }) => (
+      <nav aria-label={areas[area].title} className="-mx-2 flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto px-2">
+        {areas[area].items.map(({ to, label, icon: Icon, end, badge, group }) => [
+          group && <p key={`g-${group}`} className="mt-3 px-3 pb-1 text-xs font-semibold tracking-wide text-ink-muted uppercase">{group}</p>,
           <NavLink key={to} to={to} end={end}
             className={({ isActive }) => `flex items-center gap-3 rounded-xl px-3 py-2.5 font-medium transition-colors ${isActive ? 'bg-brand-50 font-semibold text-brand-700' : 'text-ink-soft hover:bg-surface-2 hover:text-ink'}`}>
             <Icon className="size-5" aria-hidden="true" />{label}
@@ -108,8 +116,8 @@ export default function DashboardLayout({ area }: { area: keyof typeof areas }) 
                 {unread > 99 ? '99+' : unread}<span className="sr-only"> cuộc trao đổi chưa đọc</span>
               </span>
             )}
-          </NavLink>
-        ))}
+          </NavLink>,
+        ])}
       </nav>
       <div className="mt-auto flex flex-col gap-3">
         <Link to="/khoa-hoc" className="btn-soft">Xem trang khóa học</Link>

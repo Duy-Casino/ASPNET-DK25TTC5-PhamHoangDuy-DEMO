@@ -72,6 +72,15 @@ const AdminLearningPage = lazy(() => learningAdmin().then((m) => ({ default: m.A
 const AdminEnrollmentDetailPage = lazy(() => learningAdmin().then((m) => ({ default: m.AdminEnrollmentDetailPage })))
 const AdminSupportRequestsPage = lazy(() => learningAdmin().then((m) => ({ default: m.AdminSupportRequestsPage })))
 const AdminBundlesPage = lazy(() => import('./pages/admin/AdminBundlesPage'))
+const adminTools = () => import('./pages/admin/AdminToolsPages')
+const AdminReviewsPage = lazy(() => adminTools().then((m) => ({ default: m.AdminReviewsPage })))
+const AdminInstructorApplicationsPage = lazy(() => adminTools().then((m) => ({ default: m.AdminInstructorApplicationsPage })))
+const AdminAuditLogPage = lazy(() => adminTools().then((m) => ({ default: m.AdminAuditLogPage })))
+const AdminSettingsPage = lazy(() => adminTools().then((m) => ({ default: m.AdminSettingsPage })))
+const AdminAnnouncementsPage = lazy(() => adminTools().then((m) => ({ default: m.AdminAnnouncementsPage })))
+const AdminReportsPage = lazy(() => adminTools().then((m) => ({ default: m.AdminReportsPage })))
+const AdminSystemPage = lazy(() => adminTools().then((m) => ({ default: m.AdminSystemPage })))
+const BecomeInstructorPage = lazy(() => import('./pages/account/BecomeInstructorPage').then((m) => ({ default: m.BecomeInstructorPage })))
 const InstructorQuestionsPage = lazy(() => import('./pages/instructor/InstructorQuestionsPage').then((m) => ({ default: m.InstructorQuestionsPage })))
 const InstructorEarningsPage = lazy(() => import('./pages/instructor/InstructorEarningsPage').then((m) => ({ default: m.InstructorEarningsPage })))
 
@@ -102,6 +111,7 @@ export default function App() {
           <Route path="don-hang/:id" element={<ProtectedRoute><OrderDetailPage /></ProtectedRoute>} />
           <Route path="tai-khoan" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
           <Route path="tai-khoan/don-hang" element={<ProtectedRoute><OrdersPage /></ProtectedRoute>} />
+          <Route path="dang-ky-giang-day" element={<ProtectedRoute><BecomeInstructorPage /></ProtectedRoute>} />
           <Route path="xac-nhan-email" element={<ConfirmEmailPage />} />
           <Route path="xac-minh" element={<VerifyCertificatePage />} />
           <Route path="xac-minh/:code" element={<VerifyCertificatePage />} />
@@ -164,6 +174,13 @@ export default function App() {
           <Route path="ho-tro-hoc-tap" element={<AdminSupportRequestsPage />} />
           <Route path="chung-chi" element={<AdminCertificatesPage />} />
           <Route path="diem-thuong" element={<AdminRewardsPage />} />
+          <Route path="danh-gia" element={<AdminReviewsPage />} />
+          <Route path="dang-ky-giang-vien" element={<AdminInstructorApplicationsPage />} />
+          <Route path="thong-bao" element={<AdminAnnouncementsPage />} />
+          <Route path="bao-cao" element={<AdminReportsPage />} />
+          <Route path="nhat-ky" element={<AdminAuditLogPage />} />
+          <Route path="cai-dat" element={<AdminSettingsPage />} />
+          <Route path="he-thong" element={<AdminSystemPage />} />
         </Route>
       </Routes>
     </Suspense>
