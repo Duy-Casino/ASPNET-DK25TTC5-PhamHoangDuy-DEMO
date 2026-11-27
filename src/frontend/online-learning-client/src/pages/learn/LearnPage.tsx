@@ -7,6 +7,7 @@ import { learningService } from '../../services/dashboardApi'
 import type { LearnCourse, LearnQuizBrief, Progress } from '../../types/dashboard'
 import { formatClock } from '../../utils/format'
 import NotFoundPage from '../NotFoundPage'
+import { ReportIssueButton } from './SupportTools'
 
 interface LearnContextValue {
   course: LearnCourse
@@ -69,6 +70,7 @@ export default function LearnPage() {
               <span className="text-sm tabular-nums">{Math.round(data.progressPercent)}%</span>
             </div>
           )}
+          {!data.isPreviewMode && <ReportIssueButton courseId={data.courseId} />}
           <button type="button" className="rounded-(--radius-control) p-2 hover:bg-white/10 lg:hidden" onClick={() => setOutlineOpen(true)} aria-label="Mở nội dung khóa học">
             <ListTree className="size-5" />
           </button>

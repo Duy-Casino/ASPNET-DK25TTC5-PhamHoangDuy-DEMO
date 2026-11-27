@@ -42,3 +42,8 @@ public enum RefundRequestStatus { Pending, Approved, Rejected }
 
 /// <summary>Trạng thái quà tặng: chờ thanh toán → đã gửi → đã nhận; hủy khi đơn bị hủy/hoàn tiền trước khi nhận.</summary>
 public enum GiftStatus { Pending, Sent, Redeemed, Cancelled }
+
+/// <summary>Loại yêu cầu hỗ trợ học tập.</summary>
+public enum SupportRequestType { QuizRetake, VideoIssue, ProgressIssue, CertificateIssue, Other }
+
+public enum SupportRequestStatus { Open, Resolved, Rejected }

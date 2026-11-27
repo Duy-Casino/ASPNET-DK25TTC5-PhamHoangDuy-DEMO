@@ -93,6 +93,10 @@ export interface QuizIntro {
   canAttempt: boolean
   inProgressAttemptId: string | null
   attempts: AttemptSummary[]
+  /** Lượt Admin cấp thêm (đã cộng vào maxAttempts) */
+  extraAttempts: number
+  hasOpenRetakeRequest: boolean
+  isFinalExam: boolean
 }
 export interface AttemptTake {
   attemptId: string

@@ -56,7 +56,8 @@ EduViet là website mua và học khóa học trực tuyến, giao diện tiến
 | **Thanh toán** | VNPay (HMAC-SHA512) và MoMo (HMAC-SHA256) sandbox. Kiểm tra chữ ký và số tiền ở IPN, idempotency, chỉ cấp quyền học qua IPN chứ không qua trang redirect. Có thêm kênh thử nghiệm không thu tiền thật |
 | **Học trực tuyến** | Trình học video nhớ vị trí, tự hoàn thành bài, tài liệu đính kèm, tiến độ theo bài bắt buộc; bài chưa mua bị chặn (403). Video lỗi thì hiện thông báo và nút "Tải lại video" |
 | **Tiện ích người học** | **Hỏi đáp theo từng bài học** (học viên cùng khóa và giảng viên cùng xem, trả lời của giảng viên được đánh dấu, đánh dấu đã giải đáp; giảng viên có hộp "Hỏi đáp" gom câu hỏi chưa trả lời); **ghi chú cá nhân gắn mốc thời gian video** (bấm mốc để tua tới đúng đoạn); **email nhắc học** khi bỏ dở khóa học 7 ngày (mỗi đợt nhắc một lần), học viên tắt được email nhắc nhở ở hồ sơ cá nhân |
-| **Bài kiểm tra** | Trắc nghiệm một hoặc nhiều đáp án, đúng/sai; chấm ở server; giới hạn lượt và thời gian; xem đáp án và giải thích sau khi nộp |
+| **Bài kiểm tra** | Trắc nghiệm một hoặc nhiều đáp án, đúng/sai; chấm ở server; giới hạn lượt và thời gian; xem đáp án và giải thích sau khi nộp. **Chưa đạt**: còn lượt thì hiện hướng dẫn ôn tập và số lượt còn lại; **hết lượt** thì học viên gửi yêu cầu cấp thêm lượt, Admin cấp từ trang tiến độ (yêu cầu tự đóng, học viên nhận thông báo) |
+| **Quản lý học tập (Admin)** | Trang **Tiến độ học tập** phân loại mọi lượt ghi danh: chưa bắt đầu, đang học, hoàn thành, hết lượt chưa đạt, bỏ dở > 14 ngày, đủ điều kiện nhưng chưa có chứng chỉ, đã thu hồi; trang chi tiết từng học viên có tiến độ từng bài, mọi lượt kiểm tra, dòng thời gian hoạt động. **Thao tác xử lý sự cố** (bắt buộc lý do, ghi nhật ký): cấp thêm lượt kiểm tra, đánh dấu/bỏ hoàn thành bài học, đặt lại tiến độ, tính lại tiến độ và cấp chứng chỉ, thu hồi/khôi phục quyền học, cấp quyền học thủ công. Học viên **báo sự cố** ngay trong trình học; Admin phản hồi ở trang **Hỗ trợ học tập** |
 | **Chứng chỉ** | Tự cấp khi hoàn thành khóa; PDF A4 có mã QR, mã `EDV-YYYY-XXXXXXXX`; trang xác minh công khai `/xac-minh/:mã`; Admin thu hồi, khôi phục, cấp bù |
 | **Giảng viên** | Soạn khóa học, chương, bài, tài liệu, bài kiểm tra; gửi duyệt. Hồ sơ giảng dạy gồm kinh nghiệm, học vấn, chứng nhận, chuyên môn, ảnh đại diện; huy hiệu "Đã xác minh" do Admin cấp; thống kê học viên và đánh giá |
 | **Trao đổi** | Học viên nhắn tin hỏi giảng viên về khóa học, trạng thái đã đọc/chưa đọc, thông báo trên chuông |
@@ -176,7 +177,7 @@ Thanh toán thử: ở trang thanh toán, chọn **Kênh thử nghiệm**. Đơn
 | Khách | `/`, `/khoa-hoc`, `/khoa-hoc/:slug`, `/combo`, `/giang-vien/:id`, `/xac-minh/:mã` | Tìm và lọc khóa học, xem học thử, xem combo, xem hồ sơ giảng viên, xác minh chứng chỉ |
 | Học viên | `/hoc-vien`, `/hoc/:slug`, `/gio-hang`, `/hoc-vien/yeu-thich`, `/hoc-vien/tin-nhan`, `/hoc-vien/diem-thuong`, `/qua-tang/:mã` | Mua khóa học, combo, mua tặng, lưu yêu thích, học, làm bài kiểm tra, nhận chứng chỉ, nhắn giảng viên, điểm danh, đổi điểm, nhận quà |
 | Giảng viên | `/giang-day`, `/giang-day/ho-so`, `/giang-day/tin-nhan`, `/giang-day/hoi-dap`, `/giang-day/doanh-thu` | Tạo khóa học, gửi duyệt, sửa hồ sơ giảng dạy, trả lời tin nhắn và đánh giá, xem thu nhập và rút tiền |
-| Quản trị viên | `/quan-tri`, `/quan-tri/diem-thuong`, `/quan-tri/hoan-tien`, `/quan-tri/chi-tra`, `/quan-tri/combo` | Duyệt khóa học, quản lý người dùng, đơn hàng (xuất CSV), duyệt yêu cầu hoàn tiền, chi trả giảng viên, combo, mã giảm giá, chứng chỉ, điểm thưởng |
+| Quản trị viên | `/quan-tri`, `/quan-tri/hoc-tap`, `/quan-tri/ho-tro-hoc-tap`, `/quan-tri/diem-thuong`, `/quan-tri/hoan-tien`, `/quan-tri/chi-tra`, `/quan-tri/combo` | Theo dõi tiến độ và xử lý sự cố học tập, duyệt khóa học, quản lý người dùng, đơn hàng (xuất CSV), duyệt yêu cầu hoàn tiền, chi trả giảng viên, combo, mã giảm giá, chứng chỉ, điểm thưởng |
 
 Luồng nên thử: đăng ký học viên → thêm khóa vào giỏ → thanh toán qua kênh thử nghiệm → vào học → hoàn thành bài và bài kiểm tra → tải chứng chỉ → mở trang xác minh. Mỗi bước cũng cộng điểm thưởng tương ứng.
 
@@ -188,8 +189,8 @@ Luồng vận hành bán hàng: học viên mua khóa → mở đơn hàng, tả
 
 | Tầng | Công cụ | Kết quả gần nhất |
 | --- | --- | --- |
-| Backend tích hợp | xUnit + WebApplicationFactory + SQLite in-memory | **65/65 đạt** |
-| End-to-end | Playwright (Chrome), 22 kịch bản desktop + 7 kịch bản điện thoại | **29/29 đạt** |
+| Backend tích hợp | xUnit + WebApplicationFactory + SQLite in-memory | **69/69 đạt** |
+| End-to-end | Playwright (Chrome), 23 kịch bản desktop + 7 kịch bản điện thoại | **30/30 đạt** |
 | Build | `dotnet build`, `npm run build` | Đạt |
 
 ```powershell
@@ -278,6 +279,7 @@ Mỗi khi hoàn thành một tính năng, thêm một dòng vào bảng này và
 | 25/11/2026 | Vận hành bán hàng: thu nhập giảng viên (70%, giữ 7 ngày) và yêu cầu rút tiền, Admin xác nhận chi; học viên tự yêu cầu hoàn tiền theo chính sách, Admin duyệt/từ chối; email xác nhận thanh toán; biên nhận PDF; xuất CSV đơn hàng và chi trả. Thêm 3 bảng (44 bảng), migration `InstructorPayouts` ([báo cáo tuần 03](progress-report/bao-cao-tuan-03.md)) | 55/55 backend, 27/27 E2E |
 | 27/11/2026 | Tăng doanh số: yêu thích, gợi ý "Học viên cũng quan tâm", flash sale có đếm ngược, combo khóa học, mua tặng (nhận quà bằng email), email nhắc giỏ hàng. Thêm 4 bảng (48 bảng), migration `SalesGrowth` ([báo cáo tuần 04](progress-report/bao-cao-tuan-04.md)) | 61/61 backend, 28/28 E2E |
 | 27/11/2026 | Tiện ích người học: sửa video bài học mẫu (máy chủ ngoài trả 403) bằng video đóng gói cùng Frontend, thông báo lỗi video; hỏi đáp theo từng bài học, ghi chú gắn mốc thời gian, email nhắc học, tắt email nhắc nhở; trang `/giang-day/hoi-dap`. Thêm 3 bảng (51 bảng), migration `LearnerTools` | 65/65 backend, 29/29 E2E |
+| 27/11/2026 | Quản lý học tập cho Admin: trang Tiến độ học tập (phân loại chưa bắt đầu, đang học, hoàn thành, hết lượt chưa đạt, bỏ dở, chưa có chứng chỉ), chi tiết học viên với dòng thời gian; quy trình khi chưa đạt bài cuối khóa (hướng dẫn ôn tập, xin thêm lượt, Admin cấp lượt); thao tác xử lý sự cố có nhật ký; học viên báo sự cố, trang Hỗ trợ học tập. Thêm 3 bảng (54 bảng), migration `LearningSupport` | 69/69 backend, 30/30 E2E |
 
 ## 10. Hạn chế và việc còn lại
 

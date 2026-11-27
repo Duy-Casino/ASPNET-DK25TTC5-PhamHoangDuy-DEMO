@@ -55,6 +55,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<LessonQuestion> LessonQuestions => Set<LessonQuestion>();
     public DbSet<LessonAnswer> LessonAnswers => Set<LessonAnswer>();
     public DbSet<LessonNote> LessonNotes => Set<LessonNote>();
+    public DbSet<QuizAttemptGrant> QuizAttemptGrants => Set<QuizAttemptGrant>();
+    public DbSet<LearningSupportRequest> LearningSupportRequests => Set<LearningSupportRequest>();
+    public DbSet<LearningActionLog> LearningActionLogs => Set<LearningActionLog>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

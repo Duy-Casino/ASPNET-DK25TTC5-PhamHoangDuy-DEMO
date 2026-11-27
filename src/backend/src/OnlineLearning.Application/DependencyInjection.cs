@@ -49,6 +49,7 @@ public static class DependencyInjection
         services.AddScoped<Features.Growth.ICartReminderService, Features.Growth.CartReminderService>();
         services.AddScoped<Features.Learning.ILessonQaService, Features.Learning.LessonQaService>();
         services.AddScoped<Features.Learning.IStudyReminderService, Features.Learning.StudyReminderService>();
+        services.AddScoped<Features.Learning.ILearningAdminService, Features.Learning.LearningAdminService>();
 
         return services;
     }

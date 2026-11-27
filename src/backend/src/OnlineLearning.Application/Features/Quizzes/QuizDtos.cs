@@ -27,7 +27,8 @@ public sealed record AttemptSummaryDto(Guid Id, int AttemptNumber, DateTime Star
 public sealed record QuizIntroDto(
     Guid Id, Guid CourseId, string CourseSlug, string Title, string? Description, decimal PassingScore, int? MaxAttempts,
     int? TimeLimitMinutes, int QuestionCount, decimal TotalPoints, bool IsRequired, int AttemptsUsed, decimal? BestScore,
-    bool IsPassed, bool CanAttempt, Guid? InProgressAttemptId, IReadOnlyList<AttemptSummaryDto> Attempts);
+    bool IsPassed, bool CanAttempt, Guid? InProgressAttemptId, IReadOnlyList<AttemptSummaryDto> Attempts,
+    int ExtraAttempts = 0, bool HasOpenRetakeRequest = false, bool IsFinalExam = false);
 
 public sealed record TakeOptionDto(Guid Id, string Content);
 public sealed record TakeQuestionDto(Guid Id, string Content, QuestionType Type, decimal Points, IReadOnlyList<TakeOptionDto> Options);

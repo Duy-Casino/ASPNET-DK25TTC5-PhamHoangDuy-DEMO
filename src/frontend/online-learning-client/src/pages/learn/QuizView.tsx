@@ -9,6 +9,7 @@ import { getErrorMessage } from '../../services/apiClient'
 import type { AttemptResult, AttemptTake } from '../../types/dashboard'
 import { formatDateTime } from '../../utils/format'
 import { useLearn } from './LearnPage'
+import { QuizNextSteps } from './SupportTools'
 
 type Answers = Record<string, string[]>
 
@@ -76,7 +77,10 @@ export default function QuizView() {
   const q = intro.data!
 
   if (take) return <TakeQuiz take={take} onSubmitted={onSubmitted} />
-  if (result) return <ResultView result={result} canRetry={q.canAttempt} onRetry={start} retrying={starting} />
+  if (result) return (
+    <ResultView result={result} canRetry={q.canAttempt} onRetry={start} retrying={starting}
+      nextSteps={!result.isPassed && <QuizNextSteps quiz={q} onRequested={intro.reload} />} />
+  )
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-10 sm:px-8">
@@ -97,10 +101,9 @@ export default function QuizView() {
             {starting && <Spinner className="size-4" />}
             {q.inProgressAttemptId ? 'Tiếp tục làm bài' : q.attemptsUsed > 0 ? 'Làm lại' : 'Bắt đầu làm bài'}
           </button>
-        ) : (
-          <p className="rounded-(--radius-card) bg-surface-2 p-4 text-ink-soft">Bạn đã dùng hết số lượt làm bài.</p>
-        )}
+        ) : q.isPassed && <p className="rounded-(--radius-card) bg-surface-2 p-4 text-ink-soft">Bạn đã dùng hết số lượt làm bài.</p>}
       </div>
+      <QuizNextSteps quiz={q} onRequested={intro.reload} />
 
       {q.attempts.length > 0 && (
         <section className="mt-12" aria-labelledby="hist-h">
@@ -240,7 +243,9 @@ function TakeQuiz({ take, onSubmitted }: { take: AttemptTake; onSubmitted: (r: A
   )
 }
 
-function ResultView({ result, canRetry, onRetry, retrying }: { result: AttemptResult; canRetry: boolean; onRetry: () => void; retrying: boolean }) {
+function ResultView({ result, canRetry, onRetry, retrying, nextSteps }: {
+  result: AttemptResult; canRetry: boolean; onRetry: () => void; retrying: boolean; nextSteps?: React.ReactNode
+}) {
   return (
     <div className="mx-auto max-w-3xl px-4 py-10 sm:px-8">
       <div className={`p-6 sm:p-8 ${result.isPassed ? 'bg-success-50' : 'bg-danger-50'}`}>
@@ -265,6 +270,7 @@ function ResultView({ result, canRetry, onRetry, retrying }: { result: AttemptRe
           <Link to={`/hoc/${result.courseSlug}`} className="btn-soft">Quay lại bài học</Link>
         </div>
       </div>
+      {nextSteps}
 
       <h2 className="mt-10 text-xl font-bold">Đáp án chi tiết</h2>
       <ol className="mt-6 flex flex-col gap-8">

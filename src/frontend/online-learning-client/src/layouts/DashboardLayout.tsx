@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
-  Award, BarChart3, Gift, CreditCard, BookOpen, ClipboardList, FolderTree, IdCard, LayoutDashboard, LogOut, Menu, MessageSquare, MessagesSquare, Receipt, ShieldCheck, Tag, User, Users, X, type LucideIcon, Wallet, Banknote, RotateCcw, Heart, Layers, MessageCircleQuestion,
+  Award, BarChart3, Gift, CreditCard, BookOpen, ClipboardList, FolderTree, IdCard, LayoutDashboard, LogOut, Menu, MessageSquare, MessagesSquare, Receipt, ShieldCheck, Tag, User, Users, X, type LucideIcon, Wallet, Banknote, RotateCcw, Heart, Layers, MessageCircleQuestion, GraduationCap, LifeBuoy,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Avatar, Logo } from '../components/ui'
@@ -43,6 +43,8 @@ const areas: Record<'student' | 'instructor' | 'admin', { title: string; items: 
       { to: '/quan-tri', label: 'Tổng quan', icon: LayoutDashboard, end: true },
       { to: '/quan-tri/khoa-hoc', label: 'Duyệt khóa học', icon: ShieldCheck },
       { to: '/quan-tri/nguoi-dung', label: 'Người dùng', icon: Users },
+      { to: '/quan-tri/hoc-tap', label: 'Tiến độ học tập', icon: GraduationCap },
+      { to: '/quan-tri/ho-tro-hoc-tap', label: 'Hỗ trợ học tập', icon: LifeBuoy },
       { to: '/quan-tri/danh-muc', label: 'Danh mục', icon: FolderTree },
       { to: '/quan-tri/don-hang', label: 'Đơn hàng', icon: Receipt },
       { to: '/quan-tri/giao-dich', label: 'Giao dịch', icon: CreditCard },

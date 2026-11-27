@@ -52,6 +52,9 @@ public interface IAppDbContext
     DbSet<LessonQuestion> LessonQuestions { get; }
     DbSet<LessonAnswer> LessonAnswers { get; }
     DbSet<LessonNote> LessonNotes { get; }
+    DbSet<QuizAttemptGrant> QuizAttemptGrants { get; }
+    DbSet<LearningSupportRequest> LearningSupportRequests { get; }
+    DbSet<LearningActionLog> LearningActionLogs { get; }
 
     DatabaseFacade Database { get; }
 

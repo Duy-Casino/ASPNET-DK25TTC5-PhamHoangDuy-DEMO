@@ -67,6 +67,10 @@ const BundlesPage = lazy(() => growth().then((m) => ({ default: m.BundlesPage })
 const BundleDetailPage = lazy(() => growth().then((m) => ({ default: m.BundleDetailPage })))
 const GiftRedeemPage = lazy(() => growth().then((m) => ({ default: m.GiftRedeemPage })))
 const WishlistPage = lazy(() => growth().then((m) => ({ default: m.WishlistPage })))
+const learningAdmin = () => import('./pages/admin/AdminLearningPages')
+const AdminLearningPage = lazy(() => learningAdmin().then((m) => ({ default: m.AdminLearningPage })))
+const AdminEnrollmentDetailPage = lazy(() => learningAdmin().then((m) => ({ default: m.AdminEnrollmentDetailPage })))
+const AdminSupportRequestsPage = lazy(() => learningAdmin().then((m) => ({ default: m.AdminSupportRequestsPage })))
 const AdminBundlesPage = lazy(() => import('./pages/admin/AdminBundlesPage'))
 const InstructorQuestionsPage = lazy(() => import('./pages/instructor/InstructorQuestionsPage').then((m) => ({ default: m.InstructorQuestionsPage })))
 const InstructorEarningsPage = lazy(() => import('./pages/instructor/InstructorEarningsPage').then((m) => ({ default: m.InstructorEarningsPage })))
@@ -155,6 +159,9 @@ export default function App() {
           <Route path="hoan-tien" element={<AdminRefundRequestsPage />} />
           <Route path="chi-tra" element={<AdminPayoutsPage />} />
           <Route path="combo" element={<AdminBundlesPage />} />
+          <Route path="hoc-tap" element={<AdminLearningPage />} />
+          <Route path="hoc-tap/:id" element={<AdminEnrollmentDetailPage />} />
+          <Route path="ho-tro-hoc-tap" element={<AdminSupportRequestsPage />} />
           <Route path="chung-chi" element={<AdminCertificatesPage />} />
           <Route path="diem-thuong" element={<AdminRewardsPage />} />
         </Route>

@@ -12,7 +12,7 @@ Ngày bắt đầu dự án là **Thứ Năm 05/11/2026**, ngày có commit đ�
 | 01 | 05/11/2026 – 11/11/2026 | [bao-cao-tuan-01.md](bao-cao-tuan-01.md) | Đã kết thúc | Chức năng lõi (giai đoạn 1–7), điều chỉnh giao diện 2 lần, chính sách và SEO, tính năng giảng viên, điểm thưởng, tổ chức repository | 43/43 backend, 25/25 E2E |
 | 02 | 12/11/2026 – 18/11/2026 | [bao-cao-tuan-02.md](bao-cao-tuan-02.md) | Đã kết thúc | Dùng điểm thưởng trừ khi thanh toán (học viên tự chọn), hoàn điểm khi hủy/hết hạn/hoàn tiền; báo cáo đồ án theo mẫu khoa | 48/48 backend, 26/26 E2E |
 | 03 | 19/11/2026 – 25/11/2026 | [bao-cao-tuan-03.md](bao-cao-tuan-03.md) | Đã kết thúc | Vận hành bán hàng: thu nhập và rút tiền của giảng viên, yêu cầu hoàn tiền, email biên nhận, biên nhận PDF, xuất CSV | 55/55 backend, 27/27 E2E |
-| 04 | 26/11/2026 – 02/12/2026 | [bao-cao-tuan-04.md](bao-cao-tuan-04.md) | Đang thực hiện | Tăng doanh số (yêu thích, gợi ý, flash sale, combo, mua tặng, nhắc giỏ hàng); tiện ích người học (sửa video, hỏi đáp theo bài, ghi chú, nhắc học) | 65/65 backend, 29/29 E2E |
+| 04 | 26/11/2026 – 02/12/2026 | [bao-cao-tuan-04.md](bao-cao-tuan-04.md) | Đang thực hiện | Tăng doanh số (yêu thích, gợi ý, flash sale, combo, mua tặng, nhắc giỏ hàng); tiện ích người học (sửa video, hỏi đáp theo bài, ghi chú, nhắc học); quản lý học tập và hỗ trợ cho Admin | 69/69 backend, 30/30 E2E |
 | 05 | 03/12/2026 – 09/12/2026 | `bao-cao-tuan-05.md` | Chưa đến | | |
 | 06 | 10/12/2026 – 16/12/2026 | `bao-cao-tuan-06.md` | Chưa đến | | |
 

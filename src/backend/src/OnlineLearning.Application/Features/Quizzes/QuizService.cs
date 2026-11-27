@@ -181,8 +181,17 @@ public interface IQuizTakingService
 /// Học viên làm bài: đáp án đúng không bao giờ gửi xuống trước khi nộp (FR-QUIZ-04); chấm điểm ở server;
 /// giới hạn số lần làm (BR-10); có hạn giờ thì chấm theo hạn (cộng 60 giây trễ mạng).
 /// </summary>
-public sealed class QuizTakingService(IAppDbContext db, IDateTimeProvider clock, ILearningService learning) : IQuizTakingService
+public sealed class QuizTakingService(IAppDbContext db, IDateTimeProvider clock, ILearningService learning,
+    Notifications.INotificationService notifications) : IQuizTakingService
 {
+    /// <summary>Lượt làm bài tối đa = giới hạn của bài + lượt Admin cấp thêm cho học viên. Null = không giới hạn.</summary>
+    private async Task<(int? Max, int Extra)> EffectiveMaxAsync(Quiz quiz, Guid userId, CancellationToken ct)
+    {
+        if (quiz.MaxAttempts is null) return (null, 0);
+        var extra = await db.QuizAttemptGrants.Where(g => g.QuizId == quiz.Id && g.UserId == userId).SumAsync(g => (int?)g.ExtraAttempts, ct) ?? 0;
+        return (quiz.MaxAttempts + extra, extra);
+    }
+
     private static readonly TimeSpan Grace = TimeSpan.FromSeconds(60);
     private static readonly Error NotFound = Error.NotFound("Không tìm thấy bài kiểm tra.");
 
@@ -198,12 +207,16 @@ public sealed class QuizTakingService(IAppDbContext db, IDateTimeProvider clock,
         var now = clock.UtcNow;
         var inProgress = attempts.FirstOrDefault(a => a.SubmittedAt is null && !IsExpired(quiz, a, now));
         var submitted = attempts.Where(a => a.SubmittedAt is not null).ToList();
-        var canAttempt = inProgress is not null || quiz.MaxAttempts is null || attempts.Count < quiz.MaxAttempts;
+        var (max, extra) = await EffectiveMaxAsync(quiz, userId, ct);
+        var canAttempt = inProgress is not null || max is null || attempts.Count < max;
+        var openRetake = await db.LearningSupportRequests.AnyAsync(r => r.UserId == userId && r.QuizId == quizId
+            && r.Type == SupportRequestType.QuizRetake && r.Status == SupportRequestStatus.Open, ct);
 
-        return new QuizIntroDto(quiz.Id, quiz.CourseId, quiz.Course.Slug, quiz.Title, quiz.Description, quiz.PassingScore, quiz.MaxAttempts,
+        return new QuizIntroDto(quiz.Id, quiz.CourseId, quiz.Course.Slug, quiz.Title, quiz.Description, quiz.PassingScore, max,
             quiz.TimeLimitMinutes, quiz.Questions.Count, quiz.Questions.Sum(q => q.Points), quiz.IsRequired, attempts.Count,
             submitted.Count == 0 ? null : submitted.Max(a => a.ScorePercent), submitted.Any(a => a.IsPassed), canAttempt, inProgress?.Id,
-            submitted.Select(a => new AttemptSummaryDto(a.Id, a.AttemptNumber, a.StartedAt, a.SubmittedAt, a.ScorePercent, a.IsPassed)).ToList());
+            submitted.Select(a => new AttemptSummaryDto(a.Id, a.AttemptNumber, a.StartedAt, a.SubmittedAt, a.ScorePercent, a.IsPassed)).ToList(),
+            extra, openRetake, quiz.IsFinalExam);
     }
 
     public async Task<Result<AttemptTakeDto>> StartAsync(Guid userId, Guid quizId, CancellationToken ct = default)
@@ -223,8 +236,9 @@ public sealed class QuizTakingService(IAppDbContext db, IDateTimeProvider clock,
         var attempt = attempts.FirstOrDefault(a => a.SubmittedAt is null && !IsExpired(quiz, a, now));
         if (attempt is null)
         {
-            if (quiz.MaxAttempts is { } max && attempts.Count >= max)
-                return Error.Conflict($"Bạn đã dùng hết {max} lượt làm bài.");
+            var (max, _) = await EffectiveMaxAsync(quiz, userId, ct);
+            if (max is { } limit && attempts.Count >= limit)
+                return Error.Conflict($"Bạn đã dùng hết {limit} lượt làm bài. Hãy ôn lại nội dung và gửi yêu cầu cấp thêm lượt.");
 
             attempt = new QuizAttempt
             {
@@ -292,6 +306,22 @@ public sealed class QuizTakingService(IAppDbContext db, IDateTimeProvider clock,
 
         var enrollment = await db.Enrollments.FirstOrDefaultAsync(e => e.UserId == userId && e.CourseId == quiz.CourseId, ct);
         if (enrollment is not null) await learning.RecalculateAsync(enrollment.Id, ct);
+
+        // Chưa đạt bài bắt buộc và đã hết lượt: báo học viên bước tiếp theo (ôn tập, gửi yêu cầu cấp thêm lượt)
+        if (!attempt.IsPassed && quiz.IsRequired)
+        {
+            var (max, _) = await EffectiveMaxAsync(quiz, userId, ct);
+            var used = await db.QuizAttempts.CountAsync(a => a.QuizId == quiz.Id && a.UserId == userId, ct);
+            var passedBefore = await db.QuizAttempts.AnyAsync(a => a.QuizId == quiz.Id && a.UserId == userId && a.IsPassed, ct);
+            if (!passedBefore && max is { } limit && used >= limit)
+            {
+                var slug = await db.Courses.Where(c => c.Id == quiz.CourseId).Select(c => c.Slug).FirstAsync(ct);
+                notifications.Add(userId, "Đã hết lượt làm bài kiểm tra",
+                    $"Bạn chưa đạt \"{quiz.Title}\" sau {limit} lượt. Hãy ôn lại bài học rồi gửi yêu cầu cấp thêm lượt.",
+                    NotificationType.Course, $"/hoc/{slug}/kiem-tra/{quiz.Id}");
+                await db.SaveChangesAsync(ct);
+            }
+        }
 
         return await GetResultAsync(userId, attemptId, ct);
     }
