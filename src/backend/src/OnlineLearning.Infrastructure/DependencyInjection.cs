@@ -47,6 +47,7 @@ public static class DependencyInjection
             .ValidateOnStart();
         services.Configure<AppOptions>(configuration.GetSection(AppOptions.SectionName));
         services.Configure<Application.Features.Revenue.RevenueOptions>(configuration.GetSection(Application.Features.Revenue.RevenueOptions.SectionName));
+        services.Configure<Application.Features.Growth.CartReminderOptions>(configuration.GetSection(Application.Features.Growth.CartReminderOptions.SectionName));
         services.Configure<Application.Features.Orders.InvoiceOptions>(configuration.GetSection(Application.Features.Orders.InvoiceOptions.SectionName));
         services.Configure<SmtpOptions>(configuration.GetSection(SmtpOptions.SectionName));
 
@@ -107,7 +108,10 @@ public static class DependencyInjection
             dataProtection.PersistKeysToFileSystem(new DirectoryInfo(keysPath));
 
         if (configuration.GetValue("BackgroundJobs:Enabled", true))
+        {
             services.AddHostedService<OrderExpiryService>();
+            services.AddHostedService<CartReminderJob>();
+        }
 
         return services;
     }

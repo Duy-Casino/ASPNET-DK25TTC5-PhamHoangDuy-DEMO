@@ -11,7 +11,7 @@ public sealed record CategoryBriefDto(Guid Id, string Name, string Slug);
 
 public sealed record CourseSummaryDto(
     Guid Id, string Title, string Slug, string? ShortDescription, string? ThumbnailUrl, CourseLevel Level,
-    decimal Price, decimal? DiscountPrice, decimal EffectivePrice,
+    decimal Price, decimal? DiscountPrice, decimal EffectivePrice, DateTime? DiscountEndsAt,
     decimal AverageRating, int ReviewCount, int EnrollmentCount, int TotalLessons, int TotalDurationSeconds,
     bool IsFeatured, DateTime? PublishedAt, InstructorBriefDto Instructor, CategoryBriefDto Category);
 
@@ -40,7 +40,7 @@ public sealed record CourseDetailDto(
     Guid Id, string Title, string Slug, string? ShortDescription, string? Description,
     IReadOnlyList<string> Requirements, IReadOnlyList<string> Outcomes,
     string? ThumbnailUrl, string? PreviewVideoUrl, string Language, CourseLevel Level,
-    decimal Price, decimal? DiscountPrice, decimal EffectivePrice, CourseStatus Status,
+    decimal Price, decimal? DiscountPrice, decimal EffectivePrice, DateTime? DiscountEndsAt, CourseStatus Status,
     decimal AverageRating, int ReviewCount, int EnrollmentCount, int TotalLessons, int TotalDurationSeconds,
     int QuizCount, DateTime? PublishedAt, DateTime? UpdatedAt,
     CategoryBriefDto Category, InstructorProfileDto Instructor,
@@ -91,7 +91,10 @@ public sealed record CourseEditDto(
     Guid Id, string Title, string Slug, Guid CategoryId, string? ShortDescription, string? Description,
     IReadOnlyList<string> Requirements, IReadOnlyList<string> Outcomes, string? ThumbnailUrl, string? PreviewVideoUrl,
     string Language, CourseLevel Level, decimal Price, decimal? DiscountPrice, CourseStatus Status, string? RejectionReason,
-    bool IsEditable, Guid InstructorId, IReadOnlyList<SectionEditDto> Sections);
+    bool IsEditable, Guid InstructorId, IReadOnlyList<SectionEditDto> Sections, DateTime? DiscountEndsAt = null);
+
+/// <summary>Đặt/bỏ giá khuyến mãi có thời hạn (flash sale); dùng được cả khi khóa học đã xuất bản.</summary>
+public sealed record SetPromotionRequest(decimal? DiscountPrice, DateTime? DiscountEndsAt);
 
 public sealed record SaveSectionRequest(string Title, string? Description);
 public sealed record SaveLessonRequest(

@@ -45,6 +45,10 @@ public interface IAppDbContext
     DbSet<InstructorEarning> InstructorEarnings { get; }
     DbSet<InstructorPayout> InstructorPayouts { get; }
     DbSet<RefundRequest> RefundRequests { get; }
+    DbSet<WishlistItem> WishlistItems { get; }
+    DbSet<Bundle> Bundles { get; }
+    DbSet<BundleCourse> BundleCourses { get; }
+    DbSet<CourseGift> CourseGifts { get; }
 
     DatabaseFacade Database { get; }
 

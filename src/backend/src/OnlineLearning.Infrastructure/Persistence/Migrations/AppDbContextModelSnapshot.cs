@@ -17,7 +17,7 @@ namespace OnlineLearning.Infrastructure.Persistence.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.14")
+                .HasAnnotation("ProductVersion", "10.0.15")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -307,6 +307,82 @@ namespace OnlineLearning.Infrastructure.Persistence.Migrations
                     b.ToTable("Users", (string)null);
                 });
 
+            modelBuilder.Entity("OnlineLearning.Domain.Entities.Bundle", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<decimal>("Price")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Slug")
+                        .IsRequired()
+                        .HasMaxLength(220)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(220)");
+
+                    b.Property<string>("ThumbnailUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IsActive");
+
+                    b.HasIndex("Slug")
+                        .IsUnique();
+
+                    b.ToTable("Bundles", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Bundles_Price", "[Price] >= 0");
+                        });
+                });
+
+            modelBuilder.Entity("OnlineLearning.Domain.Entities.BundleCourse", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("BundleId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CourseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CourseId");
+
+                    b.HasIndex("BundleId", "CourseId")
+                        .IsUnique();
+
+                    b.ToTable("BundleCourses", (string)null);
+                });
+
             modelBuilder.Entity("OnlineLearning.Domain.Entities.Cart", b =>
                 {
                     b.Property<Guid>("Id")
@@ -314,6 +390,9 @@ namespace OnlineLearning.Infrastructure.Persistence.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("ReminderSentAt")
                         .HasColumnType("datetime2");
 
                     b.Property<DateTime?>("UpdatedAt")
@@ -626,6 +705,9 @@ namespace OnlineLearning.Infrastructure.Persistence.Migrations
                     b.Property<string>("Description")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<DateTime?>("DiscountEndsAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<decimal?>("DiscountPrice")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
@@ -742,6 +824,75 @@ namespace OnlineLearning.Infrastructure.Persistence.Migrations
 
                             t.HasCheckConstraint("CK_Courses_Rating", "[AverageRating] BETWEEN 0 AND 5");
                         });
+                });
+
+            modelBuilder.Entity("OnlineLearning.Domain.Entities.CourseGift", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(20)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Message")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<Guid>("OrderId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("RecipientEmail")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("RecipientName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime?>("RedeemedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("RedeemedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("SenderId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("SentAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasDefaultValue("Pending");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.HasIndex("OrderId")
+                        .IsUnique();
+
+                    b.HasIndex("RecipientEmail");
+
+                    b.HasIndex("SenderId");
+
+                    b.ToTable("CourseGifts", (string)null);
                 });
 
             modelBuilder.Entity("OnlineLearning.Domain.Entities.CourseSection", b =>
@@ -1357,6 +1508,9 @@ namespace OnlineLearning.Infrastructure.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid?>("BundleId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<DateTime?>("CancelledAt")
                         .HasColumnType("datetime2");
 
@@ -1376,6 +1530,9 @@ namespace OnlineLearning.Infrastructure.Persistence.Migrations
 
                     b.Property<DateTime>("ExpiresAt")
                         .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsGift")
+                        .HasColumnType("bit");
 
                     b.Property<string>("Note")
                         .HasMaxLength(500)
@@ -1432,6 +1589,8 @@ namespace OnlineLearning.Infrastructure.Persistence.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("BundleId");
 
                     b.HasIndex("CouponId");
 
@@ -2154,6 +2313,31 @@ namespace OnlineLearning.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("OnlineLearning.Domain.Entities.WishlistItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CourseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CourseId");
+
+                    b.HasIndex("UserId", "CourseId")
+                        .IsUnique();
+
+                    b.ToTable("WishlistItems", (string)null);
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>
                 {
                     b.HasOne("OnlineLearning.Domain.Entities.AppRole", null)
@@ -2214,6 +2398,25 @@ namespace OnlineLearning.Infrastructure.Persistence.Migrations
                         .IsRequired();
 
                     b.Navigation("Question");
+                });
+
+            modelBuilder.Entity("OnlineLearning.Domain.Entities.BundleCourse", b =>
+                {
+                    b.HasOne("OnlineLearning.Domain.Entities.Bundle", "Bundle")
+                        .WithMany("Courses")
+                        .HasForeignKey("BundleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("OnlineLearning.Domain.Entities.Course", "Course")
+                        .WithMany()
+                        .HasForeignKey("CourseId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Bundle");
+
+                    b.Navigation("Course");
                 });
 
             modelBuilder.Entity("OnlineLearning.Domain.Entities.Cart", b =>
@@ -2336,6 +2539,25 @@ namespace OnlineLearning.Infrastructure.Persistence.Migrations
                     b.Navigation("Category");
 
                     b.Navigation("Instructor");
+                });
+
+            modelBuilder.Entity("OnlineLearning.Domain.Entities.CourseGift", b =>
+                {
+                    b.HasOne("OnlineLearning.Domain.Entities.Order", "Order")
+                        .WithOne("Gift")
+                        .HasForeignKey("OnlineLearning.Domain.Entities.CourseGift", "OrderId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("OnlineLearning.Domain.Entities.AppUser", "Sender")
+                        .WithMany()
+                        .HasForeignKey("SenderId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Order");
+
+                    b.Navigation("Sender");
                 });
 
             modelBuilder.Entity("OnlineLearning.Domain.Entities.CourseSection", b =>
@@ -2545,6 +2767,11 @@ namespace OnlineLearning.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("OnlineLearning.Domain.Entities.Order", b =>
                 {
+                    b.HasOne("OnlineLearning.Domain.Entities.Bundle", "Bundle")
+                        .WithMany()
+                        .HasForeignKey("BundleId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
                     b.HasOne("OnlineLearning.Domain.Entities.Coupon", "Coupon")
                         .WithMany()
                         .HasForeignKey("CouponId")
@@ -2555,6 +2782,8 @@ namespace OnlineLearning.Infrastructure.Persistence.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
+
+                    b.Navigation("Bundle");
 
                     b.Navigation("Coupon");
 
@@ -2786,6 +3015,25 @@ namespace OnlineLearning.Infrastructure.Persistence.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("OnlineLearning.Domain.Entities.WishlistItem", b =>
+                {
+                    b.HasOne("OnlineLearning.Domain.Entities.Course", "Course")
+                        .WithMany()
+                        .HasForeignKey("CourseId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("OnlineLearning.Domain.Entities.AppUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Course");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("OnlineLearning.Domain.Entities.AppUser", b =>
                 {
                     b.Navigation("Cart");
@@ -2805,6 +3053,11 @@ namespace OnlineLearning.Infrastructure.Persistence.Migrations
                     b.Navigation("Reviews");
 
                     b.Navigation("TaughtCourses");
+                });
+
+            modelBuilder.Entity("OnlineLearning.Domain.Entities.Bundle", b =>
+                {
+                    b.Navigation("Courses");
                 });
 
             modelBuilder.Entity("OnlineLearning.Domain.Entities.Cart", b =>
@@ -2861,6 +3114,8 @@ namespace OnlineLearning.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("OnlineLearning.Domain.Entities.Order", b =>
                 {
+                    b.Navigation("Gift");
+
                     b.Navigation("Items");
 
                     b.Navigation("Payments");

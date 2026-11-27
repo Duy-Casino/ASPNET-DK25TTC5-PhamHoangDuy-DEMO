@@ -12,7 +12,9 @@ public sealed record CartDto(IReadOnlyList<CartItemDto> Items, int Count, decima
 
 // ---------- Pricing / coupon ----------
 /// <summary>UsePoints: học viên chọn trừ điểm thưởng. Points: số điểm muốn dùng; để trống thì dùng tối đa cho phép.</summary>
-public sealed record PriceQuoteRequest(IReadOnlyList<Guid> CourseIds, string? CouponCode, bool UsePoints = false, int? Points = null);
+/// <summary>BundleId: báo giá cả combo (bỏ qua CourseIds). IsGift: mua tặng (không chặn khóa người mua đã sở hữu).</summary>
+public sealed record PriceQuoteRequest(IReadOnlyList<Guid>? CourseIds, string? CouponCode, bool UsePoints = false, int? Points = null,
+    Guid? BundleId = null, bool IsGift = false);
 public sealed record PriceLineDto(Guid CourseId, string Title, decimal OriginalPrice, decimal Price, decimal DiscountAllocated, decimal FinalPrice);
 /// <summary>Thông tin dùng điểm cho đơn đang báo giá. MaxUsable = min(số dư, số điểm ứng với MaxPercent % giá trị đơn sau mã giảm giá).</summary>
 public sealed record CheckoutPointsDto(bool Enabled, int Balance, int MaxUsable, int PointsPerUnit, decimal AmountPerUnit, int MaxPercent);
@@ -22,7 +24,10 @@ public sealed record PriceQuoteDto(IReadOnlyList<PriceLineDto> Lines, decimal Su
 // ---------- Orders ----------
 /// <summary>Frontend chỉ gửi danh sách khóa học (hoặc lấy từ giỏ) + mã giảm giá. Không gửi giá.</summary>
 public sealed record CreateOrderRequest(IReadOnlyList<Guid>? CourseIds, bool FromCart, string? CouponCode, string? Note,
-    bool UsePoints = false, int? Points = null);
+    bool UsePoints = false, int? Points = null, Guid? BundleId = null, GiftRequest? Gift = null);
+
+/// <summary>Mua tặng: người nhận nhận email có mã và đăng nhập bằng đúng email này để nhận khóa học.</summary>
+public sealed record GiftRequest(string RecipientEmail, string RecipientName, string? Message);
 
 public sealed record OrderItemDto(Guid CourseId, string CourseTitle, string? CourseSlug, string? ThumbnailUrl,
     decimal OriginalPrice, decimal Price, decimal DiscountAllocated, decimal FinalPrice);
@@ -30,7 +35,10 @@ public sealed record PaymentDto(Guid Id, PaymentProvider Provider, decimal Amoun
     string? ProviderTransactionId, string? BankCode, string? ResponseCode, DateTime CreatedAt, DateTime? PaidAt);
 public sealed record OrderDto(Guid Id, string OrderCode, OrderStatus Status, decimal SubTotal, decimal DiscountAmount,
     int PointsUsed, decimal PointsDiscountAmount, decimal TotalAmount, string? CouponCode, string? Note, DateTime CreatedAt, DateTime ExpiresAt, DateTime? PaidAt, DateTime? CancelledAt,
-    IReadOnlyList<OrderItemDto> Items, IReadOnlyList<PaymentDto> Payments);
+    IReadOnlyList<OrderItemDto> Items, IReadOnlyList<PaymentDto> Payments, OrderGiftDto? Gift = null, string? BundleTitle = null);
+/// <summary>Thông tin quà tặng của đơn. RedeemUrl chỉ có khi quà đã gửi và chưa nhận.</summary>
+public sealed record OrderGiftDto(string RecipientEmail, string RecipientName, string? Message, GiftStatus Status,
+    DateTime? SentAt, DateTime? RedeemedAt, string? RedeemUrl);
 public sealed record OrderListItemDto(Guid Id, string OrderCode, OrderStatus Status, decimal TotalAmount, int ItemCount,
     string FirstCourseTitle, DateTime CreatedAt, DateTime? PaidAt);
 
@@ -76,7 +84,8 @@ public sealed class PriceQuoteRequestValidator : AbstractValidator<PriceQuoteReq
 {
     public PriceQuoteRequestValidator()
     {
-        RuleFor(x => x.CourseIds).NotEmpty().WithMessage("Chưa chọn khóa học.").Must(l => l.Count <= 50);
+        RuleFor(x => x.CourseIds).NotEmpty().WithMessage("Chưa chọn khóa học.").When(x => x.BundleId is null);
+        RuleFor(x => x.CourseIds).Must(l => l is null || l.Count <= 50);
         RuleFor(x => x.CouponCode).MaximumLength(50);
         RuleFor(x => x.Points).InclusiveBetween(1, 10_000_000).When(x => x.UsePoints && x.Points.HasValue).WithMessage("Số điểm không hợp lệ.");
     }
@@ -86,10 +95,16 @@ public sealed class CreateOrderRequestValidator : AbstractValidator<CreateOrderR
 {
     public CreateOrderRequestValidator()
     {
-        RuleFor(x => x.CourseIds).NotEmpty().WithMessage("Chưa chọn khóa học.").When(x => !x.FromCart);
+        RuleFor(x => x.CourseIds).NotEmpty().WithMessage("Chưa chọn khóa học.").When(x => !x.FromCart && x.BundleId is null);
         RuleFor(x => x.CourseIds).Must(l => l is null || l.Count <= 50);
         RuleFor(x => x.CouponCode).MaximumLength(50);
         RuleFor(x => x.Note).MaximumLength(500);
+        When(x => x.Gift is not null, () =>
+        {
+            RuleFor(x => x.Gift!.RecipientEmail).NotEmpty().WithMessage("Nhập email người nhận.").EmailAddress().WithMessage("Email người nhận không hợp lệ.").MaximumLength(256);
+            RuleFor(x => x.Gift!.RecipientName).NotEmpty().WithMessage("Nhập tên người nhận.").MaximumLength(100);
+            RuleFor(x => x.Gift!.Message).MaximumLength(500);
+        });
         RuleFor(x => x.Points).InclusiveBetween(1, 10_000_000).When(x => x.UsePoints && x.Points.HasValue).WithMessage("Số điểm không hợp lệ.");
     }
 }

@@ -4,15 +4,16 @@ import type { CourseSummary } from '../../types/api'
 import { courseLevelLabel } from '../../types/common'
 import { discountPercent, formatDuration, formatNumber, formatPrice } from '../../utils/format'
 import { RatingStars, ResponsiveImg, Skeleton } from '../ui'
+import { FlashSaleCountdown, WishlistButton } from '../growth'
 
 /** Thẻ khóa học: ảnh trong khung bo góc, lĩnh vực, tên, giảng viên, đánh giá, giá. Cả thẻ là một liên kết. */
 export function CourseCard({ course, eager = false }: { course: CourseSummary; eager?: boolean }) {
   const off = discountPercent(course.price, course.discountPrice)
   return (
+    <div className="relative flex" data-reveal>
     <Link
       to={`/khoa-hoc/${course.slug}`}
-      className="group card card-hover flex flex-col p-3 outline-offset-4"
-      data-reveal
+      className="group card card-hover flex w-full flex-col p-3 outline-offset-4"
     >
       <div className="relative aspect-video overflow-hidden rounded-xl bg-surface-3">
         <ResponsiveImg
@@ -30,6 +31,7 @@ export function CourseCard({ course, eager = false }: { course: CourseSummary; e
           {off !== null && (
             <span className="rounded-full bg-white px-2.5 py-1 text-xs font-bold text-accent-700">-{off}%</span>
           )}
+          {course.discountEndsAt && <FlashSaleCountdown endsAt={course.discountEndsAt} compact />}
         </div>
       </div>
       <div className="flex flex-1 flex-col gap-2 px-2 pt-4 pb-1">
@@ -52,6 +54,9 @@ export function CourseCard({ course, eager = false }: { course: CourseSummary; e
         </div>
       </div>
     </Link>
+    {/* Nút yêu thích nằm ngoài liên kết (không lồng nút trong thẻ a) */}
+    <WishlistButton courseId={course.id} title={course.title} className="absolute top-6 right-6 z-[1]" />
+    </div>
   )
 }
 

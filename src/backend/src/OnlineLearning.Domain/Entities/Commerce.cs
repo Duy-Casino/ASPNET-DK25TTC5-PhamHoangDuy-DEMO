@@ -9,6 +9,9 @@ public class Cart : AuditableEntity
     public AppUser User { get; set; } = null!;
 
     public ICollection<CartItem> Items { get; set; } = [];
+
+    /// <summary>Lần gửi email nhắc giỏ hàng gần nhất; nhắc lại chỉ khi giỏ có khóa học thêm sau thời điểm này.</summary>
+    public DateTime? ReminderSentAt { get; set; }
 }
 
 public class CartItem : BaseEntity
@@ -51,6 +54,15 @@ public class Order : AuditableEntity
     public DateTime? CancelledAt { get; set; }
     public DateTime? RefundedAt { get; set; }
     public string? RefundReason { get; set; }
+
+    /// <summary>Đơn mua theo combo (giá combo đã phân bổ vào từng OrderItem).</summary>
+    public Guid? BundleId { get; set; }
+    public Bundle? Bundle { get; set; }
+
+    /// <summary>Đơn mua tặng: người mua không được ghi danh; người nhận nhận quà qua <see cref="CourseGift"/>.</summary>
+    public bool IsGift { get; set; }
+    public CourseGift? Gift { get; set; }
+
     public byte[] RowVersion { get; set; } = [];
 
     public ICollection<OrderItem> Items { get; set; } = [];

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode, type RefObject } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import {
-  ArrowRight, Bell, BookOpen, ChevronDown, GraduationCap, Home, LogOut, Mail, MapPin, Menu, Phone, Search, ShieldCheck, ShoppingCart, X,
+  ArrowRight, Bell, BookOpen, ChevronDown, GraduationCap, Home, LogOut, Mail, MapPin, Menu, Phone, Search, ShieldCheck, ShoppingCart, X, Layers,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Avatar, DecorBlobs, Logo, Spinner } from '../components/ui'
@@ -324,6 +324,9 @@ function Header() {
             <Home className="size-[18px]" aria-hidden="true" /> Trang chủ
           </NavLink>
           <CoursesMenu />
+          <NavLink to="/combo" className={({ isActive }) => navItem(isActive)}>
+            <Layers className="size-[18px]" aria-hidden="true" /> Combo
+          </NavLink>
           <NavLink to="/xac-minh" className={({ isActive }) => navItem(isActive)}>
             <ShieldCheck className="size-[18px]" aria-hidden="true" /> Xác minh chứng chỉ
           </NavLink>
@@ -372,6 +375,7 @@ function Header() {
           <div className="container-page flex flex-col gap-1 py-4">
             <NavLink to="/" end className={mobileLink}><Home className="size-5" aria-hidden="true" />Trang chủ</NavLink>
             <NavLink to="/khoa-hoc" end className={mobileLink}><GraduationCap className="size-5" aria-hidden="true" />Tất cả khóa học</NavLink>
+            <NavLink to="/combo" className={mobileLink}><Layers className="size-5" aria-hidden="true" />Combo khóa học</NavLink>
             <NavLink to="/xac-minh" className={mobileLink}><ShieldCheck className="size-5" aria-hidden="true" />Xác minh chứng chỉ</NavLink>
             {isAuthenticated && <NavLink to="/hoc-vien" className={mobileLink}><BookOpen className="size-5" aria-hidden="true" />Khóa học của tôi</NavLink>}
             {categories && categories.length > 0 && (
@@ -456,6 +460,7 @@ function Footer() {
           <li><Link className={lnk} to="/khoa-hoc">Tất cả khóa học</Link></li>
           <li><Link className={lnk} to="/khoa-hoc?sort=popular">Bán chạy</Link></li>
           <li><Link className={lnk} to="/khoa-hoc?free=true">Khóa miễn phí</Link></li>
+          <li><Link className={lnk} to="/combo">Combo khóa học</Link></li>
           <li><Link className={lnk} to="/xac-minh">Xác minh chứng chỉ</Link></li>
         </FooterCol>
         <FooterCol title="Về EduViet">

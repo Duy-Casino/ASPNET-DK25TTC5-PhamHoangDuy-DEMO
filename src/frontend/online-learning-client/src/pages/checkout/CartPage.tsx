@@ -1,15 +1,19 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { Trash2 } from 'lucide-react'
 import { ResponsiveImg, PageHeader, EmptyState, Skeleton, Spinner } from '../../components/ui'
-import { useDocumentTitle } from '../../hooks/useAsync'
+import { useAsync, useDocumentTitle } from '../../hooks/useAsync'
 import { useCart } from '../../hooks/useAuth'
 import { formatDuration, formatPrice } from '../../utils/format'
+import { RecommendationGrid } from '../../components/growth/Sections'
+import { recommendationService } from '../../services/growthApi'
 
 export default function CartPage() {
   useDocumentTitle('Giỏ hàng')
   const { cart, loading, remove, pendingId } = useCart()
   const navigate = useNavigate()
   const saving = cart.originalTotal - cart.subTotal
+  const ids = cart.items.map((i) => i.courseId).join(',')
+  const suggestions = useAsync(() => (ids ? recommendationService.forCart(4) : Promise.resolve([])), [ids])
 
   return (
     <>
@@ -60,8 +64,16 @@ export default function CartPage() {
             </dl>
             <p className="mt-4 text-sm text-ink-soft">Mã giảm giá được áp dụng ở bước thanh toán.</p>
             <button type="button" className="btn-primary mt-6 min-h-12 w-full text-base" onClick={() => navigate('/thanh-toan')}>Thanh toán</button>
+            <Link to="/thanh-toan?tang=1" className="btn-ghost mt-2 w-full">Mua tặng người khác</Link>
           </aside>
         </div>
+      )}
+
+      {!!suggestions.data?.length && (
+        <section aria-labelledby="sugg-h" className="mt-16">
+          <h2 id="sugg-h" className="text-2xl font-semibold">Gợi ý thêm cho bạn</h2>
+          <div className="mt-6"><RecommendationGrid items={suggestions.data} /></div>
+        </section>
       )}
     </div>
     </>

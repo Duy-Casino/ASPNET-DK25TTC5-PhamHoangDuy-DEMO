@@ -18,6 +18,8 @@ public interface IInstructorCourseService
     Task<Result> DeleteAsync(Guid courseId, CancellationToken ct = default);
     Task<Result> SubmitForReviewAsync(Guid courseId, CancellationToken ct = default);
     Task<Result> UnpublishAsync(Guid courseId, CancellationToken ct = default);
+    /// <summary>Flash sale: đặt giá khuyến mãi kèm hạn kết thúc, hoặc bỏ khuyến mãi. Không cần duyệt lại.</summary>
+    Task<Result<CourseEditDto>> SetPromotionAsync(Guid courseId, SetPromotionRequest request, CancellationToken ct = default);
 
     Task<Result<SectionEditDto>> AddSectionAsync(Guid courseId, SaveSectionRequest request, CancellationToken ct = default);
     Task<Result<SectionEditDto>> UpdateSectionAsync(Guid sectionId, SaveSectionRequest request, CancellationToken ct = default);
@@ -76,6 +78,30 @@ public sealed class InstructorCourseService(
         };
         Apply(course, request);
         db.Courses.Add(course);
+        await db.SaveChangesAsync(ct);
+        return ToEditDto(course);
+    }
+
+    public async Task<Result<CourseEditDto>> SetPromotionAsync(Guid courseId, SetPromotionRequest r, CancellationToken ct = default)
+    {
+        var course = await LoadFullAsync(courseId, ct, tracking: true);
+        if (course is null || !CanManage(course)) return NotFound;
+
+        if (r.DiscountPrice is null)
+        {
+            course.DiscountPrice = null;
+            course.DiscountEndsAt = null;
+        }
+        else
+        {
+            var now = clock.UtcNow;
+            if (r.DiscountPrice < 0 || r.DiscountPrice >= course.Price)
+                return Error.Validation("Giá khuyến mãi phải nhỏ hơn giá gốc.");
+            if (r.DiscountEndsAt is { } end && (end <= now.AddMinutes(10) || end > now.AddDays(90)))
+                return Error.Validation("Thời điểm kết thúc phải sau hiện tại ít nhất 10 phút và không quá 90 ngày.");
+            course.DiscountPrice = r.DiscountPrice;
+            course.DiscountEndsAt = r.DiscountEndsAt?.ToUniversalTime();
+        }
         await db.SaveChangesAsync(ct);
         return ToEditDto(course);
     }
@@ -375,6 +401,7 @@ public sealed class InstructorCourseService(
         course.Level = r.Level;
         course.Price = r.Price;
         course.DiscountPrice = r.DiscountPrice;
+        if (r.DiscountPrice is null) course.DiscountEndsAt = null;
     }
 
     private static void Apply(Lesson lesson, SaveLessonRequest r)
@@ -409,7 +436,7 @@ public sealed class InstructorCourseService(
         ContentSanitizer.FromJsonList(c.Requirements), ContentSanitizer.FromJsonList(c.Outcomes),
         c.ThumbnailUrl, c.PreviewVideoUrl, c.Language, c.Level, c.Price, c.DiscountPrice, c.Status, c.RejectionReason,
         c.IsEditable, c.InstructorId,
-        c.Sections.OrderBy(s => s.SortOrder).Select(ToSectionDto).ToList());
+        c.Sections.OrderBy(s => s.SortOrder).Select(ToSectionDto).ToList(), c.DiscountEndsAt);
 
     private static SectionEditDto ToSectionDto(CourseSection s) =>
         new(s.Id, s.Title, s.Description, s.SortOrder, s.Lessons.OrderBy(l => l.SortOrder).Select(ToLessonDto).ToList());

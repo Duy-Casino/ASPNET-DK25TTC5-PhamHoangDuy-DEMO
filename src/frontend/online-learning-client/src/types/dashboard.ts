@@ -158,6 +158,8 @@ export interface CourseEdit {
   requirements: string[]; outcomes: string[]; thumbnailUrl: string | null; previewVideoUrl: string | null; language: string
   level: CourseLevel; price: number; discountPrice: number | null; status: CourseStatus; rejectionReason: string | null
   isEditable: boolean; instructorId: string; sections: SectionEdit[]
+  /** Hạn kết thúc giá khuyến mãi (flash sale) */
+  discountEndsAt: string | null
 }
 export interface SaveCourseInput {
   title: string; categoryId: string; shortDescription: string | null; description: string | null; requirements: string[]; outcomes: string[]

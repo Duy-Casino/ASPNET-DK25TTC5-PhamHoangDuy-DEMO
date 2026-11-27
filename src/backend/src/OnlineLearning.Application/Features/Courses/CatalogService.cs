@@ -36,10 +36,15 @@ public sealed class CatalogService(IAppDbContext db, IFileStorage storage) : ICa
         return entries;
     }
 
-    internal static readonly Expression<Func<Course, CourseSummaryDto>> ToSummary = c => new CourseSummaryDto(
+    /// <summary>Thẻ khóa học tại thời điểm hiện tại: khuyến mãi đã hết hạn thì trả giá gốc và DiscountPrice = null.</summary>
+    internal static Expression<Func<Course, CourseSummaryDto>> ToSummary => SummaryAt(DateTime.UtcNow);
+
+    internal static Expression<Func<Course, CourseSummaryDto>> SummaryAt(DateTime now) => c => new CourseSummaryDto(
         c.Id, c.Title, c.Slug, c.ShortDescription, c.ThumbnailUrl, c.Level,
-        c.Price, c.DiscountPrice,
-        c.DiscountPrice != null && c.DiscountPrice < c.Price ? c.DiscountPrice.Value : c.Price,
+        c.Price,
+        c.DiscountPrice != null && c.DiscountPrice < c.Price && (c.DiscountEndsAt == null || c.DiscountEndsAt > now) ? c.DiscountPrice : null,
+        c.DiscountPrice != null && c.DiscountPrice < c.Price && (c.DiscountEndsAt == null || c.DiscountEndsAt > now) ? c.DiscountPrice.Value : c.Price,
+        c.DiscountPrice != null && c.DiscountPrice < c.Price && (c.DiscountEndsAt == null || c.DiscountEndsAt > now) ? c.DiscountEndsAt : null,
         c.AverageRating, c.ReviewCount, c.EnrollmentCount, c.TotalLessons, c.TotalDurationSeconds,
         c.IsFeatured, c.PublishedAt,
         new InstructorBriefDto(c.Instructor.Id, c.Instructor.FullName, c.Instructor.AvatarUrl, c.Instructor.Headline),
@@ -102,19 +107,20 @@ public sealed class CatalogService(IAppDbContext db, IFileStorage storage) : ICa
         if (q.InstructorId is { } iid) query = query.Where(c => c.InstructorId == iid);
         if (q.MinRating is { } minRating) query = query.Where(c => c.AverageRating >= minRating);
 
+        var now = DateTime.UtcNow;
         if (q.Free == true)
-            query = query.Where(c => c.Price == 0 || c.DiscountPrice == 0);
+            query = query.Where(c => c.Price == 0 || (c.DiscountPrice == 0 && (c.DiscountEndsAt == null || c.DiscountEndsAt > now)));
         if (q.MinPrice is { } min)
-            query = query.Where(c => (c.DiscountPrice != null && c.DiscountPrice < c.Price ? c.DiscountPrice.Value : c.Price) >= min);
+            query = query.Where(c => (c.DiscountPrice != null && c.DiscountPrice < c.Price && (c.DiscountEndsAt == null || c.DiscountEndsAt > now) ? c.DiscountPrice.Value : c.Price) >= min);
         if (q.MaxPrice is { } max)
-            query = query.Where(c => (c.DiscountPrice != null && c.DiscountPrice < c.Price ? c.DiscountPrice.Value : c.Price) <= max);
+            query = query.Where(c => (c.DiscountPrice != null && c.DiscountPrice < c.Price && (c.DiscountEndsAt == null || c.DiscountEndsAt > now) ? c.DiscountPrice.Value : c.Price) <= max);
 
         query = q.Sort switch
         {
             "popular" => query.OrderByDescending(c => c.EnrollmentCount).ThenByDescending(c => c.AverageRating),
             "rating" => query.OrderByDescending(c => c.AverageRating).ThenByDescending(c => c.ReviewCount),
-            "price_asc" => query.OrderBy(c => c.DiscountPrice != null && c.DiscountPrice < c.Price ? c.DiscountPrice.Value : c.Price),
-            "price_desc" => query.OrderByDescending(c => c.DiscountPrice != null && c.DiscountPrice < c.Price ? c.DiscountPrice.Value : c.Price),
+            "price_asc" => query.OrderBy(c => c.DiscountPrice != null && c.DiscountPrice < c.Price && (c.DiscountEndsAt == null || c.DiscountEndsAt > now) ? c.DiscountPrice.Value : c.Price),
+            "price_desc" => query.OrderByDescending(c => c.DiscountPrice != null && c.DiscountPrice < c.Price && (c.DiscountEndsAt == null || c.DiscountEndsAt > now) ? c.DiscountPrice.Value : c.Price),
             _ => query.OrderByDescending(c => c.PublishedAt),
         };
 
@@ -160,7 +166,8 @@ public sealed class CatalogService(IAppDbContext db, IFileStorage storage) : ICa
             course.Id, course.Title, course.Slug, course.ShortDescription, course.Description,
             ContentSanitizer.FromJsonList(course.Requirements), ContentSanitizer.FromJsonList(course.Outcomes),
             course.ThumbnailUrl, course.PreviewVideoUrl, course.Language, course.Level,
-            course.Price, course.DiscountPrice, course.EffectivePrice, course.Status,
+            course.Price, course.IsDiscountActive(DateTime.UtcNow) ? course.DiscountPrice : null, course.EffectivePrice,
+            course.IsDiscountActive(DateTime.UtcNow) ? course.DiscountEndsAt : null, course.Status,
             course.AverageRating, course.ReviewCount, course.EnrollmentCount, course.TotalLessons, course.TotalDurationSeconds,
             quizCount, course.PublishedAt, course.UpdatedAt,
             new CategoryBriefDto(course.Category.Id, course.Category.Name, course.Category.Slug),

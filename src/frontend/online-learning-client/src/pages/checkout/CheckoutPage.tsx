@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
-import { PageHeader, ErrorState, Skeleton, Spinner } from '../../components/ui'
+import { PageHeader, ErrorState, Field, Skeleton, Spinner, TextArea } from '../../components/ui'
 import { PaymentMethodPicker } from '../../components/payment/PaymentMethods'
 import { useAsync, useDocumentTitle } from '../../hooks/useAsync'
 import { useCart } from '../../hooks/useAuth'
@@ -20,11 +20,17 @@ export default function CheckoutPage() {
   useDocumentTitle('Thanh toán')
   const [params] = useSearchParams()
   const singleCourse = params.get('course')
+  const bundleId = params.get('combo')
   const { cart, loading: cartLoading, reload: reloadCart } = useCart()
   const navigate = useNavigate()
 
-  const courseIds = singleCourse ? [singleCourse] : cart.items.map((i) => i.courseId)
-  const key = courseIds.join(',')
+  const courseIds = bundleId ? [] : singleCourse ? [singleCourse] : cart.items.map((i) => i.courseId)
+  const key = bundleId ? `combo:${bundleId}` : courseIds.join(',')
+
+  // Mua tặng: người nhận nhận email có liên kết nhận quà
+  const [isGift, setIsGift] = useState(params.get('tang') === '1')
+  const [gift, setGift] = useState({ recipientEmail: '', recipientName: '', message: '' })
+  const [giftErrors, setGiftErrors] = useState<Record<string, string>>({})
 
   const [couponInput, setCouponInput] = useState('')
   const [coupon, setCoupon] = useState('')
@@ -49,7 +55,7 @@ export default function CheckoutPage() {
     if (!key) return
     let cancelled = false
     setQuoting(true)
-    orderService.quote(key.split(','), coupon || undefined, points)
+    orderService.quote(courseIds, coupon || undefined, points, { bundleId: bundleId ?? undefined, isGift })
       .then((q) => {
         if (cancelled) return
         setQuote(q)
@@ -81,9 +87,10 @@ export default function CheckoutPage() {
     return () => {
       cancelled = true
     }
-  }, [key, coupon, points])
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- courseIds được mã hóa trong key
+  }, [key, coupon, points, isGift])
 
-  if (!singleCourse && !cartLoading && !placing && cart.count === 0) return <Navigate to="/gio-hang" replace />
+  if (!singleCourse && !bundleId && !cartLoading && !placing && cart.count === 0) return <Navigate to="/gio-hang" replace />
 
   const applyCoupon = (e: FormEvent) => {
     e.preventDefault()
@@ -110,16 +117,31 @@ export default function CheckoutPage() {
     setPoints(n)
   }
 
+  const validateGift = () => {
+    const e: Record<string, string> = {}
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(gift.recipientEmail.trim())) e.recipientEmail = 'Nhập email người nhận hợp lệ.'
+    if (!gift.recipientName.trim()) e.recipientName = 'Nhập tên người nhận.'
+    setGiftErrors(e)
+    return Object.keys(e).length === 0
+  }
+
   const placeOrder = async () => {
+    if (isGift && !validateGift()) {
+      document.getElementById('gift-h')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      return
+    }
     setPlacing(true)
+    const giftInput = isGift ? { recipientEmail: gift.recipientEmail.trim(), recipientName: gift.recipientName.trim(), message: gift.message.trim() || null } : null
     try {
       const order = await orderService.create(
-        singleCourse
-          ? { courseIds: [singleCourse], couponCode: coupon, points: quote?.pointsUsed || null }
-          : { fromCart: true, couponCode: coupon, points: quote?.pointsUsed || null },
+        bundleId
+          ? { bundleId, couponCode: coupon, points: quote?.pointsUsed || null, gift: giftInput }
+          : singleCourse
+            ? { courseIds: [singleCourse], couponCode: coupon, points: quote?.pointsUsed || null, gift: giftInput }
+            : { fromCart: true, couponCode: coupon, points: quote?.pointsUsed || null, gift: giftInput },
       )
       if (order.status === 'Paid') {
-        toast.success('Đăng ký thành công! Khóa học đã được thêm vào tài khoản của bạn.')
+        toast.success(order.gift ? `Đã gửi quà tặng tới ${order.gift.recipientEmail}.` : 'Đăng ký thành công! Khóa học đã được thêm vào tài khoản của bạn.')
         // Chuyển trang trước rồi mới làm mới giỏ, để trang này không tự chuyển về giỏ hàng trống
         navigate(`/don-hang/${order.id}`, { replace: true })
         void reloadCart()
@@ -145,10 +167,10 @@ export default function CheckoutPage() {
 
   return (
     <>
-      <PageHeader title="Thanh toán" crumbs={singleCourse ? [{ label: 'Khóa học', to: '/khoa-hoc' }, { label: 'Thanh toán' }] : [{ label: 'Giỏ hàng', to: '/gio-hang' }, { label: 'Thanh toán' }]} />
+      <PageHeader title={isGift ? 'Thanh toán quà tặng' : 'Thanh toán'} crumbs={bundleId ? [{ label: 'Combo', to: '/combo' }, { label: 'Thanh toán' }] : singleCourse ? [{ label: 'Khóa học', to: '/khoa-hoc' }, { label: 'Thanh toán' }] : [{ label: 'Giỏ hàng', to: '/gio-hang' }, { label: 'Thanh toán' }]} />
     <div className="container-page py-10 md:py-12">
-      <Link to={singleCourse ? '/khoa-hoc' : '/gio-hang'} className="mt-2 inline-block font-semibold text-brand-700 hover:underline">
-        ← {singleCourse ? 'Tiếp tục xem khóa học' : 'Quay lại giỏ hàng'}
+      <Link to={bundleId ? '/combo' : singleCourse ? '/khoa-hoc' : '/gio-hang'} className="mt-2 inline-block font-semibold text-brand-700 hover:underline">
+        ← {bundleId ? 'Xem các combo khác' : singleCourse ? 'Tiếp tục xem khóa học' : 'Quay lại giỏ hàng'}
       </Link>
 
       {quoteError ? (
@@ -170,6 +192,26 @@ export default function CheckoutPage() {
                   </li>
                 ))}
               </ul>
+            </section>
+
+            <section aria-labelledby="gift-h" className="max-w-xl">
+              <h2 id="gift-h" className="text-2xl font-semibold">Mua tặng</h2>
+              <label className="mt-4 flex cursor-pointer items-start gap-3">
+                <input type="checkbox" className="mt-1 size-5 accent-brand-600" checked={isGift} onChange={(e) => { setIsGift(e.target.checked); setGiftErrors({}) }} />
+                <span>
+                  <span className="block font-semibold">Mua tặng người khác</span>
+                  <span className="block text-sm text-ink-soft">Người nhận nhận email có liên kết nhận quà, đăng nhập bằng đúng email đó để vào học. Bạn không được ghi danh vào các khóa này.</span>
+                </span>
+              </label>
+              {isGift && (
+                <div className="mt-4 grid gap-4 rounded-(--radius-card) bg-surface-2 p-4 sm:grid-cols-2">
+                  <Field label="Email người nhận" type="email" value={gift.recipientEmail} onChange={(e) => setGift({ ...gift, recipientEmail: e.target.value })} error={giftErrors.recipientEmail} maxLength={256} />
+                  <Field label="Tên người nhận" value={gift.recipientName} onChange={(e) => setGift({ ...gift, recipientName: e.target.value })} error={giftErrors.recipientName} maxLength={100} />
+                  <div className="sm:col-span-2">
+                    <TextArea label="Lời nhắn (không bắt buộc)" rows={2} maxLength={500} value={gift.message} onChange={(e) => setGift({ ...gift, message: e.target.value })} />
+                  </div>
+                </div>
+              )}
             </section>
 
             <section aria-labelledby="coupon-h">

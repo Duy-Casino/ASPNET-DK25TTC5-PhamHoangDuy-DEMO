@@ -70,18 +70,25 @@ export const cartService = {
 
 export const orderService = {
   /** points: null = không dùng điểm; số = dùng đúng số điểm đó; 'max' = dùng tối đa cho phép. */
-  quote: (courseIds: string[], couponCode?: string, points: number | 'max' | null = null) =>
+  /** bundleId: báo giá cả combo; isGift: mua tặng (không chặn khóa đã sở hữu). */
+  quote: (courseIds: string[], couponCode?: string, points: number | 'max' | null = null, extra: { bundleId?: string; isGift?: boolean } = {}) =>
     post<PriceQuote>('/api/orders/quote', {
-      courseIds, couponCode: couponCode || null,
+      courseIds: extra.bundleId ? null : courseIds, couponCode: couponCode || null,
       usePoints: points !== null, points: typeof points === 'number' ? points : null,
+      bundleId: extra.bundleId ?? null, isGift: !!extra.isGift,
     }),
-  create: (input: { courseIds?: string[]; fromCart?: boolean; couponCode?: string; note?: string; points?: number | null }) =>
+  create: (input: {
+    courseIds?: string[]; fromCart?: boolean; couponCode?: string; note?: string; points?: number | null
+    bundleId?: string; gift?: { recipientEmail: string; recipientName: string; message: string | null } | null
+  }) =>
     post<Order>('/api/orders', {
       courseIds: input.courseIds ?? null,
       fromCart: input.fromCart ?? false,
       couponCode: input.couponCode || null,
       note: input.note || null,
       usePoints: !!input.points, points: input.points || null,
+      bundleId: input.bundleId ?? null,
+      gift: input.gift ?? null,
     }),
   mine: (page = 1, status?: OrderStatus) => get<PagedResult<OrderListItem>>('/api/orders', { page, pageSize: 10, status }),
   get: (id: string) => get<Order>(`/api/orders/${id}`),

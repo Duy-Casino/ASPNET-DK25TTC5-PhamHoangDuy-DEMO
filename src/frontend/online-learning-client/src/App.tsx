@@ -62,6 +62,12 @@ const AdminPaymentsPage = lazy(() => import('./pages/admin/AdminPaymentsPage'))
 const revenueAdmin = () => import('./pages/admin/AdminRevenuePages')
 const AdminPayoutsPage = lazy(() => revenueAdmin().then((m) => ({ default: m.AdminPayoutsPage })))
 const AdminRefundRequestsPage = lazy(() => revenueAdmin().then((m) => ({ default: m.AdminRefundRequestsPage })))
+const growth = () => import('./pages/growth/GrowthPages')
+const BundlesPage = lazy(() => growth().then((m) => ({ default: m.BundlesPage })))
+const BundleDetailPage = lazy(() => growth().then((m) => ({ default: m.BundleDetailPage })))
+const GiftRedeemPage = lazy(() => growth().then((m) => ({ default: m.GiftRedeemPage })))
+const WishlistPage = lazy(() => growth().then((m) => ({ default: m.WishlistPage })))
+const AdminBundlesPage = lazy(() => import('./pages/admin/AdminBundlesPage'))
 const InstructorEarningsPage = lazy(() => import('./pages/instructor/InstructorEarningsPage').then((m) => ({ default: m.InstructorEarningsPage })))
 
 function PageLoader() {
@@ -82,6 +88,9 @@ export default function App() {
           <Route path="khoa-hoc" element={<CoursesPage />} />
           <Route path="khoa-hoc/:slug" element={<CourseDetailPage />} />
           <Route path="giang-vien/:id" element={<InstructorPage />} />
+          <Route path="combo" element={<BundlesPage />} />
+          <Route path="combo/:slug" element={<BundleDetailPage />} />
+          <Route path="qua-tang/:code" element={<GiftRedeemPage />} />
           <Route path="gio-hang" element={<ProtectedRoute><CartPage /></ProtectedRoute>} />
           <Route path="thanh-toan" element={<ProtectedRoute><CheckoutPage /></ProtectedRoute>} />
           <Route path="thanh-toan/ket-qua" element={<ProtectedRoute><PaymentResultPage /></ProtectedRoute>} />
@@ -116,6 +125,7 @@ export default function App() {
           <Route path="ket-qua" element={<QuizResultsPage />} />
           <Route path="chung-chi" element={<CertificatesPage />} />
           <Route path="diem-thuong" element={<RewardsPage />} />
+          <Route path="yeu-thich" element={<WishlistPage />} />
           <Route path="tin-nhan" element={<MessagesPage area="student" />} />
           <Route path="tin-nhan/:id" element={<MessagesPage area="student" />} />
         </Route>
@@ -142,6 +152,7 @@ export default function App() {
           <Route path="giao-dich" element={<AdminPaymentsPage />} />
           <Route path="hoan-tien" element={<AdminRefundRequestsPage />} />
           <Route path="chi-tra" element={<AdminPayoutsPage />} />
+          <Route path="combo" element={<AdminBundlesPage />} />
           <Route path="chung-chi" element={<AdminCertificatesPage />} />
           <Route path="diem-thuong" element={<AdminRewardsPage />} />
         </Route>

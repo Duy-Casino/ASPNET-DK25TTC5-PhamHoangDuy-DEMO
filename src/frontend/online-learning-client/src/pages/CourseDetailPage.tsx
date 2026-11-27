@@ -5,6 +5,8 @@ import { Check, ChevronDown, FileText, PlayCircle, Star, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { MessageInstructorButton } from '../components/messaging/MessageInstructorButton'
 import { ShareCourseButton } from '../components/rewards/ShareCourseButton'
+import { FlashSaleCountdown, WishlistButton } from '../components/growth'
+import { CourseBundles, RelatedCourses } from '../components/growth/Sections'
 import { ResponsiveImg, Avatar, DecorBlobs, ErrorState, Pagination, RatingStars, Skeleton, Spinner, TextArea, VerifiedBadge } from '../components/ui'
 import { site } from '../config/site'
 import { useAsync } from '../hooks/useAsync'
@@ -111,6 +113,7 @@ export default function CourseDetailPage() {
               </span>
             </Link>
               <ShareCourseButton course={{ id: course.id, title: course.title }} label="Chia sẻ khóa học" className="btn-outline min-h-12" />
+              {!course.isOwner && !course.isEnrolled && <WishlistButton courseId={course.id} title={course.title} variant="button" />}
             </div>
           </div>
           <div className="lg:hidden">
@@ -178,10 +181,14 @@ export default function CourseDetailPage() {
             </div>
           </section>
 
+          {!course.isEnrolled && <CourseBundles courseId={course.id} />}
+
           <Reviews course={course} onChanged={reload} />
         </div>
         <div className="hidden lg:block" />
       </div>
+
+      <RelatedCourses slug={course.slug} />
 
       {preview && <PreviewDialog title={preview.title} url={preview.url} onClose={() => setPreview(null)} />}
     </div>
@@ -228,6 +235,7 @@ function PurchaseCard({ course, onPreview }: { course: CourseDetail; onPreview: 
             </>
           )}
         </div>
+        {course.discountEndsAt && !course.isEnrolled && <FlashSaleCountdown endsAt={course.discountEndsAt} />}
 
         {course.isOwner ? (
           <div className="flex flex-col gap-2">
@@ -260,6 +268,12 @@ function PurchaseCard({ course, onPreview }: { course: CourseDetail; onPreview: 
             >
               {course.effectivePrice === 0 ? 'Đăng ký học miễn phí' : 'Mua ngay'}
             </button>
+            {course.effectivePrice > 0 && (
+              <button type="button" className="btn-ghost w-full"
+                onClick={() => (isAuthenticated ? navigate(`/thanh-toan?course=${course.id}&tang=1`) : requireLogin())}>
+                Mua tặng người khác
+              </button>
+            )}
           </>
         )}
 

@@ -57,6 +57,8 @@ public class OrderConfiguration : IEntityTypeConfiguration<Order>
             .HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.NoAction);
         b.HasOne(x => x.Coupon).WithMany()
             .HasForeignKey(x => x.CouponId).OnDelete(DeleteBehavior.NoAction);
+        b.HasOne(x => x.Bundle).WithMany()
+            .HasForeignKey(x => x.BundleId).OnDelete(DeleteBehavior.NoAction);
     }
 }
 

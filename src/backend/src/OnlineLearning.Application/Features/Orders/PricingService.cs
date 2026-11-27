@@ -9,7 +9,7 @@ namespace OnlineLearning.Application.Features.Orders;
 
 public sealed record PricingLine(Course Course, decimal OriginalPrice, decimal Price, decimal DiscountAllocated, decimal FinalPrice);
 public sealed record PricingResult(IReadOnlyList<PricingLine> Lines, decimal SubTotal, decimal DiscountAmount, decimal TotalAmount, Coupon? Coupon,
-    int PointsUsed, decimal PointsDiscountAmount, CheckoutPointsDto Points);
+    int PointsUsed, decimal PointsDiscountAmount, CheckoutPointsDto Points, Bundle? Bundle = null);
 
 public interface IPricingService
 {
@@ -17,8 +17,10 @@ public interface IPricingService
     /// Tính giá hoàn toàn từ DB (không tin giá từ Frontend), áp BR-01, BR-02, BR-05.
     /// Điểm thưởng (nếu usePoints) trừ sau mã giảm giá, theo quy tắc checkout_points và số dư thật trong DB.
     /// </summary>
+    /// <param name="bundleId">Mua combo: lấy danh sách khóa và giá từ combo (bỏ qua courseIds).</param>
+    /// <param name="isGift">Mua tặng: không chặn khóa học người mua đã sở hữu.</param>
     Task<Result<PricingResult>> CalculateAsync(Guid userId, IReadOnlyCollection<Guid> courseIds, string? couponCode,
-        bool usePoints, int? points, CancellationToken ct = default);
+        bool usePoints, int? points, CancellationToken ct = default, Guid? bundleId = null, bool isGift = false);
     Task<Result<PriceQuoteDto>> QuoteAsync(Guid userId, PriceQuoteRequest request, CancellationToken ct = default);
 }
 
@@ -27,9 +29,16 @@ public sealed class PricingService(IAppDbContext db, IDateTimeProvider clock) : 
     private static readonly System.Globalization.CultureInfo Vi = new("vi-VN");
 
     public async Task<Result<PricingResult>> CalculateAsync(Guid userId, IReadOnlyCollection<Guid> courseIds, string? couponCode,
-        bool usePoints, int? points, CancellationToken ct = default)
+        bool usePoints, int? points, CancellationToken ct = default, Guid? bundleId = null, bool isGift = false)
     {
         var ids = courseIds.Distinct().ToList();
+        Bundle? bundle = null;
+        if (bundleId is { } bid)
+        {
+            bundle = await db.Bundles.Include(b => b.Courses).FirstOrDefaultAsync(b => b.Id == bid && b.IsActive, ct);
+            if (bundle is null) return Error.Validation("Combo không tồn tại hoặc đã ngừng bán.");
+            ids = bundle.Courses.OrderBy(x => x.SortOrder).Select(x => x.CourseId).ToList();
+        }
         if (ids.Count == 0) return Error.Validation("Chưa chọn khóa học.");
 
         var courses = await db.Courses.Where(c => ids.Contains(c.Id)).ToListAsync(ct);
@@ -38,14 +47,23 @@ public sealed class PricingService(IAppDbContext db, IDateTimeProvider clock) : 
         if (courses.Any(c => c.InstructorId == userId))
             return Error.Conflict("Bạn không thể mua khóa học của chính mình.");
 
-        var owned = await db.Enrollments.Where(e => e.UserId == userId && ids.Contains(e.CourseId))
-            .Select(e => e.Course.Title).ToListAsync(ct);
-        if (owned.Count > 0)
-            return Error.Conflict($"Bạn đã sở hữu: {string.Join(", ", owned)}.");
+        if (!isGift)
+        {
+            var owned = await db.Enrollments.Where(e => e.UserId == userId && ids.Contains(e.CourseId))
+                .Select(e => e.Course.Title).ToListAsync(ct);
+            if (owned.Count > 0)
+                return Error.Conflict(bundle is null
+                    ? $"Bạn đã sở hữu: {string.Join(", ", owned)}."
+                    : $"Bạn đã sở hữu: {string.Join(", ", owned)}. Combo chỉ bán trọn bộ, bạn có thể mua lẻ các khóa còn lại.");
+        }
 
         // Giữ thứ tự theo yêu cầu để phân bổ giảm giá ổn định
         courses = ids.Select(id => courses.First(c => c.Id == id)).ToList();
-        var subTotal = courses.Sum(c => c.EffectivePrice);
+        // Giá từng khóa: giá khuyến mãi còn hạn tại thời điểm tính, hoặc phần giá combo phân bổ theo giá gốc
+        var priceOf = bundle is null
+            ? courses.ToDictionary(c => c.Id, c => c.EffectivePriceAt(clock.UtcNow))
+            : SplitBundlePrice(courses, bundle.Price);
+        var subTotal = courses.Sum(c => priceOf[c.Id]);
 
         Coupon? coupon = null;
         decimal discount = 0;
@@ -72,14 +90,14 @@ public sealed class PricingService(IAppDbContext db, IDateTimeProvider clock) : 
                 if (eligible.Count == 0) return Error.Validation("Mã giảm giá không áp dụng cho các khóa học đã chọn.");
             }
 
-            var eligibleAmount = eligible.Sum(c => c.EffectivePrice);
+            var eligibleAmount = eligible.Sum(c => priceOf[c.Id]);
             if (eligibleAmount < coupon.MinOrderAmount)
                 return Error.Validation($"Đơn hàng tối thiểu {coupon.MinOrderAmount.ToString("N0", Vi)}đ để dùng mã này.");
 
             discount = coupon.CalculateDiscount(eligibleAmount);
         }
 
-        var lines = Allocate(courses, eligible, discount);
+        var lines = Allocate(courses, eligible, discount, priceOf);
 
         // ---- Điểm thưởng: trừ sau mã giảm giá ----
         var afterCoupon = subTotal - discount;
@@ -110,12 +128,13 @@ public sealed class PricingService(IAppDbContext db, IDateTimeProvider clock) : 
         if (pointsDiscount > afterCoupon) pointsDiscount = afterCoupon;
         lines = AllocateExtra(lines, pointsDiscount);
 
-        return new PricingResult(lines, subTotal, discount, afterCoupon - pointsDiscount, coupon, used, pointsDiscount, info);
+        return new PricingResult(lines, subTotal, discount, afterCoupon - pointsDiscount, coupon, used, pointsDiscount, info, bundle);
     }
 
     public async Task<Result<PriceQuoteDto>> QuoteAsync(Guid userId, PriceQuoteRequest request, CancellationToken ct = default)
     {
-        var result = await CalculateAsync(userId, request.CourseIds, request.CouponCode, request.UsePoints, request.Points, ct);
+        var result = await CalculateAsync(userId, request.CourseIds ?? [], request.CouponCode, request.UsePoints, request.Points, ct,
+            request.BundleId, request.IsGift);
         if (result.IsFailure) return result.Error!;
         var p = result.Value!;
         return new PriceQuoteDto(
@@ -151,10 +170,27 @@ public sealed class PricingService(IAppDbContext db, IDateTimeProvider clock) : 
         return lines.Select((l, i) => l with { DiscountAllocated = l.DiscountAllocated + shares[i], FinalPrice = l.FinalPrice - shares[i] }).ToList();
     }
 
-    /// <summary>Phân bổ tiền giảm theo tỷ lệ giá cho từng khóa học đủ điều kiện; phần dư làm tròn dồn vào dòng cuối.</summary>
-    private static List<PricingLine> Allocate(List<Course> courses, List<Course> eligible, decimal discount)
+    /// <summary>Chia giá combo cho từng khóa theo tỷ lệ giá gốc; phần dư làm tròn dồn vào khóa cuối để tổng đúng bằng giá combo.</summary>
+    internal static Dictionary<Guid, decimal> SplitBundlePrice(List<Course> courses, decimal bundlePrice)
     {
-        var eligibleTotal = eligible.Sum(c => c.EffectivePrice);
+        var total = courses.Sum(c => c.Price);
+        var result = new Dictionary<Guid, decimal>();
+        var remaining = bundlePrice;
+        for (var i = 0; i < courses.Count; i++)
+        {
+            var c = courses[i];
+            var share = i == courses.Count - 1 ? remaining
+                : total <= 0 ? 0 : Math.Min(remaining, Math.Round(bundlePrice * c.Price / total, 0, MidpointRounding.ToZero));
+            result[c.Id] = share;
+            remaining -= share;
+        }
+        return result;
+    }
+
+    /// <summary>Phân bổ tiền giảm theo tỷ lệ giá cho từng khóa học đủ điều kiện; phần dư làm tròn dồn vào dòng cuối.</summary>
+    private static List<PricingLine> Allocate(List<Course> courses, List<Course> eligible, decimal discount, Dictionary<Guid, decimal> priceOf)
+    {
+        var eligibleTotal = eligible.Sum(c => priceOf[c.Id]);
         var remaining = discount;
         var lastEligible = eligible.LastOrDefault();
         var lines = new List<PricingLine>();
@@ -166,11 +202,11 @@ public sealed class PricingService(IAppDbContext db, IDateTimeProvider clock) : 
             {
                 allocated = c == lastEligible
                     ? remaining
-                    : Math.Round(discount * c.EffectivePrice / eligibleTotal, 0, MidpointRounding.ToZero);
-                allocated = Math.Min(allocated, c.EffectivePrice);
+                    : Math.Round(discount * priceOf[c.Id] / eligibleTotal, 0, MidpointRounding.ToZero);
+                allocated = Math.Min(allocated, priceOf[c.Id]);
                 remaining -= allocated;
             }
-            lines.Add(new PricingLine(c, c.Price, c.EffectivePrice, allocated, c.EffectivePrice - allocated));
+            lines.Add(new PricingLine(c, c.Price, priceOf[c.Id], allocated, priceOf[c.Id] - allocated));
         }
         return lines;
     }

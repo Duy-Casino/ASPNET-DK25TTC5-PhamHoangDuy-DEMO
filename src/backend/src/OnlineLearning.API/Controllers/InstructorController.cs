@@ -51,6 +51,11 @@ public sealed class InstructorController(IInstructorCourseService courses, IRevi
     [HttpPost("courses/{id:guid}/unpublish")]
     public async Task<IActionResult> Unpublish(Guid id, CancellationToken ct) => FromResult(await courses.UnpublishAsync(id, ct));
 
+    /// <summary>Flash sale: đặt giá khuyến mãi có hạn kết thúc (hoặc bỏ khuyến mãi), dùng được khi khóa đã xuất bản.</summary>
+    [HttpPut("courses/{id:guid}/promotion")]
+    public async Task<IActionResult> SetPromotion(Guid id, SetPromotionRequest request, CancellationToken ct) =>
+        FromResult(await courses.SetPromotionAsync(id, request, ct));
+
     // ---------- Sections ----------
     [HttpPost("courses/{courseId:guid}/sections")]
     public async Task<IActionResult> AddSection(Guid courseId, SaveSectionRequest request, CancellationToken ct) =>

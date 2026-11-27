@@ -11,7 +11,8 @@ import { instructorService } from '../../services/dashboardApi'
 import type { CourseLevel } from '../../types/common'
 import { courseLevelLabel } from '../../types/common'
 import type { CourseEdit, LessonEdit, SaveLessonInput, SectionEdit } from '../../types/dashboard'
-import { formatClock } from '../../utils/format'
+import { formatClock, formatPrice } from '../../utils/format'
+import { promotionService } from '../../services/growthApi'
 import QuizzesTab from './QuizEditor'
 import { FileUpload } from '../../components/upload/FileUpload'
 
@@ -88,6 +89,7 @@ export default function CourseEditorPage() {
         <StatusBadge status={course.status} />
         {course.status === 'Rejected' && course.rejectionReason && <span className="text-sm text-danger">Lý do: {course.rejectionReason}</span>}
       </div>
+      <PromotionPanel course={course} onSaved={reload} />
       {!course.isEditable && (
         <p className="flex items-start gap-3 bg-warning-50 p-4 text-sm">
           <Lock className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
@@ -112,6 +114,51 @@ export default function CourseEditorPage() {
 }
 
 const lines = (s: string) => s.split('\n').map((x) => x.trim()).filter(Boolean)
+
+/** Giá trị cho ô datetime-local theo giờ máy người dùng. */
+const toLocalInput = (iso: string | null) => {
+  if (!iso) return ''
+  const d = new Date(iso)
+  return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
+}
+
+/** Flash sale: đặt giá khuyến mãi kèm hạn kết thúc; dùng được cả khi khóa học đang bán, không cần duyệt lại. */
+function PromotionPanel({ course, onSaved }: { course: CourseEdit; onSaved: () => void }) {
+  const active = course.discountPrice !== null && (!course.discountEndsAt || new Date(course.discountEndsAt) > new Date())
+  const [price, setPrice] = useState(course.discountPrice?.toString() ?? '')
+  const [ends, setEnds] = useState(toLocalInput(course.discountEndsAt))
+  const [saving, setSaving] = useState(false)
+  const save = async (clear = false) => {
+    setSaving(true)
+    try {
+      await promotionService.set(course.id, clear ? null : Number(price), clear || !ends ? null : new Date(ends).toISOString())
+      toast.success(clear ? 'Đã bỏ khuyến mãi' : 'Đã lưu khuyến mãi')
+      if (clear) { setPrice(''); setEnds('') }
+      onSaved()
+    } catch (e) {
+      toast.error(getErrorMessage(e))
+    } finally {
+      setSaving(false)
+    }
+  }
+  return (
+    <section className="card flex flex-wrap items-end gap-3 p-4" aria-label="Khuyến mãi có thời hạn">
+      <div className="w-full">
+        <h2 className="font-bold">Khuyến mãi / flash sale</h2>
+        <p className="text-sm text-ink-soft">
+          Giá gốc {formatPrice(course.price, '0đ')}.{' '}
+          {active ? <>Đang giảm còn <b className="text-ink">{formatPrice(course.discountPrice ?? 0, '0đ')}</b>{course.discountEndsAt && <> đến {new Date(course.discountEndsAt).toLocaleString('vi-VN')}</>}.</>
+            : course.discountPrice !== null ? 'Khuyến mãi đã hết hạn, đang bán giá gốc.' : 'Chưa có khuyến mãi.'}
+          {' '}Hết hạn thì giá tự trở về giá gốc.
+        </p>
+      </div>
+      <Field label="Giá khuyến mãi (đ)" type="number" min={0} step={1000} value={price} onChange={(e) => setPrice(e.target.value)} className="w-48" />
+      <Field label="Kết thúc lúc (để trống = không thời hạn)" type="datetime-local" value={ends} onChange={(e) => setEnds(e.target.value)} />
+      <button type="button" className="btn-primary" disabled={saving || !price} onClick={() => save()}>{saving && <Spinner className="size-4" />}Lưu khuyến mãi</button>
+      {course.discountPrice !== null && <button type="button" className="btn-ghost text-danger" disabled={saving} onClick={() => save(true)}>Bỏ khuyến mãi</button>}
+    </section>
+  )
+}
 
 function InfoTab({ course, onSaved }: { course: CourseEdit; onSaved: (c: CourseEdit) => void }) {
   const categories = useAsync(() => catalogService.categories(), [])

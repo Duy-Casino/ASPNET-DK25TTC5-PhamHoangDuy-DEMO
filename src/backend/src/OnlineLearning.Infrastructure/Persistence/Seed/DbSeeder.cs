@@ -73,6 +73,12 @@ public static class DbSeeder
 
         await SeedInstructorAvatarsAsync(db, ct);
 
+        if (!await db.Bundles.AnyAsync(ct) && await db.Courses.AnyAsync(ct))
+        {
+            await SeedBundlesAndFlashSaleAsync(db, ct);
+            logger.LogInformation("Đã tạo combo mẫu và flash sale mẫu.");
+        }
+
         if (!await db.InstructorEarnings.AnyAsync(ct) && await db.Orders.AnyAsync(o => o.Status == OrderStatus.Paid, ct))
         {
             await SeedInstructorEarningsAsync(db, config, ct);
@@ -98,6 +104,7 @@ public static class DbSeeder
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
         var missing = db.Model.GetEntityTypes().Select(e => e.GetTableName()).OfType<string>().Distinct()
             .Where(t => !existing.Contains(t)).ToList();
+        await AddMissingSqliteColumnsAsync(db, existing, logger, ct);
         if (missing.Count == 0) return;
 
         static string? TableOf(string stmt, string keyword)
@@ -122,6 +129,58 @@ public static class DbSeeder
             if (table is not null && missing.Contains(table)) await db.Database.ExecuteSqlRawAsync(stmt, ct);
         }
         logger.LogInformation("DB demo: đã tạo thêm {Count} bảng mới: {Tables}", missing.Count, string.Join(", ", missing));
+    }
+
+    /// <summary>Hai combo mẫu (giá combo thấp hơn tổng giá gốc) và một khóa học flash sale kết thúc sau 3 ngày.</summary>
+    private static async Task SeedBundlesAndFlashSaleAsync(AppDbContext db, CancellationToken ct)
+    {
+        var published = await db.Courses.Where(c => c.Status == CourseStatus.Published && !c.IsDeleted).ToListAsync(ct);
+        Course? Find(string title) => published.FirstOrDefault(c => c.Title == title);
+
+        void AddBundle(string title, string description, decimal price, params string[] titles)
+        {
+            var courses = titles.Select(Find).OfType<Course>().ToList();
+            if (courses.Count < 2 || price >= courses.Sum(c => c.Price)) return;
+            var bundle = new Bundle
+            {
+                Title = title, Slug = "combo-" + SlugHelper.Slugify(title), Description = description, Price = price, IsActive = true,
+            };
+            for (var i = 0; i < courses.Count; i++) bundle.Courses.Add(new BundleCourse { CourseId = courses[i].Id, SortOrder = i });
+            db.Bundles.Add(bundle);
+        }
+
+        AddBundle("Lập trình web với .NET và React", "Lộ trình trọn gói từ C# cơ bản, xây dựng Web API đến giao diện React.", 1_490_000,
+            "Lập trình C# từ cơ bản đến nâng cao", "ASP.NET Core Web API thực chiến", "ReactJS và TypeScript cho người mới");
+        AddBundle("Phân tích dữ liệu văn phòng", "Thành thạo Excel rồi dựng dashboard Power BI cho báo cáo kinh doanh.", 990_000,
+            "Excel từ cơ bản đến nâng cao", "Power BI phân tích dữ liệu kinh doanh");
+
+        if (Find("Photoshop cơ bản cho người đi làm") is { DiscountPrice: not null } sale)
+            sale.DiscountEndsAt = DateTime.UtcNow.AddDays(3);
+        await db.SaveChangesAsync(ct);
+    }
+
+    /// <summary>Cột mới trên bảng đã có (ví dụ Courses.DiscountEndsAt): thêm bằng ALTER TABLE ADD COLUMN, cột bắt buộc lấy giá trị mặc định 0/''.</summary>
+    private static async Task AddMissingSqliteColumnsAsync(AppDbContext db, HashSet<string> existingTables, ILogger logger, CancellationToken ct)
+    {
+        foreach (var entity in db.Model.GetEntityTypes().Where(e => e.GetTableName() is { } t && existingTables.Contains(t) && e.GetViewName() is null))
+        {
+            var table = entity.GetTableName()!;
+            var store = Microsoft.EntityFrameworkCore.Metadata.StoreObjectIdentifier.Table(table, null);
+            var columns = (await db.Database.SqlQueryRaw<string>($"SELECT name AS Value FROM pragma_table_info('{table}')").ToListAsync(ct))
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            foreach (var prop in entity.GetProperties())
+            {
+                var column = prop.GetColumnName(store);
+                if (column is null || columns.Contains(column)) continue;
+                var type = prop.GetColumnType(store) ?? "TEXT";
+                var sql = prop.IsNullable
+                    ? $"ALTER TABLE \"{table}\" ADD COLUMN \"{column}\" {type} NULL"
+                    : $"ALTER TABLE \"{table}\" ADD COLUMN \"{column}\" {type} NOT NULL DEFAULT {(type.Equals("TEXT", StringComparison.OrdinalIgnoreCase) ? "''" : "0")}";
+                await db.Database.ExecuteSqlRawAsync(sql, ct);
+                columns.Add(column);
+                logger.LogInformation("DB demo: thêm cột {Table}.{Column}", table, column);
+            }
+        }
     }
 
     /// <summary>

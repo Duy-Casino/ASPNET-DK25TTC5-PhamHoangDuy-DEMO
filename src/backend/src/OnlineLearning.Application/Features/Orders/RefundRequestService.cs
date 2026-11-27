@@ -79,7 +79,9 @@ public sealed class RefundRequestService(
             return ($"Bạn đã học {progress:0.#}% nội dung, vượt mức {O.RefundMaxProgressPercent:0.#}% được hoàn tiền.", deadline, progress);
 
         var courseIds = order.Items.Select(i => i.CourseId).ToList();
-        if (await db.Certificates.AnyAsync(c => c.UserId == order.UserId && courseIds.Contains(c.CourseId) && !c.IsRevoked, ct))
+        var learnerIds = await db.Enrollments.Where(e => e.OrderId == order.Id).Select(e => e.UserId).ToListAsync(ct);
+        learnerIds.Add(order.UserId);
+        if (await db.Certificates.AnyAsync(c => learnerIds.Contains(c.UserId) && courseIds.Contains(c.CourseId) && !c.IsRevoked, ct))
             return ("Khóa học trong đơn đã được cấp chứng chỉ.", deadline, progress);
 
         return (null, deadline, progress);

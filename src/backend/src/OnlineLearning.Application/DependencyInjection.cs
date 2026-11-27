@@ -42,6 +42,11 @@ public static class DependencyInjection
         services.AddScoped<IRefundRequestService, RefundRequestService>();
         services.AddScoped<IInvoiceService, InvoiceService>();
         services.AddScoped<IOrderEmailService, OrderEmailService>();
+        services.AddScoped<Features.Growth.IWishlistService, Features.Growth.WishlistService>();
+        services.AddScoped<Features.Growth.IRecommendationService, Features.Growth.RecommendationService>();
+        services.AddScoped<Features.Growth.IBundleService, Features.Growth.BundleService>();
+        services.AddScoped<Features.Growth.IGiftService, Features.Growth.GiftService>();
+        services.AddScoped<Features.Growth.ICartReminderService, Features.Growth.CartReminderService>();
 
         return services;
     }

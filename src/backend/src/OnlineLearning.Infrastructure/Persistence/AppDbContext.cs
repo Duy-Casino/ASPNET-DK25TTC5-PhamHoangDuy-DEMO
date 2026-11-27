@@ -48,6 +48,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<InstructorEarning> InstructorEarnings => Set<InstructorEarning>();
     public DbSet<InstructorPayout> InstructorPayouts => Set<InstructorPayout>();
     public DbSet<RefundRequest> RefundRequests => Set<RefundRequest>();
+    public DbSet<WishlistItem> WishlistItems => Set<WishlistItem>();
+    public DbSet<Bundle> Bundles => Set<Bundle>();
+    public DbSet<BundleCourse> BundleCourses => Set<BundleCourse>();
+    public DbSet<CourseGift> CourseGifts => Set<CourseGift>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -103,6 +107,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
         configurationBuilder.Properties<EarningType>().HaveConversion<string>().HaveMaxLength(20);
         configurationBuilder.Properties<PayoutStatus>().HaveConversion<string>().HaveMaxLength(20);
         configurationBuilder.Properties<RefundRequestStatus>().HaveConversion<string>().HaveMaxLength(20);
+        configurationBuilder.Properties<GiftStatus>().HaveConversion<string>().HaveMaxLength(20);
     }
 
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)

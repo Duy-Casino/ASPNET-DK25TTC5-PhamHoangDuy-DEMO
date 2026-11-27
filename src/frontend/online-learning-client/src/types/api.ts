@@ -42,6 +42,8 @@ export interface CourseSummary {
   price: number
   discountPrice: number | null
   effectivePrice: number
+  /** Hạn kết thúc giá khuyến mãi (flash sale); null = không thời hạn */
+  discountEndsAt: string | null
   averageRating: number
   reviewCount: number
   enrollmentCount: number
@@ -229,6 +231,8 @@ export interface CourseDetail {
   price: number
   discountPrice: number | null
   effectivePrice: number
+  /** Hạn kết thúc giá khuyến mãi (flash sale); null = không thời hạn */
+  discountEndsAt: string | null
   status: CourseStatus
   averageRating: number
   reviewCount: number
@@ -342,6 +346,19 @@ export interface Order {
   cancelledAt: string | null
   items: OrderItem[]
   payments: Payment[]
+  gift: OrderGift | null
+  bundleTitle: string | null
+}
+
+export interface OrderGift {
+  recipientEmail: string
+  recipientName: string
+  message: string | null
+  status: 'Pending' | 'Sent' | 'Redeemed' | 'Cancelled'
+  sentAt: string | null
+  redeemedAt: string | null
+  /** Liên kết nhận quà (chỉ có khi đã gửi, chưa nhận) để người mua gửi lại cho người nhận */
+  redeemUrl: string | null
 }
 
 export interface OrderListItem {

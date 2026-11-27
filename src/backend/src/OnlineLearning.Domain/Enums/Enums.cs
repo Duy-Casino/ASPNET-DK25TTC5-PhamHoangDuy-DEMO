@@ -39,3 +39,6 @@ public enum PayoutStatus { Requested, Paid, Rejected, Cancelled }
 
 /// <summary>Trạng thái yêu cầu hoàn tiền của học viên.</summary>
 public enum RefundRequestStatus { Pending, Approved, Rejected }
+
+/// <summary>Trạng thái quà tặng: chờ thanh toán → đã gửi → đã nhận; hủy khi đơn bị hủy/hoàn tiền trước khi nhận.</summary>
+public enum GiftStatus { Pending, Sent, Redeemed, Cancelled }

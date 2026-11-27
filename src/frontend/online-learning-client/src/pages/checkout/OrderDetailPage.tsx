@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { CheckCircle2, Clock, FileDown, RotateCcw } from 'lucide-react'
+import { CheckCircle2, Clock, FileDown, Gift, RotateCcw } from 'lucide-react'
 import { toast } from 'sonner'
 import { ErrorState, OrderStatusBadge, Skeleton, Spinner, TextArea } from '../../components/ui'
 import { useAsync, useDocumentTitle } from '../../hooks/useAsync'
@@ -9,6 +9,8 @@ import { getErrorMessage } from '../../services/apiClient'
 import { paymentService, providerLabel, redirectToGateway, type PaymentProvider } from '../../services/paymentApi'
 import { PaymentMethodPicker, TestModeNotice } from '../../components/payment/PaymentMethods'
 import { refundService, refundStatusLabel, refundStatusStyle } from '../../services/revenueApi'
+import { giftStatusLabel } from '../../services/growthApi'
+import type { Order } from '../../types/api'
 import { formatDateTime, formatNumber, formatPrice } from '../../utils/format'
 import NotFoundPage from '../NotFoundPage'
 
@@ -98,11 +100,13 @@ export default function OrderDetailPage() {
           <span className="text-ink-soft">Mã đơn <b className="text-ink">{order.orderCode}</b> · {formatDateTime(order.createdAt)}</span>
         </div>
 
-        {paid && (
+        {paid && !order.gift && (
           <p className="max-w-xl text-lg text-ink-soft">
             Khóa học đã được thêm vào tài khoản của bạn. Quyền học chỉ được cấp sau khi hệ thống xác nhận thanh toán.
           </p>
         )}
+        {order.bundleTitle && <p className="font-semibold text-accent-700">Mua theo combo: {order.bundleTitle}</p>}
+        {order.gift && <GiftInfo gift={order.gift} />}
 
         {order.status === 'Pending' && countdown && (
           <div className="max-w-xl bg-warning-50 p-5">
@@ -179,6 +183,33 @@ export default function OrderDetailPage() {
         )}
       </aside>
     </div>
+  )
+}
+
+function GiftInfo({ gift }: { gift: NonNullable<Order['gift']> }) {
+  const copy = async () => {
+    if (!gift.redeemUrl) return
+    try {
+      await navigator.clipboard.writeText(gift.redeemUrl)
+      toast.success('Đã sao chép liên kết nhận quà')
+    } catch {
+      toast.error('Không sao chép được, hãy chọn và sao chép thủ công.')
+    }
+  }
+  return (
+    <section className="card max-w-xl p-5" aria-label="Quà tặng">
+      <h2 className="flex items-center gap-2 font-bold"><Gift className="size-5 text-accent-600" aria-hidden="true" />Quà tặng cho {gift.recipientName}</h2>
+      <p className="mt-2 text-sm text-ink-soft">{gift.recipientEmail} · <b className="text-ink">{giftStatusLabel[gift.status]}</b>
+        {gift.redeemedAt && ` lúc ${formatDateTime(gift.redeemedAt)}`}</p>
+      {gift.message && <p className="mt-2 text-sm italic text-ink-soft">“{gift.message}”</p>}
+      {gift.redeemUrl && (
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <input readOnly value={gift.redeemUrl} className="input min-w-0 flex-1 text-sm" aria-label="Liên kết nhận quà" onFocus={(e) => e.currentTarget.select()} />
+          <button type="button" className="btn-soft" onClick={copy}>Sao chép</button>
+        </div>
+      )}
+      {gift.status === 'Sent' && <p className="mt-2 text-xs text-ink-muted">Email đã gửi tới người nhận. Nếu họ không thấy, bạn có thể gửi lại liên kết này.</p>}
+    </section>
   )
 }
 

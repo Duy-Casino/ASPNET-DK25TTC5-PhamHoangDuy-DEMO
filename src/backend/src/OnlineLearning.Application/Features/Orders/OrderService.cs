@@ -34,15 +34,25 @@ public sealed class OrderService(
 {
     public async Task<Result<OrderDto>> CreateAsync(Guid userId, CreateOrderRequest request, CancellationToken ct = default)
     {
-        var courseIds = request.FromCart
-            ? await db.CartItems.Where(i => i.Cart.UserId == userId).Select(i => i.CourseId).ToListAsync(ct)
-            : request.CourseIds?.ToList() ?? [];
-        if (courseIds.Count == 0) return Error.Validation("Giỏ hàng trống.");
+        var courseIds = request.BundleId is not null ? []
+            : request.FromCart
+                ? await db.CartItems.Where(i => i.Cart.UserId == userId).Select(i => i.CourseId).ToListAsync(ct)
+                : request.CourseIds?.ToList() ?? [];
+        if (courseIds.Count == 0 && request.BundleId is null) return Error.Validation("Giỏ hàng trống.");
+
+        var gift = request.Gift;
+        if (gift is not null)
+        {
+            var buyerEmail = await db.Users.Where(u => u.Id == userId).Select(u => u.Email).FirstAsync(ct);
+            if (string.Equals(buyerEmail, gift.RecipientEmail.Trim(), StringComparison.OrdinalIgnoreCase))
+                return Error.Validation("Không thể tự tặng khóa học cho chính mình.");
+        }
 
         // Tính giá, tạo đơn và trừ điểm (nếu dùng) trong cùng một transaction:
         // số dư thay đổi giữa lúc báo giá và lúc đặt hàng thì đơn không được tạo
         await using var tx = await db.Database.BeginTransactionAsync(ct);
-        var priced = await pricing.CalculateAsync(userId, courseIds, request.CouponCode, request.UsePoints, request.Points, ct);
+        var priced = await pricing.CalculateAsync(userId, courseIds, request.CouponCode, request.UsePoints, request.Points, ct,
+            request.BundleId, isGift: gift is not null);
         if (priced.IsFailure) return priced.Error!;
         var p = priced.Value!;
         if (request.UsePoints && request.Points is { } wanted && wanted != p.PointsUsed)
@@ -63,6 +73,17 @@ public sealed class OrderService(
             Status = OrderStatus.Pending,
             Note = request.Note?.Trim(),
             ExpiresAt = now.AddMinutes(appOptions.Value.OrderExpiryMinutes),
+            BundleId = p.Bundle?.Id,
+            IsGift = gift is not null,
+            Gift = gift is null ? null : new CourseGift
+            {
+                SenderId = userId,
+                RecipientEmail = gift.RecipientEmail.Trim().ToLowerInvariant(),
+                RecipientName = gift.RecipientName.Trim(),
+                Message = string.IsNullOrWhiteSpace(gift.Message) ? null : gift.Message.Trim(),
+                Code = await UniqueGiftCodeAsync(ct),
+                Status = GiftStatus.Pending,
+            },
             Items = p.Lines.Select(l => new OrderItem
             {
                 CourseId = l.Course.Id,
@@ -118,16 +139,22 @@ public sealed class OrderService(
         var o = await db.Orders.AsNoTracking()
             .Include(x => x.Items).ThenInclude(i => i.Course)
             .Include(x => x.Payments)
+            .Include(x => x.Gift)
+            .Include(x => x.Bundle)
             .AsSplitQuery()
             .FirstOrDefaultAsync(x => x.Id == orderId, ct);
         if (o is null || (!isAdmin && o.UserId != userId)) return Error.NotFound("Không tìm thấy đơn hàng.");
+        var giftDto = o.Gift is not { } g ? null : new OrderGiftDto(g.RecipientEmail, g.RecipientName, g.Message, g.Status, g.SentAt, g.RedeemedAt,
+            // Mã nhận quà chỉ hiện cho người mua sau khi đã thanh toán (để gửi lại nếu người nhận không thấy email)
+            g.Status == GiftStatus.Sent ? $"{appOptions.Value.ClientUrl.TrimEnd('/')}/qua-tang/{g.Code}" : null);
 
         return new OrderDto(o.Id, o.OrderCode, o.Status, o.SubTotal, o.DiscountAmount, o.PointsUsed, o.PointsDiscountAmount, o.TotalAmount, o.CouponCode, o.Note,
             o.CreatedAt, o.ExpiresAt, o.PaidAt, o.CancelledAt,
             o.Items.Select(i => new OrderItemDto(i.CourseId, i.CourseTitle, i.Course?.Slug, i.Course?.ThumbnailUrl,
                 i.OriginalPrice, i.Price, i.DiscountAllocated, i.FinalPrice)).ToList(),
             o.Payments.OrderByDescending(x => x.CreatedAt).Select(x => new PaymentDto(x.Id, x.Provider, x.Amount, x.Status,
-                x.TransactionRef, x.ProviderTransactionId, x.BankCode, x.ResponseCode, x.CreatedAt, x.PaidAt)).ToList());
+                x.TransactionRef, x.ProviderTransactionId, x.BankCode, x.ResponseCode, x.CreatedAt, x.PaidAt)).ToList(),
+            giftDto, o.Bundle?.Title);
     }
 
     public async Task<Result> CancelAsync(Guid orderId, Guid userId, CancellationToken ct = default)
@@ -226,6 +253,15 @@ public sealed class OrderService(
         return count;
     }
 
+    private async Task<string> UniqueGiftCodeAsync(CancellationToken ct)
+    {
+        while (true)
+        {
+            var code = CodeGenerator.Random(12);
+            if (!await db.CourseGifts.AnyAsync(g => g.Code == code, ct)) return code;
+        }
+    }
+
     private async Task<string> UniqueOrderCodeAsync(DateTime now, CancellationToken ct)
     {
         while (true)
@@ -317,10 +353,23 @@ public sealed class OrderFulfillmentService(
         order.PaidAt = now;
 
         var courseIds = order.Items.Select(i => i.CourseId).ToList();
-        var alreadyEnrolled = await db.Enrollments
+        var alreadyEnrolled = order.IsGift ? courseIds : await db.Enrollments
             .Where(e => e.UserId == order.UserId && courseIds.Contains(e.CourseId))
             .Select(e => e.CourseId).ToListAsync(ct);
         var courses = await db.Courses.Where(c => courseIds.Contains(c.Id)).ToListAsync(ct);
+
+        // Đơn mua tặng: người mua không được ghi danh; quà chuyển sang "Đã gửi", người nhận nhận bằng mã
+        CourseGift? gift = null;
+        if (order.IsGift)
+        {
+            gift = await db.CourseGifts.FirstAsync(g => g.OrderId == order.Id, ct);
+            gift.Status = GiftStatus.Sent;
+            gift.SentAt = now;
+            var recipientId = await db.Users.Where(u => u.NormalizedEmail == gift.RecipientEmail.ToUpper()).Select(u => (Guid?)u.Id).FirstOrDefaultAsync(ct);
+            if (recipientId is { } rid)
+                notifications.Add(rid, "Bạn nhận được quà tặng khóa học", "Mở email hoặc liên kết để nhận khóa học được tặng.",
+                    NotificationType.Order, $"/qua-tang/{gift.Code}");
+        }
 
         foreach (var item in order.Items.Where(i => !alreadyEnrolled.Contains(i.CourseId)))
         {
@@ -344,14 +393,20 @@ public sealed class OrderFulfillmentService(
             coupon.UsedCount += 1;
         }
 
-        var cartItems = await db.CartItems
-            .Where(i => i.Cart.UserId == order.UserId && courseIds.Contains(i.CourseId))
-            .ToListAsync(ct);
-        foreach (var ci in cartItems) db.CartItems.Remove(ci);
+        // Mua tặng không xóa giỏ: người mua chưa có các khóa này
+        if (!order.IsGift)
+        {
+            var cartItems = await db.CartItems
+                .Where(i => i.Cart.UserId == order.UserId && courseIds.Contains(i.CourseId))
+                .ToListAsync(ct);
+            foreach (var ci in cartItems) db.CartItems.Remove(ci);
+        }
 
         notifications.Add(order.UserId, "Thanh toán thành công",
-            $"Đơn hàng {order.OrderCode} đã được thanh toán. Bạn có thể bắt đầu học ngay.", NotificationType.Order,
-            "/hoc-vien/khoa-hoc");
+            gift is null
+                ? $"Đơn hàng {order.OrderCode} đã được thanh toán. Bạn có thể bắt đầu học ngay."
+                : $"Đơn hàng {order.OrderCode} đã được thanh toán. Quà tặng đã được gửi tới {gift.RecipientEmail}.",
+            NotificationType.Order, gift is null ? "/hoc-vien/khoa-hoc" : $"/don-hang/{order.Id}");
 
         // Điểm thưởng mua hàng + giới thiệu: cùng transaction với việc xác nhận thanh toán,
         // nên IPN gửi lặp (đơn đã Paid ở trên) không bao giờ cộng điểm lần hai
@@ -365,6 +420,7 @@ public sealed class OrderFulfillmentService(
 
         logger.LogInformation("Đơn {OrderCode} thanh toán thành công qua {Provider}", order.OrderCode, confirmation.Provider);
         await emails.SendReceiptAsync(order.Id, ct);
+        if (gift is not null) await emails.SendGiftAsync(order.Id, ct);
         return Result.Success();
     }
 
@@ -391,9 +447,11 @@ public sealed class OrderFulfillmentService(
         if (order.Status == OrderStatus.Refunded) return Result.Failure(Error.Conflict("Đơn hàng đã được hoàn tiền trước đó."));
         if (order.Status != OrderStatus.Paid) return Result.Failure(Error.Conflict("Chỉ hoàn tiền được đơn đã thanh toán."));
 
+        // Quyền học của đơn (người mua, hoặc người nhận nếu là quà đã nhận)
         var enrollments = await db.Enrollments.Where(e => e.OrderId == order.Id).ToListAsync(ct);
         var enrolledCourseIds = enrollments.Select(e => e.CourseId).ToList();
-        if (await db.Certificates.AnyAsync(c => c.UserId == order.UserId && enrolledCourseIds.Contains(c.CourseId) && !c.IsRevoked, ct))
+        var learnerIds = enrollments.Select(e => e.UserId).Append(order.UserId).Distinct().ToList();
+        if (await db.Certificates.AnyAsync(c => learnerIds.Contains(c.UserId) && enrolledCourseIds.Contains(c.CourseId) && !c.IsRevoked, ct))
             return Result.Failure(Error.Conflict("Không hoàn tiền được: học viên đã được cấp chứng chỉ cho khóa học trong đơn."));
 
         var now = clock.UtcNow;
@@ -412,6 +470,14 @@ public sealed class OrderFulfillmentService(
         await rewards.StageRefundRevocationAsync(order, adminId, ct);
         await rewards.StageCheckoutRestoreAsync(order, refund: true, ct);
         await revenue.StageRefundReversalAsync(order, now, ct);
+
+        if (order.IsGift && await db.CourseGifts.FirstOrDefaultAsync(g => g.OrderId == order.Id, ct) is { } gift)
+        {
+            if (gift.Status != GiftStatus.Redeemed) gift.Status = GiftStatus.Cancelled;
+            if (gift.RedeemedById is { } rid && rid != order.UserId)
+                notifications.Add(rid, "Quà tặng đã bị thu hồi", $"Đơn quà tặng {order.OrderCode} đã được hoàn tiền cho người tặng; quyền học bị thu hồi.",
+                    NotificationType.Order, "/hoc-vien");
+        }
 
         // Yêu cầu hoàn tiền đang chờ của đơn (nếu có) được đóng là "Đã duyệt"
         var pending = await db.RefundRequests.Where(r => r.OrderId == order.Id && r.Status == RefundRequestStatus.Pending).ToListAsync(ct);

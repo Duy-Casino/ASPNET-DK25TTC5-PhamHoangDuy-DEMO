@@ -102,6 +102,8 @@ public interface IOrderEmailService
 {
     Task SendReceiptAsync(Guid orderId, CancellationToken ct = default);
     Task SendRefundedAsync(Guid orderId, CancellationToken ct = default);
+    /// <summary>Email cho người nhận quà: lời nhắn, danh sách khóa học, liên kết nhận quà.</summary>
+    Task SendGiftAsync(Guid orderId, CancellationToken ct = default);
 }
 
 public sealed class OrderEmailService(
@@ -159,5 +161,30 @@ public sealed class OrderEmailService(
         }
     }
 
-    private static string E(string? s) => WebUtility.HtmlEncode(s ?? "");
+    public async Task SendGiftAsync(Guid orderId, CancellationToken ct = default)
+    {
+        try
+        {
+            var g = await db.CourseGifts.AsNoTracking().Include(x => x.Sender).Include(x => x.Order).ThenInclude(o => o.Items)
+                .FirstOrDefaultAsync(x => x.OrderId == orderId, ct);
+            if (g is null || g.Status != GiftStatus.Sent) return;
+            var client = app.Value.ClientUrl.TrimEnd('/');
+            var sb = new StringBuilder();
+            sb.Append($"<p>Chào {E(g.RecipientName)},</p>");
+            sb.Append($"<p><b>{E(g.Sender.FullName)}</b> đã tặng bạn {(g.Order.Items.Count > 1 ? $"{g.Order.Items.Count} khóa học" : "một khóa học")} trên {E(invoice.Value.SellerName)}:</p><ul>");
+            foreach (var i in g.Order.Items.OrderBy(i => i.CourseTitle)) sb.Append($"<li>{E(i.CourseTitle)}</li>");
+            sb.Append("</ul>");
+            if (!string.IsNullOrWhiteSpace(g.Message))
+                sb.Append($"<blockquote style=\"border-left:3px solid #ef8000;margin:0;padding:8px 12px;color:#334155\">{E(g.Message)}</blockquote>");
+            sb.Append($"<p><a href=\"{client}/qua-tang/{g.Code}\">Nhận quà tặng</a> (đăng nhập hoặc đăng ký bằng email <b>{E(g.RecipientEmail)}</b>).</p>");
+            sb.Append($"<p style=\"color:#64748b;font-size:12px\">Mã quà tặng: {E(g.Code)}</p>");
+            await sender.SendAsync(g.RecipientEmail, $"{g.Sender.FullName} tặng bạn khóa học trên {invoice.Value.SellerName}", sb.ToString(), ct);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Không gửi được email quà tặng cho đơn {OrderId}", orderId);
+        }
+    }
+
+    private static string E(string? s) => System.Text.Encodings.Web.HtmlEncoder.Create(System.Text.Unicode.UnicodeRanges.All).Encode(s ?? "");
 }

@@ -42,6 +42,8 @@ public class Course : AuditableEntity
 
     public decimal Price { get; set; }
     public decimal? DiscountPrice { get; set; }
+    /// <summary>Hạn kết thúc giá khuyến mãi (flash sale). Null = khuyến mãi không thời hạn.</summary>
+    public DateTime? DiscountEndsAt { get; set; }
 
     public CourseStatus Status { get; set; } = CourseStatus.Draft;
     public string? RejectionReason { get; set; }
@@ -63,8 +65,15 @@ public class Course : AuditableEntity
     public ICollection<Enrollment> Enrollments { get; set; } = [];
     public ICollection<Review> Reviews { get; set; } = [];
 
-    /// <summary>BR-01: giá bán thực tế (luôn tính ở Backend).</summary>
-    public decimal EffectivePrice => DiscountPrice is { } d && d < Price ? d : Price;
+    /// <summary>Giá khuyến mãi còn hiệu lực tại thời điểm <paramref name="utcNow"/> (chưa hết hạn flash sale).</summary>
+    public bool IsDiscountActive(DateTime utcNow) =>
+        DiscountPrice is { } d && d < Price && (DiscountEndsAt is null || DiscountEndsAt > utcNow);
+
+    /// <summary>BR-01: giá bán thực tế tại một thời điểm (luôn tính ở Backend).</summary>
+    public decimal EffectivePriceAt(DateTime utcNow) => IsDiscountActive(utcNow) ? DiscountPrice!.Value : Price;
+
+    /// <summary>Giá bán thực tế ở thời điểm hiện tại (dùng để hiển thị; tính tiền dùng <see cref="EffectivePriceAt"/>).</summary>
+    public decimal EffectivePrice => EffectivePriceAt(DateTime.UtcNow);
 
     /// <summary>Nội dung chính chỉ được sửa khi Draft hoặc Rejected.</summary>
     public bool IsEditable => Status is CourseStatus.Draft or CourseStatus.Rejected;

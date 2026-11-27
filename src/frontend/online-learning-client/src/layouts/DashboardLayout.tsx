@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
-  Award, BarChart3, Gift, CreditCard, BookOpen, ClipboardList, FolderTree, IdCard, LayoutDashboard, LogOut, Menu, MessageSquare, MessagesSquare, Receipt, ShieldCheck, Tag, User, Users, X, type LucideIcon, Wallet, Banknote, RotateCcw,
+  Award, BarChart3, Gift, CreditCard, BookOpen, ClipboardList, FolderTree, IdCard, LayoutDashboard, LogOut, Menu, MessageSquare, MessagesSquare, Receipt, ShieldCheck, Tag, User, Users, X, type LucideIcon, Wallet, Banknote, RotateCcw, Heart, Layers,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Avatar, Logo } from '../components/ui'
@@ -18,6 +18,7 @@ const areas: Record<'student' | 'instructor' | 'admin', { title: string; items: 
       { to: '/hoc-vien/ket-qua', label: 'Kết quả kiểm tra', icon: ClipboardList },
       { to: '/hoc-vien/chung-chi', label: 'Chứng chỉ', icon: Award },
       { to: '/hoc-vien/diem-thuong', label: 'Điểm thưởng', icon: Gift },
+      { to: '/hoc-vien/yeu-thich', label: 'Yêu thích', icon: Heart },
       { to: '/hoc-vien/tin-nhan', label: 'Tin nhắn', icon: MessagesSquare, badge: 'messages' },
       { to: '/tai-khoan/don-hang', label: 'Lịch sử thanh toán', icon: Receipt },
       { to: '/tai-khoan', label: 'Hồ sơ cá nhân', icon: User, end: true },
@@ -49,6 +50,7 @@ const areas: Record<'student' | 'instructor' | 'admin', { title: string; items: 
       { to: '/quan-tri/chung-chi', label: 'Chứng chỉ', icon: Award },
       { to: '/quan-tri/diem-thuong', label: 'Điểm thưởng', icon: Gift },
       { to: '/quan-tri/ma-giam-gia', label: 'Mã giảm giá', icon: Tag },
+      { to: '/quan-tri/combo', label: 'Combo', icon: Layers },
     ],
   },
 }
