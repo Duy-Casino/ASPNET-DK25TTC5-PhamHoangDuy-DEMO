@@ -83,7 +83,7 @@ public sealed record LessonResourceDto(Guid Id, string FileName, string FileUrl,
 
 public sealed record LessonEditDto(
     Guid Id, Guid SectionId, string Title, LessonType Type, string? Content, string? VideoUrl, string? VideoPublicId,
-    int DurationSeconds, int SortOrder, bool IsPreview, bool IsRequired, IReadOnlyList<LessonResourceDto> Resources);
+    int DurationSeconds, int SortOrder, bool IsPreview, bool IsRequired, IReadOnlyList<LessonResourceDto> Resources, string? SubtitlePublicId = null);
 
 public sealed record SectionEditDto(Guid Id, string Title, string? Description, int SortOrder, IReadOnlyList<LessonEditDto> Lessons);
 
@@ -100,6 +100,8 @@ public sealed record SaveSectionRequest(string Title, string? Description);
 public sealed record SaveLessonRequest(
     string Title, LessonType Type, string? Content, string? VideoUrl, string? VideoPublicId,
     int DurationSeconds, bool IsPreview, bool IsRequired = true);
+/// <summary>Gắn/gỡ phụ đề (publicId từ /api/uploads/subtitle; null = gỡ). Được phép cả khi khóa đã xuất bản.</summary>
+public sealed record SetSubtitleRequest(string? SubtitlePublicId);
 public sealed record ReorderRequest(IReadOnlyList<Guid> OrderedIds);
 public sealed record AddResourceRequest(string FileName, string FileUrl, string? PublicId, string? ContentType, long FileSize);
 

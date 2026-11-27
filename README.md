@@ -56,6 +56,9 @@ EduViet là website mua và học khóa học trực tuyến, giao diện tiến
 | **Thanh toán** | VNPay (HMAC-SHA512) và MoMo (HMAC-SHA256) sandbox. Kiểm tra chữ ký và số tiền ở IPN, idempotency, chỉ cấp quyền học qua IPN chứ không qua trang redirect. Có thêm kênh thử nghiệm không thu tiền thật |
 | **Học trực tuyến** | Trình học video nhớ vị trí, tự hoàn thành bài, tài liệu đính kèm, tiến độ theo bài bắt buộc; bài chưa mua bị chặn (403). Video lỗi thì hiện thông báo và nút "Tải lại video" |
 | **Tiện ích người học** | **Hỏi đáp theo từng bài học** (học viên cùng khóa và giảng viên cùng xem, trả lời của giảng viên được đánh dấu, đánh dấu đã giải đáp; giảng viên có hộp "Hỏi đáp" gom câu hỏi chưa trả lời); **ghi chú cá nhân gắn mốc thời gian video** (bấm mốc để tua tới đúng đoạn); **email nhắc học** khi bỏ dở khóa học 7 ngày (mỗi đợt nhắc một lần), học viên tắt được email nhắc nhở ở hồ sơ cá nhân |
+| **Trình phát và ôn tập** | Trình phát có **chọn tốc độ 0,75–2x** (nhớ cho lần sau), **phím tắt** (Space/K phát–dừng, ←/→ tua 10 giây, Shift+</> đổi tốc độ, M, C, F), **phụ đề WebVTT** (giảng viên tải `.vtt` hoặc `.srt`, hệ thống tự đổi sang WebVTT; gắn được cả khi khóa đã xuất bản), **tự chuyển bài sau 5 giây** kèm nút ở lại; **tìm bài trong mục lục** (gõ không dấu vẫn khớp); kết quả bài kiểm tra có bộ lọc **"Câu sai"** và chế độ **luyện lại câu sai** không tính điểm, không tốn lượt |
+| **Tìm kiếm và đăng nhập** | Ô tìm kiếm **gợi ý khi gõ** (khóa học, giảng viên, danh mục; chọn bằng phím mũi tên); **đăng nhập bằng Google** (Google Identity Services, máy chủ xác minh ID token; tự gắn vào tài khoản cùng email; chỉ hiện nút khi đã cấu hình `Authentication:Google:ClientId`) |
+| **Hỗ trợ học viên (giảng viên)** | Trang **Học viên** của giảng viên lọc theo tình trạng: hết lượt kiểm tra, bỏ dở > 14 ngày, chưa bắt đầu, đang học, hoàn thành; cảnh báo số học viên cần hỗ trợ; **cấp thêm 1–3 lượt** cho học viên hết lượt trong khóa của mình (ghi lý do, học viên nhận thông báo); xem **tỷ lệ hoàn thành từng bài** của khóa đang lọc |
 | **Bài kiểm tra** | Trắc nghiệm một hoặc nhiều đáp án, đúng/sai; chấm ở server; giới hạn lượt và thời gian; xem đáp án và giải thích sau khi nộp. **Chưa đạt**: còn lượt thì hiện hướng dẫn ôn tập và số lượt còn lại; **hết lượt** thì học viên gửi yêu cầu cấp thêm lượt, Admin cấp từ trang tiến độ (yêu cầu tự đóng, học viên nhận thông báo) |
 | **Quản lý học tập (Admin)** | Trang **Tiến độ học tập** phân loại mọi lượt ghi danh: chưa bắt đầu, đang học, hoàn thành, hết lượt chưa đạt, bỏ dở > 14 ngày, đủ điều kiện nhưng chưa có chứng chỉ, đã thu hồi; trang chi tiết từng học viên có tiến độ từng bài, mọi lượt kiểm tra, dòng thời gian hoạt động. **Thao tác xử lý sự cố** (bắt buộc lý do, ghi nhật ký): cấp thêm lượt kiểm tra, đánh dấu/bỏ hoàn thành bài học, đặt lại tiến độ, tính lại tiến độ và cấp chứng chỉ, thu hồi/khôi phục quyền học, cấp quyền học thủ công. Học viên **báo sự cố** ngay trong trình học; Admin phản hồi ở trang **Hỗ trợ học tập** |
 | **Công cụ quản trị** | **Báo cáo** doanh thu, khóa học bán chạy, giảng viên nổi bật theo khoảng ngày và **tỷ lệ hoàn thành từng bài** (thấy học viên bỏ dở ở bài nào; giảng viên cũng xem được cho khóa của mình); **kiểm duyệt đánh giá** (lọc số sao, ẩn/hiện); **đăng ký làm giảng viên** (người dùng gửi hồ sơ tại `/dang-ky-giang-day`, Admin duyệt thì tự cấp vai trò Giảng viên); **gửi thông báo hàng loạt** tới tất cả, học viên, giảng viên hoặc học viên một khóa, kèm email tùy chọn; **nhật ký quản trị** ghi mọi thao tác thay đổi dữ liệu của Admin (cả thao tác lỗi), xuất CSV; **cài đặt hệ thống** trên giao diện (tỷ lệ chia doanh thu, chính sách hoàn tiền, thông tin bên bán, bật/tắt email nhắc) có hiệu lực ngay không cần khởi động lại; **trạng thái hệ thống** (CSDL, SMTP, cổng thanh toán, lưu trữ, công việc nền với nút "Chạy ngay", email gần đây); **xuất CSV** người dùng và tiến độ học tập |
@@ -124,6 +127,8 @@ git clone https://github.com/Duy-Casino/ASPNET-DK25TTC5-PhamHoangDuy-DEMO.git
 cd ASPNET-DK25TTC5-PhamHoangDuy-DEMO\src\backend\src\OnlineLearning.API
 dotnet user-secrets set "Jwt:SecretKey" "<chuỗi ngẫu nhiên ≥ 32 ký tự>"
 dotnet user-secrets set "Seed:DemoPassword" "<mật khẩu demo, ≥ 8 ký tự, có hoa/thường/số>"
+# Không bắt buộc: bật "Đăng nhập bằng Google" (OAuth Client ID loại Web, thêm http://localhost:5173 vào Authorized JavaScript origins)
+dotnet user-secrets set "Authentication:Google:ClientId" "<client-id>.apps.googleusercontent.com"
 ```
 
 Bí mật được lưu bằng User Secrets, không nằm trong mã nguồn. Sinh chuỗi ngẫu nhiên trong PowerShell:
@@ -190,8 +195,8 @@ Luồng vận hành bán hàng: học viên mua khóa → mở đơn hàng, tả
 
 | Tầng | Công cụ | Kết quả gần nhất |
 | --- | --- | --- |
-| Backend tích hợp | xUnit + WebApplicationFactory + SQLite in-memory | **76/76 đạt** |
-| End-to-end | Playwright (Chrome), 24 kịch bản desktop + 7 kịch bản điện thoại | **31/31 đạt** |
+| Backend tích hợp | xUnit + WebApplicationFactory + SQLite in-memory | **81/81 đạt** |
+| End-to-end | Playwright (Chrome), 27 kịch bản desktop + 7 kịch bản điện thoại | **34/34 đạt** |
 | Build | `dotnet build`, `npm run build` | Đạt |
 
 ```powershell
@@ -282,6 +287,7 @@ Mỗi khi hoàn thành một tính năng, thêm một dòng vào bảng này và
 | 27/11/2026 | Tiện ích người học: sửa video bài học mẫu (máy chủ ngoài trả 403) bằng video đóng gói cùng Frontend, thông báo lỗi video; hỏi đáp theo từng bài học, ghi chú gắn mốc thời gian, email nhắc học, tắt email nhắc nhở; trang `/giang-day/hoi-dap`. Thêm 3 bảng (51 bảng), migration `LearnerTools` | 65/65 backend, 29/29 E2E |
 | 27/11/2026 | Quản lý học tập cho Admin: trang Tiến độ học tập (phân loại chưa bắt đầu, đang học, hoàn thành, hết lượt chưa đạt, bỏ dở, chưa có chứng chỉ), chi tiết học viên với dòng thời gian; quy trình khi chưa đạt bài cuối khóa (hướng dẫn ôn tập, xin thêm lượt, Admin cấp lượt); thao tác xử lý sự cố có nhật ký; học viên báo sự cố, trang Hỗ trợ học tập. Thêm 3 bảng (54 bảng), migration `LearningSupport` | 69/69 backend, 30/30 E2E |
 | 27/11/2026 | Công cụ quản trị: báo cáo theo khoảng ngày và tỷ lệ hoàn thành từng bài, kiểm duyệt đánh giá, đăng ký làm giảng viên và duyệt hồ sơ, thông báo hàng loạt, nhật ký quản trị, cài đặt hệ thống có hiệu lực ngay, trang trạng thái hệ thống, xuất CSV người dùng và tiến độ học tập; thanh bên Admin chia nhóm. Thêm 4 bảng (58 bảng), migration `AdminTools` | 76/76 backend, 31/31 E2E |
+| 27/11/2026 | Tiện ích người học và giảng viên: tốc độ phát được nhớ, phím tắt, tự chuyển bài, phụ đề `.vtt`/`.srt`, tìm bài trong mục lục, lọc và luyện lại câu sai, gợi ý khi gõ tìm kiếm, đăng nhập bằng Google, trang Học viên của giảng viên lọc học viên hết lượt/bỏ dở và cấp thêm lượt. Thêm cột `Lessons.SubtitlePublicId`, migration `LessonSubtitles` | 81/81 backend, 34/34 E2E |
 
 ## 10. Hạn chế và việc còn lại
 
@@ -289,6 +295,7 @@ Mỗi khi hoàn thành một tính năng, thêm một dòng vào bảng này và
 - Chạy trên SQL Server thật. Migration đã sinh và đã viết script, nhưng hiện mới chạy trên SQLite.
 - Cổng VNPay/MoMo sandbox thật: cần khóa merchant và URL công khai (ngrok) để nhận IPN. Thuật toán ký đã test bằng khóa giả.
 - Cloudinary thật: cần khóa. Đã test với lưu trữ cục bộ.
+- Đăng nhập bằng Google với Client ID thật: cần tạo OAuth Client trên Google Cloud. Luồng xác minh đã test bằng bộ xác thực giả; nút Google chỉ hiện khi đã cấu hình Client ID.
 - Docker Compose: chưa build vì máy không có Docker.
 
 **Cần làm trước khi đưa vào sử dụng thật**

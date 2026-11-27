@@ -86,6 +86,11 @@ public sealed class InstructorController(IInstructorCourseService courses, IRevi
     public async Task<IActionResult> UpdateLesson(Guid lessonId, SaveLessonRequest request, CancellationToken ct) =>
         FromResult(await courses.UpdateLessonAsync(lessonId, request, ct));
 
+    /// <summary>Gắn/gỡ phụ đề cho bài video (cả khi khóa đã xuất bản).</summary>
+    [HttpPut("lessons/{lessonId:guid}/subtitle")]
+    public async Task<IActionResult> SetSubtitle(Guid lessonId, SetSubtitleRequest request, CancellationToken ct) =>
+        FromResult(await courses.SetSubtitleAsync(lessonId, request, ct));
+
     [HttpDelete("lessons/{lessonId:guid}")]
     public async Task<IActionResult> DeleteLesson(Guid lessonId, CancellationToken ct) =>
         FromResult(await courses.DeleteLessonAsync(lessonId, ct));

@@ -30,7 +30,7 @@ export interface UploadResult {
   contentType: string
   size: number
   durationSeconds: number | null
-  kind: 'image' | 'video' | 'document'
+  kind: 'image' | 'video' | 'document' | 'subtitle'
   storage: string
 }
 

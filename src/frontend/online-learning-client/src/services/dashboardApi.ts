@@ -50,6 +50,7 @@ export const instructorService = {
   addLesson: (sectionId: string, data: SaveLessonInput) => post<LessonEdit>(`/api/instructor/sections/${sectionId}/lessons`, data),
   updateLesson: (id: string, data: SaveLessonInput) => put<LessonEdit>(`/api/instructor/lessons/${id}`, data),
   deleteLesson: (id: string) => del<void>(`/api/instructor/lessons/${id}`),
+  setSubtitle: (id: string, subtitlePublicId: string | null) => put<LessonEdit>(`/api/instructor/lessons/${id}/subtitle`, { subtitlePublicId }),
   reorderLessons: (sectionId: string, orderedIds: string[]) => put<void>(`/api/instructor/sections/${sectionId}/lessons/order`, { orderedIds }),
   addResource: (lessonId: string, data: { fileName: string; fileUrl: string; publicId: string | null; contentType: string | null; fileSize: number }) =>
     post<LessonEdit['resources'][number]>(`/api/instructor/lessons/${lessonId}/resources`, data),

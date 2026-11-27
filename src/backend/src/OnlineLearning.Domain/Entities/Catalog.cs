@@ -102,6 +102,8 @@ public class Lesson : AuditableEntity
     public string? Content { get; set; }
     public string? VideoUrl { get; set; }
     public string? VideoPublicId { get; set; }
+    /// <summary>Phụ đề WebVTT (tệp riêng tư, phát qua URL có chữ ký).</summary>
+    public string? SubtitlePublicId { get; set; }
     public int DurationSeconds { get; set; }
     public int SortOrder { get; set; }
     public bool IsPreview { get; set; }

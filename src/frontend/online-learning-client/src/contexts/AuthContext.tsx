@@ -12,6 +12,8 @@ export interface AuthContextValue {
   hasRole: (...roles: UserRole[]) => boolean
   login: (email: string, password: string) => Promise<User>
   register: (fullName: string, email: string, password: string, referralCode?: string | null) => Promise<User>
+  /** Đăng nhập/đăng ký bằng ID token Google */
+  loginWithGoogle: (credential: string, referralCode?: string | null) => Promise<User>
   logout: () => Promise<void>
   setUser: (user: User) => void
 }
@@ -55,6 +57,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return auth.user
   }, [apply])
 
+  const loginWithGoogle = useCallback(async (credential: string, referralCode?: string | null) => {
+    const auth = await authService.google(credential, referralCode)
+    apply(auth)
+    return auth.user
+  }, [apply])
+
   const logout = useCallback(async () => {
     try {
       await authService.logout()
@@ -70,9 +78,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     hasRole: (...roles) => !!user && roles.some((r) => user.roles.includes(r)),
     login,
     register,
+    loginWithGoogle,
     logout,
     setUser,
-  }), [user, initializing, login, register, logout])
+  }), [user, initializing, login, register, loginWithGoogle, logout])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

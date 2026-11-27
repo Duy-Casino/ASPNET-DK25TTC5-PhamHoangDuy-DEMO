@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Plus } from 'lucide-react'
+import { AlertTriangle, BarChart3, Plus } from 'lucide-react'
 import { toast } from 'sonner'
 import { CountChart, DataTable, Modal, PageHeader, Panel, ProgressBar, RevenueChart, SelectField, StatCard, StatusBadge } from '../../components/dashboard'
 import { Avatar, EmptyState, ErrorState, Field, Pagination, RatingStars, Skeleton, Spinner, TextArea } from '../../components/ui'
@@ -8,11 +8,12 @@ import { useAsync, useDebounce, useDocumentTitle } from '../../hooks/useAsync'
 import { catalogService } from '../../services/api'
 import { getErrorMessage, getFieldErrors } from '../../services/apiClient'
 import { instructorService } from '../../services/dashboardApi'
-import { lessonStatsService } from '../../services/adminToolsApi'
+import { instructorLearnersService, lessonStatsService, type InstructorLearner } from '../../services/adminToolsApi'
+import { learningStateLabel, learningStateStyle, type LearningState } from '../../services/learnerApi'
 import { LessonStatsModal } from '../../components/LessonStatsModal'
 import type { CourseStatus } from '../../types/common'
 import { courseStatusLabel } from '../../types/common'
-import { formatDate, formatDateTime, formatNumber, formatPrice } from '../../utils/format'
+import { formatDate, formatNumber, formatPrice, formatRelative } from '../../utils/format'
 
 export function InstructorOverviewPage() {
   useDocumentTitle('Tổng quan giảng dạy')
@@ -156,53 +157,151 @@ function CreateCourseModal({ onClose }: { onClose: () => void }) {
   )
 }
 
+const learnerTabs: { state: string; label: string; hint?: string }[] = [
+  { state: '', label: 'Tất cả' },
+  { state: 'stuck', label: 'Hết lượt kiểm tra', hint: 'Chưa đạt bài kiểm tra bắt buộc và đã dùng hết lượt' },
+  { state: 'inactive', label: 'Bỏ dở > 14 ngày', hint: 'Đang học dở nhưng không vào học hơn 14 ngày' },
+  { state: 'not-started', label: 'Chưa bắt đầu' },
+  { state: 'in-progress', label: 'Đang học' },
+  { state: 'completed', label: 'Hoàn thành' },
+]
+
 export function InstructorStudentsPage() {
   useDocumentTitle('Học viên')
   const [keyword, setKeyword] = useState('')
   const [courseId, setCourseId] = useState('')
+  const [state, setState] = useState('')
   const [page, setPage] = useState(1)
+  const [grantFor, setGrantFor] = useState<InstructorLearner | null>(null)
+  const [statsOf, setStatsOf] = useState<{ id: string; title: string } | null>(null)
   const q = useDebounce(keyword)
   const courses = useAsync(() => instructorService.courses(undefined, 1), [])
-  const { data, loading, error, reload } = useAsync(() => instructorService.students({ keyword: q || undefined, courseId: courseId || undefined, page }), [q, courseId, page])
+  const { data, loading, error, reload } = useAsync(
+    () => instructorLearnersService.list({ keyword: q || undefined, courseId: courseId || undefined, state: state || undefined, page }), [q, courseId, state, page])
+  const counts = data?.counts ?? {}
+  const selectedCourse = courses.data?.items.find((c) => c.id === courseId)
 
   return (
     <div className="flex flex-col gap-8">
-      <PageHeader title="Học viên" description="Danh sách lượt ghi danh vào các khóa học của bạn." />
+      <PageHeader title="Học viên" description="Theo dõi tiến độ, nhận ra học viên đang kẹt bài kiểm tra hoặc bỏ dở để hỗ trợ kịp thời."
+        actions={selectedCourse && (
+          <button type="button" className="btn-soft" onClick={() => setStatsOf({ id: selectedCourse.id, title: selectedCourse.title })}>
+            <BarChart3 className="size-4" aria-hidden="true" />Tỷ lệ hoàn thành từng bài
+          </button>
+        )} />
+
+      {(counts.stuck ?? 0) + (counts.inactive ?? 0) > 0 && (
+        <div className="flex flex-wrap items-center gap-3 rounded-(--radius-card) bg-warning-50 p-4" role="status">
+          <AlertTriangle className="size-5 text-warning" aria-hidden="true" />
+          <p className="flex-1">
+            <b>{counts.stuck ?? 0}</b> học viên đã hết lượt kiểm tra và <b>{counts.inactive ?? 0}</b> học viên bỏ dở hơn 14 ngày.
+            Một lời nhắn hoặc thêm một lượt làm bài có thể giúp họ hoàn thành khóa học.
+          </p>
+          {state !== 'stuck' && (counts.stuck ?? 0) > 0 && <button type="button" className="btn-soft" onClick={() => { setState('stuck'); setPage(1) }}>Xem học viên hết lượt</button>}
+        </div>
+      )}
+
       <Panel>
-        <div className="mb-6 grid gap-4 sm:grid-cols-2">
+        <div className="mb-4 grid gap-4 sm:grid-cols-2">
           <Field label="Tìm học viên" type="search" value={keyword} onChange={(e) => { setKeyword(e.target.value); setPage(1) }} placeholder="Tên hoặc email" />
           <SelectField label="Khóa học" value={courseId} onChange={(v) => { setCourseId(v); setPage(1) }}>
             <option value="">Tất cả khóa học</option>
             {courses.data?.items.map((c) => <option key={c.id} value={c.id}>{c.title}</option>)}
           </SelectField>
         </div>
+        <div className="mb-6 flex flex-wrap gap-2" role="tablist" aria-label="Lọc theo tình trạng học">
+          {learnerTabs.map((t) => (
+            <button key={t.state || 'all'} type="button" role="tab" aria-selected={state === t.state} title={t.hint}
+              onClick={() => { setState(t.state); setPage(1) }}
+              className={`rounded-full px-3.5 py-1.5 text-sm font-semibold transition-colors ${state === t.state ? 'bg-brand-600 text-white' : 'bg-surface-2 text-ink-soft hover:bg-surface-3'}`}>
+              {t.label} <span className="tabular-nums opacity-80">{counts[t.state || 'all'] ?? 0}</span>
+            </button>
+          ))}
+        </div>
         {error ? <ErrorState message={error} onRetry={reload} />
-          : loading ? <Skeleton className="h-48" />
-          : data?.items.length === 0 ? <EmptyState title="Chưa có học viên">Học viên sẽ xuất hiện khi có người mua khóa học của bạn.</EmptyState>
-          : (
+          : loading && !data ? <Skeleton className="h-48" />
+          : data?.page.items.length === 0 ? (
+            <EmptyState title={state ? 'Không có học viên ở nhóm này' : 'Chưa có học viên'}>
+              {state ? 'Thử chọn nhóm khác hoặc bỏ bộ lọc.' : 'Học viên sẽ xuất hiện khi có người mua khóa học của bạn.'}
+            </EmptyState>
+          ) : (
             <>
-              <DataTable head={<><th>Học viên</th><th>Khóa học</th><th className="w-48">Tiến độ</th><th>Trạng thái</th><th>Ghi danh</th><th>Học gần nhất</th></>}>
-                {data?.items.map((s) => (
-                  <tr key={`${s.userId}-${s.courseId}`}>
+              <DataTable minWidth={900} head={<><th>Học viên</th><th>Khóa học</th><th className="w-44">Tiến độ</th><th>Tình trạng</th><th>Học gần nhất</th><th className="text-right">Hỗ trợ</th></>}>
+                {data?.page.items.map((s) => (
+                  <tr key={s.enrollmentId}>
                     <td>
                       <div className="flex items-center gap-3">
                         <Avatar name={s.fullName} src={s.avatarUrl} size={36} />
-                        <div><p className="font-semibold">{s.fullName}</p><p className="text-ink-muted">{s.email}</p></div>
+                        <div className="min-w-0"><p className="font-semibold">{s.fullName}</p><p className="truncate text-ink-muted">{s.email}</p></div>
                       </div>
                     </td>
                     <td>{s.courseTitle}</td>
-                    <td><ProgressBar value={s.progressPercent} label={`Tiến độ ${s.fullName}`} /></td>
-                    <td><StatusBadge status={s.status} /></td>
-                    <td className="text-ink-soft">{formatDate(s.enrolledAt)}</td>
-                    <td className="text-ink-soft">{s.lastAccessedAt ? formatDateTime(s.lastAccessedAt) : '—'}</td>
+                    <td>
+                      <ProgressBar value={s.progressPercent} label={`Tiến độ ${s.fullName}`} />
+                      <p className="mt-1 text-xs text-ink-muted tabular-nums">{s.completedLessons}/{s.requiredLessons} bài bắt buộc</p>
+                    </td>
+                    <td>
+                      <span className={`inline-flex rounded-(--radius-control) px-2.5 py-0.5 text-sm font-semibold whitespace-nowrap ${learningStateStyle[s.state as LearningState] ?? ''}`}>
+                        {learningStateLabel[s.state as LearningState] ?? s.state}
+                      </span>
+                      {s.stuckQuiz && <p className="mt-1 text-xs text-ink-soft">{s.stuckQuiz.title}: {s.stuckQuiz.attemptsUsed}/{s.stuckQuiz.maxAttempts} lượt</p>}
+                    </td>
+                    <td className="text-ink-soft">{s.lastAccessedAt ? formatRelative(s.lastAccessedAt) : 'Chưa vào học'}</td>
+                    <td className="text-right">
+                      {s.stuckQuiz
+                        ? <button type="button" className="btn-soft min-h-9 px-3 text-sm" onClick={() => setGrantFor(s)}>Cấp thêm lượt</button>
+                        : <span className="text-ink-muted">—</span>}
+                    </td>
                   </tr>
                 ))}
               </DataTable>
-              <div className="mt-6"><Pagination page={page} totalPages={data?.totalPages ?? 1} onChange={setPage} /></div>
+              <div className="mt-6"><Pagination page={page} totalPages={data?.page.totalPages ?? 1} onChange={setPage} /></div>
             </>
           )}
       </Panel>
+      {grantFor && <GrantAttemptModal learner={grantFor} onClose={() => setGrantFor(null)} onDone={() => { setGrantFor(null); reload() }} />}
+      {statsOf && <LessonStatsModal courseId={statsOf.id} title={statsOf.title} load={lessonStatsService.get} onClose={() => setStatsOf(null)} />}
     </div>
+  )
+}
+
+function GrantAttemptModal({ learner, onClose, onDone }: { learner: InstructorLearner; onClose: () => void; onDone: () => void }) {
+  const [extra, setExtra] = useState('1')
+  const [reason, setReason] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
+  const quiz = learner.stuckQuiz!
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault()
+    if (reason.trim().length < 5) { setError('Ghi lý do (ít nhất 5 ký tự), học viên sẽ thấy trong thông báo.'); return }
+    setSaving(true)
+    try {
+      await instructorLearnersService.grant(learner.enrollmentId, quiz.quizId, Number(extra), reason.trim())
+      toast.success(`Đã cấp thêm ${extra} lượt cho ${learner.fullName}`)
+      onDone()
+    } catch (err) {
+      toast.error(getErrorMessage(err))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Modal title="Cấp thêm lượt làm bài" onClose={onClose}>
+      <form className="flex flex-col gap-4" onSubmit={submit} noValidate>
+        <p className="text-ink-soft"><b className="text-ink">{learner.fullName}</b> đã dùng {quiz.attemptsUsed}/{quiz.maxAttempts} lượt của “{quiz.title}” mà chưa đạt.</p>
+        <SelectField label="Số lượt cấp thêm" value={extra} onChange={setExtra}>
+          {[1, 2, 3].map((n) => <option key={n} value={n}>{n} lượt</option>)}
+        </SelectField>
+        <TextArea label="Lý do (học viên sẽ thấy)" rows={3} maxLength={500} value={reason} error={error ?? undefined}
+          onChange={(e) => { setReason(e.target.value); setError(null) }} placeholder="Ví dụ: Đã trao đổi, hãy xem lại chương 3 trước khi làm lại." />
+        <div className="flex justify-end gap-3">
+          <button type="button" className="btn-ghost" onClick={onClose}>Hủy</button>
+          <button type="submit" className="btn-primary" disabled={saving}>{saving && <Spinner className="size-4" />}Cấp thêm lượt</button>
+        </div>
+      </form>
+    </Modal>
   )
 }
 

@@ -52,3 +52,8 @@ export function discountPercent(price: number, discountPrice: number | null): nu
   if (discountPrice === null || discountPrice >= price || price === 0) return null
   return Math.round(((price - discountPrice) / price) * 100)
 }
+
+/** Bỏ dấu và chữ hoa để so khớp tiếng Việt ("ham" khớp "Hàm", "dong" khớp "Đồng"). */
+export function foldVietnamese(s: string) {
+  return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase()
+}

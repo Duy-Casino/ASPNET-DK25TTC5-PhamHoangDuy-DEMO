@@ -16,14 +16,15 @@
 - Thêm **tiện ích người học**: hỏi đáp theo từng bài học, ghi chú gắn mốc thời gian video, email nhắc học khi bỏ dở, tùy chọn tắt email nhắc nhở. CSDL thêm 3 bảng (51 bảng), migration thứ 7 `LearnerTools`.
 - Rà soát khu vực Admin: **chưa có trang nào theo dõi tiến độ học** và học viên **hết lượt bài kiểm tra cuối khóa thì bị kẹt** (không ai được báo, không ai cấp thêm lượt được). Đã bổ sung trang **Tiến độ học tập**, quy trình xử lý khi chưa đạt bài cuối khóa, các thao tác xử lý sự cố và trang **Hỗ trợ học tập**. CSDL thêm 3 bảng (54 bảng), migration thứ 8 `LearningSupport`.
 - Rà soát toàn bộ công cụ Admin, bổ sung **8 công cụ quản trị**: báo cáo theo khoảng ngày, kiểm duyệt đánh giá, đăng ký làm giảng viên, thông báo hàng loạt, nhật ký quản trị, cài đặt hệ thống có hiệu lực ngay, trạng thái hệ thống, xuất CSV người dùng/tiến độ. CSDL thêm 4 bảng (58 bảng), migration thứ 9 `AdminTools`.
-- Kiểm thử: **backend 76/76, E2E 31/31** đạt.
+- Bổ sung **tiện ích người học và giảng viên**: tốc độ phát được nhớ, phím tắt, tự chuyển bài, phụ đề `.vtt`/`.srt`, tìm bài trong mục lục, lọc và luyện lại câu sai, gợi ý khi gõ tìm kiếm, đăng nhập bằng Google; giảng viên lọc học viên hết lượt/bỏ dở và cấp thêm lượt. CSDL thêm 1 cột, migration thứ 10 `LessonSubtitles`.
+- Kiểm thử: **backend 81/81, E2E 34/34** đạt.
 
 | Chỉ số | Cuối tuần 03 | Hiện tại (27/11) |
 | --- | --- | --- |
-| Test backend | 55 | 76 |
-| Kịch bản E2E | 27 | 31 |
+| Test backend | 55 | 81 |
+| Kịch bản E2E | 27 | 34 |
 | Bảng dữ liệu | 44 | 58 |
-| Migration CSDL | 5 | 9 (thêm `SalesGrowth`, `LearnerTools`, `LearningSupport`, `AdminTools`) |
+| Migration CSDL | 5 | 10 (thêm `SalesGrowth`, `LearnerTools`, `LearningSupport`, `AdminTools`, `LessonSubtitles`) |
 
 ## 2. Công việc theo ngày
 
@@ -33,6 +34,7 @@
 | Thứ Sáu 27/11 | Nhóm 2 "tăng doanh số": yêu thích, gợi ý, flash sale, combo, mua tặng, nhắc giỏ hàng; 5 trang mới (`/combo`, `/combo/:slug`, `/qua-tang/:mã`, `/hoc-vien/yeu-thich`, `/quan-tri/combo`) | 61/61 backend, 28/28 E2E |
 | Thứ Sáu 27/11 | Rà soát trải nghiệm người học; sửa video mẫu; hỏi đáp theo bài, ghi chú theo mốc thời gian, nhắc học, tắt email nhắc nhở; trang `/giang-day/hoi-dap` | 65/65 backend, 29/29 E2E |
 | Thứ Sáu 27/11 | Quản lý học tập cho Admin: trang Tiến độ học tập, chi tiết học viên và dòng thời gian, quy trình hết lượt bài kiểm tra cuối khóa, thao tác xử lý sự cố, báo sự cố và trang Hỗ trợ học tập | 69/69 backend, 30/30 E2E |
+| Thứ Sáu 27/11 | Tiện ích người học và giảng viên: trình phát (tốc độ, phím tắt, tự chuyển bài, phụ đề), tìm bài trong mục lục, ôn câu sai, gợi ý tìm kiếm, đăng nhập Google, trang Học viên của giảng viên lọc theo tình trạng và cấp thêm lượt | 81/81 backend, 34/34 E2E |
 
 ## 3. Chức năng mới
 
@@ -93,6 +95,18 @@ Học viên có nút **"Báo sự cố"** trên thanh trình học (video không
 | Trạng thái hệ thống | `/quan-tri/he-thong`: CSDL (migration chưa áp dụng), SMTP, từng cổng thanh toán, lưu trữ tệp; 3 công việc nền với lần chạy gần nhất, kết quả và nút "Chạy ngay"; 20 email gần nhất (địa chỉ được che) và số lỗi 24 giờ |
 | Xuất CSV | Người dùng (theo bộ lọc vai trò, từ khóa) và tiến độ học tập (theo tình trạng) |
 
+### Tiện ích người học và giảng viên
+
+| Chức năng | Mô tả |
+| --- | --- |
+| Trình phát | Thanh công cụ dưới video: tốc độ 0,75–2x (nhớ trong trình duyệt), bật/tắt phụ đề, bật/tắt tự chuyển bài, bảng phím tắt. Phím tắt: Space/K phát–dừng, ←/→ (J/L) tua 10 giây, Shift+</> đổi tốc độ, M tắt tiếng, C phụ đề, F toàn màn hình; không bắt phím khi đang gõ chữ. Hết video: đếm ngược 5 giây sang bài tiếp (hiện tên bài), có nút "Phát ngay" và "Ở lại bài này" |
+| Phụ đề | Giảng viên tải `.vtt` hoặc `.srt` (tối đa 2 MB) trong hộp sửa bài học, hoặc bằng nút phụ đề trên từng bài khi khóa đã xuất bản. Máy chủ kiểm tra dòng thời gian, đổi SRT sang WebVTT, lưu riêng tư; học viên nhận URL có chữ ký như video |
+| Tìm bài trong mục lục | Ô tìm ở đầu mục lục trình học, lọc bài học và bài kiểm tra theo tên bài hoặc tên chương, gõ không dấu vẫn khớp, báo số kết quả |
+| Ôn câu sai | Trang kết quả có bộ lọc "Tất cả / Câu sai" và chế độ "Luyện lại câu sai": làm từng câu theo thứ tự ngẫu nhiên, bấm "Kiểm tra" để xem đúng/sai và giải thích; không tính điểm, không tốn lượt |
+| Gợi ý tìm kiếm | Gõ từ 2 ký tự vào ô tìm kiếm đầu trang: tối đa 6 khóa học, 3 giảng viên, 3 danh mục (`GET /api/courses/suggest`); chọn bằng chuột hoặc phím mũi tên + Enter, Escape đóng gợi ý; dòng "Xem tất cả kết quả" |
+| Đăng nhập bằng Google | Nút Google Identity Services ở trang đăng nhập và đăng ký. Máy chủ xác minh ID token (chữ ký theo khóa công khai của Google, issuer, audience = Client ID, hạn dùng), chỉ nhận email đã được Google xác minh; tìm theo liên kết Google, nếu chưa có thì gắn vào tài khoản cùng email, nếu chưa có tài khoản thì tạo mới vai trò Học viên. Nút chỉ hiện khi đã cấu hình `Authentication:Google:ClientId` |
+| Học viên cần hỗ trợ | Trang `/giang-day/hoc-vien` lọc theo tình trạng (hết lượt kiểm tra, bỏ dở > 14 ngày, chưa bắt đầu, đang học, hoàn thành) kèm số lượng; học viên cần hỗ trợ xếp lên đầu; cột tình trạng ghi rõ bài kiểm tra và số lượt đã dùng. Giảng viên cấp thêm 1–3 lượt cho học viên trong khóa của mình (ghi lý do, học viên nhận thông báo); xem tỷ lệ hoàn thành từng bài của khóa đang lọc |
+
 ## 4. Các điều chỉnh trong tuần
 
 | # | Điều chỉnh | Lý do | Kết quả |
@@ -114,12 +128,13 @@ Học viên có nút **"Báo sự cố"** trên thanh trình học (video không
 
 - **Đã xong:** nhóm 2 (tăng doanh số) gồm 6 tính năng đã đề xuất.
 - **Đã xong thêm:** sửa video bài học, nhóm tiện ích người học mức ưu tiên cao (hỏi đáp, ghi chú, nhắc học).
-- **Chưa xong:** tiện ích mức trung bình (phụ đề, nút tốc độ và phím tắt trình phát, ôn lại câu sai, tìm bài trong mục lục); cập nhật báo cáo đồ án và slide; chạy thử trên SQL Server thật.
+- **Đã xong thêm:** tiện ích mức trung bình (phụ đề, tốc độ và phím tắt trình phát, ôn lại câu sai, tìm bài trong mục lục), gợi ý tìm kiếm, đăng nhập Google, trang hỗ trợ học viên cho giảng viên.
+- **Chưa xong:** cập nhật báo cáo đồ án và slide; chạy thử trên SQL Server thật; thử đăng nhập Google với Client ID thật.
 
 ## 7. Kế hoạch còn lại của tuần
 
 | Việc | Đầu ra |
 | --- | --- |
 | Bổ sung chức năng nhóm 1 và nhóm 2 vào báo cáo đồ án (chương 2, 3) và slide | `thesis/doc`, `thesis/pdf`, `thesis/abs` |
-| Thử chạy 8 script SQL trên SQL Server thật | Ghi kết quả vào báo cáo kiểm thử |
+| Thử chạy 10 script SQL trên SQL Server thật | Ghi kết quả vào báo cáo kiểm thử |
 | Chốt báo cáo tuần 04 vào 02/12 | Cập nhật tệp này |

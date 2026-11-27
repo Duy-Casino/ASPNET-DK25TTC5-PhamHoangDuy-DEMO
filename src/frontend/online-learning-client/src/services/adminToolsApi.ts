@@ -41,6 +41,7 @@ export interface Setting {
 export interface PublicSettings {
   refundRequestDays: number; refundMaxProgressPercent: number; instructorSharePercent: number
   sellerName: string; sellerEmail: string | null; sellerPhone: string | null; sellerAddress: string | null
+  googleClientId: string | null
 }
 
 export interface ReportCourse {
@@ -125,4 +126,20 @@ export const publicSettingsService = {
 
 export const lessonStatsService = {
   get: (courseId: string) => apiClient.get<CourseLessonStats>(`/api/instructor/courses/${courseId}/lesson-stats`).then((r) => r.data),
+}
+
+// ---------- Giảng viên: học viên cần hỗ trợ ----------
+export interface InstructorLearner {
+  enrollmentId: string; userId: string; fullName: string; email: string; avatarUrl: string | null; courseId: string; courseTitle: string; courseSlug: string
+  progressPercent: number; completedLessons: number; requiredLessons: number; state: string; finalBestScore: number | null; finalPassed: boolean
+  enrolledAt: string; lastAccessedAt: string | null
+  stuckQuiz: { quizId: string; title: string; attemptsUsed: number; maxAttempts: number } | null
+}
+export interface InstructorLearners { counts: Record<string, number>; page: PagedResult<InstructorLearner> }
+
+export const instructorLearnersService = {
+  list: (q: { state?: string; courseId?: string; keyword?: string; page?: number }) =>
+    apiClient.get<InstructorLearners>('/api/instructor/learners', { params: clean({ ...q, pageSize: 15 }) }).then((r) => r.data),
+  grant: (enrollmentId: string, quizId: string, extraAttempts: number, reason: string) =>
+    apiClient.post(`/api/instructor/learners/${enrollmentId}/grant-attempts`, { quizId, extraAttempts, reason }),
 }

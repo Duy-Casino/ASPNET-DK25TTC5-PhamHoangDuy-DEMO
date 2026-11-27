@@ -13,6 +13,7 @@ const del = <T,>(url: string) => apiClient.delete<T>(url).then((r) => r.data)
 
 export const authService = {
   login: (email: string, password: string) => post<AuthResponse>('/api/auth/login', { email, password }),
+  google: (credential: string, referralCode?: string | null) => post<AuthResponse>('/api/auth/google', { credential, referralCode: referralCode || null }),
   register: (fullName: string, email: string, password: string, referralCode?: string | null) =>
     post<AuthResponse>('/api/auth/register', { fullName, email, password, referralCode: referralCode || null }),
   logout: () => post<void>('/api/auth/logout'),
@@ -52,6 +53,14 @@ export const catalogService = {
   reviews: (courseId: string, page = 1, pageSize = 6) =>
     get<PagedResult<Review>>(`/api/courses/${courseId}/reviews`, { page, pageSize }),
   instructor: (id: string) => get<InstructorDetail>(`/api/instructors/${id}`),
+  suggest: (q: string, signal?: AbortSignal) =>
+    apiClient.get<SearchSuggestions>('/api/courses/suggest', { params: { q }, signal }).then((r) => r.data),
+}
+
+export interface SearchSuggestions {
+  courses: { id: string; title: string; slug: string; thumbnailUrl: string | null; instructorName: string }[]
+  instructors: { id: string; fullName: string; avatarUrl: string | null; headline: string | null; courseCount: number }[]
+  categories: { name: string; slug: string }[]
 }
 
 export const reviewService = {

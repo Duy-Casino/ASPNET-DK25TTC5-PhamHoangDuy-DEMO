@@ -42,6 +42,7 @@ public sealed class TestApp : WebApplicationFactory<Program>, IAsyncLifetime
         builder.UseSetting("MoMo:AccessKey", MoMoAccess);
         builder.UseSetting("MoMo:SecretKey", MoMoSecret);
         builder.UseSetting("Cloudinary:CloudName", "");
+        builder.UseSetting("Authentication:Google:ClientId", "test-client.apps.googleusercontent.com");
 
         builder.ConfigureServices(services =>
         {
@@ -53,6 +54,8 @@ public sealed class TestApp : WebApplicationFactory<Program>, IAsyncLifetime
             services.AddHttpClient<OnlineLearning.Infrastructure.Payments.MoMoGateway>()
                 .ConfigurePrimaryHttpMessageHandler(() => new FakeMoMoHandler());
             // Ghi lại email thay vì gửi thật
+            services.RemoveAll<OnlineLearning.Application.Common.Interfaces.IGoogleTokenValidator>();
+            services.AddSingleton<OnlineLearning.Application.Common.Interfaces.IGoogleTokenValidator, FakeGoogleTokenValidator>();
             services.RemoveAll<OnlineLearning.Application.Common.Interfaces.IEmailSender>();
             services.AddSingleton<OnlineLearning.Application.Common.Interfaces.IEmailSender>(Emails);
         });
@@ -146,5 +149,18 @@ public static class HttpExtensions
         if (!res.IsSuccessStatusCode)
             throw new Xunit.Sdk.XunitException($"{(int)res.StatusCode} {res.RequestMessage?.Method} {res.RequestMessage?.RequestUri}: {await res.Content.ReadAsStringAsync()}");
         return await res.JsonAsync();
+    }
+}
+
+/// <summary>Giả lập Google: token dạng "google:{sub}:{email}:{tên}[:unverified]".</summary>
+public sealed class FakeGoogleTokenValidator : OnlineLearning.Application.Common.Interfaces.IGoogleTokenValidator
+{
+    public bool IsConfigured => true;
+    public Task<OnlineLearning.Application.Common.Interfaces.ExternalUserInfo?> ValidateAsync(string idToken, CancellationToken ct = default)
+    {
+        var p = idToken.Split(':');
+        if (p.Length < 4 || p[0] != "google") return Task.FromResult<OnlineLearning.Application.Common.Interfaces.ExternalUserInfo?>(null);
+        return Task.FromResult<OnlineLearning.Application.Common.Interfaces.ExternalUserInfo?>(
+            new(p[1], p[2], !(p.Length > 4 && p[4] == "unverified"), p[3], null));
     }
 }

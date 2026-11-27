@@ -1620,6 +1620,10 @@ namespace OnlineLearning.Infrastructure.Persistence.Migrations
                     b.Property<int>("SortOrder")
                         .HasColumnType("int");
 
+                    b.Property<string>("SubtitlePublicId")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(200)

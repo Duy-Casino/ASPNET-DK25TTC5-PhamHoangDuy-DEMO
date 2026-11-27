@@ -70,6 +70,8 @@ export interface LessonContent {
   resources: { id: string; fileName: string; fileUrl: string; contentType: string | null; fileSize: number }[]
   previousLessonId: string | null
   nextLessonId: string | null
+  subtitleUrl?: string | null
+  nextLessonTitle?: string | null
 }
 
 export interface Progress { progressPercent: number; completedLessons: number; requiredLessons: number; status: EnrollmentStatus; courseCompleted: boolean; certificateCode: string | null }
@@ -153,7 +155,7 @@ export interface InstructorCourseListItem {
 }
 export interface LessonEdit {
   id: string; sectionId: string; title: string; type: LessonType; content: string | null; videoUrl: string | null; videoPublicId: string | null
-  durationSeconds: number; sortOrder: number; isPreview: boolean; isRequired: boolean
+  durationSeconds: number; sortOrder: number; isPreview: boolean; isRequired: boolean; subtitlePublicId?: string | null
   resources: { id: string; fileName: string; fileUrl: string; contentType: string | null; fileSize: number }[]
 }
 export interface SectionEdit { id: string; title: string; description: string | null; sortOrder: number; lessons: LessonEdit[] }

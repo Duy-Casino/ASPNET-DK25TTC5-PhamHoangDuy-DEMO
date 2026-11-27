@@ -44,7 +44,7 @@ public sealed record SettingDto(string Key, string Group, string Label, string? 
     string? Value, bool IsOverridden, DateTime? UpdatedAt);
 public sealed record SaveSettingsRequest(IReadOnlyDictionary<string, string?> Values);
 public sealed record PublicSettingsDto(int RefundRequestDays, decimal RefundMaxProgressPercent, decimal InstructorSharePercent,
-    string SellerName, string? SellerEmail, string? SellerPhone, string? SellerAddress);
+    string SellerName, string? SellerEmail, string? SellerPhone, string? SellerAddress, string? GoogleClientId = null);
 
 /// <summary>Đọc giá trị cấu hình hiện hành và áp dụng giá trị mới vào cấu hình đang chạy (triển khai ở Infrastructure).</summary>
 public interface IRuntimeSettings
@@ -123,7 +123,8 @@ public sealed class SettingsService(IAppDbContext db, IRuntimeSettings runtime, 
         int I(string k, int d) => int.TryParse(runtime.Get(k), NumberStyles.Integer, CultureInfo.InvariantCulture, out var v) ? v : d;
         decimal D(string k, decimal d) => decimal.TryParse(runtime.Get(k), NumberStyles.Number, CultureInfo.InvariantCulture, out var v) ? v : d;
         return new PublicSettingsDto(I("Revenue:RefundRequestDays", 7), D("Revenue:RefundMaxProgressPercent", 20), D("Revenue:InstructorSharePercent", 70),
-            runtime.Get("Invoice:SellerName") ?? "EduViet", runtime.Get("Invoice:SellerEmail"), runtime.Get("Invoice:SellerPhone"), runtime.Get("Invoice:SellerAddress"));
+            runtime.Get("Invoice:SellerName") ?? "EduViet", runtime.Get("Invoice:SellerEmail"), runtime.Get("Invoice:SellerPhone"), runtime.Get("Invoice:SellerAddress"),
+            runtime.Get("Authentication:Google:ClientId") is { Length: > 0 } gid ? gid : null);
     }
 }
 

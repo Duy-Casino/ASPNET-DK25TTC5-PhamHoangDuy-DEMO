@@ -24,6 +24,7 @@ builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration, configureDatabase: !isTesting);
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUser, CurrentUser>();
+builder.Services.AddSingleton<IGoogleTokenValidator, OnlineLearning.API.Common.GoogleTokenValidator>();
 
 // ---------- Xác thực JWT ----------
 var jwt = builder.Configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>() ?? new JwtOptions();

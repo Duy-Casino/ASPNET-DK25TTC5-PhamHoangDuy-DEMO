@@ -17,6 +17,7 @@ public interface IAuthService
 {
     Task<Result<AuthResult>> RegisterAsync(RegisterRequest request, CancellationToken ct = default);
     Task<Result<AuthResult>> LoginAsync(LoginRequest request, CancellationToken ct = default);
+    Task<Result<AuthResult>> GoogleLoginAsync(GoogleLoginRequest request, CancellationToken ct = default);
     Task<Result<AuthResult>> RefreshAsync(string? refreshToken, CancellationToken ct = default);
     Task LogoutAsync(string? refreshToken, CancellationToken ct = default);
     Task ForgotPasswordAsync(ForgotPasswordRequest request, CancellationToken ct = default);
@@ -37,6 +38,7 @@ public sealed class AuthService(
     IOptions<JwtOptions> jwtOptions,
     IOptions<AppOptions> appOptions,
     Rewards.IRewardService rewards,
+    IGoogleTokenValidator google,
     ILogger<AuthService> logger) : IAuthService
 {
     private static readonly Error InvalidCredentials =
@@ -88,6 +90,60 @@ public sealed class AuthService(
         }
 
         await userManager.ResetAccessFailedCountAsync(user);
+        return await IssueTokensAsync(user, ct);
+    }
+
+    public const string GoogleProvider = "Google";
+
+    /// <summary>
+    /// Đăng nhập bằng Google: tìm theo liên kết Google; chưa có thì gắn vào tài khoản cùng email (chỉ khi Google xác nhận email);
+    /// chưa có tài khoản thì tạo mới vai trò Học viên, không mật khẩu, email đã xác nhận.
+    /// </summary>
+    public async Task<Result<AuthResult>> GoogleLoginAsync(GoogleLoginRequest request, CancellationToken ct = default)
+    {
+        if (!google.IsConfigured)
+            return new Error("google_disabled", "Đăng nhập bằng Google chưa được bật trên hệ thống.", ErrorType.Validation);
+        var info = await google.ValidateAsync(request.Credential, ct);
+        if (info is null)
+            return new Error("google_invalid", "Không xác thực được tài khoản Google. Vui lòng thử lại.", ErrorType.Unauthorized);
+        if (!info.EmailVerified)
+            return new Error("google_unverified", "Email Google chưa được xác minh nên không dùng để đăng nhập được.", ErrorType.Unauthorized);
+
+        var user = await userManager.FindByLoginAsync(GoogleProvider, info.Subject);
+        if (user is null)
+        {
+            user = await userManager.FindByEmailAsync(info.Email);
+            if (user is null)
+            {
+                user = new AppUser
+                {
+                    UserName = info.Email,
+                    Email = info.Email,
+                    EmailConfirmed = true,
+                    FullName = string.IsNullOrWhiteSpace(info.FullName) ? info.Email.Split('@')[0] : info.FullName.Trim()[..Math.Min(info.FullName.Trim().Length, 150)],
+                    AvatarUrl = info.PictureUrl is { Length: <= 500 } pic && pic.StartsWith("https://", StringComparison.Ordinal) ? pic : null,
+                    CreatedAt = clock.UtcNow,
+                };
+                var created = await userManager.CreateAsync(user);
+                if (!created.Succeeded) return IdentityError(created);
+                await rewards.AttachReferralAsync(user.Id, request.ReferralCode, ct);
+                await userManager.AddToRoleAsync(user, Roles.Student);
+                logger.LogInformation("Tạo tài khoản mới {UserId} qua Google", user.Id);
+            }
+            else if (!user.EmailConfirmed)
+            {
+                // Google đã xác minh chủ sở hữu email → xác nhận email luôn
+                user.EmailConfirmed = true;
+                await userManager.UpdateAsync(user);
+            }
+            var linked = await userManager.AddLoginAsync(user, new UserLoginInfo(GoogleProvider, info.Subject, "Google"));
+            if (!linked.Succeeded) return IdentityError(linked);
+        }
+
+        if (!user.IsActive)
+            return new Error("account_disabled", "Tài khoản đã bị vô hiệu hóa. Liên hệ quản trị viên.", ErrorType.Forbidden);
+        if (await userManager.IsLockedOutAsync(user))
+            return new Error("locked_out", "Tài khoản đang tạm khóa. Thử lại sau 15 phút.", ErrorType.Unauthorized);
         return await IssueTokensAsync(user, ct);
     }
 

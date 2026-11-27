@@ -70,7 +70,7 @@ test.describe('Trang công khai', () => {
   test('tìm kiếm, lọc và mở chi tiết khóa học', async ({ page }) => {
     await page.goto('/')
     await page.getByRole('button', { name: 'Mở tìm kiếm' }).click()
-    await page.getByRole('searchbox', { name: 'Tìm khóa học' }).fill('Excel')
+    await page.getByRole('combobox', { name: 'Tìm khóa học' }).fill('Excel')
     await page.keyboard.press('Enter')
     await expect(page).toHaveURL(/\/khoa-hoc\?keyword=Excel/)
     await expect(page.getByRole('heading', { level: 1 })).toContainText('Excel')

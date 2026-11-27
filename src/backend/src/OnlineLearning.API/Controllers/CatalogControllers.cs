@@ -38,6 +38,11 @@ public sealed class CoursesController(ICatalogService catalog, IReviewService re
     public async Task<ActionResult<PagedResult<CourseSummaryDto>>> Search([FromQuery] CourseSearchQuery query, CancellationToken ct) =>
         Ok(await catalog.SearchAsync(query, ct));
 
+    /// <summary>Gợi ý khi gõ ô tìm kiếm (tối thiểu 2 ký tự).</summary>
+    [HttpGet("suggest")]
+    public async Task<ActionResult<SearchSuggestionsDto>> Suggest([FromQuery] string? q, CancellationToken ct) =>
+        Ok(await catalog.SuggestAsync(q, ct));
+
     [HttpGet("{slug}")]
     public async Task<IActionResult> GetDetail(string slug, CancellationToken ct)
     {

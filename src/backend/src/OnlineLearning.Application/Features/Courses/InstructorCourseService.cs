@@ -29,6 +29,7 @@ public interface IInstructorCourseService
     Task<Result<LessonEditDto>> AddLessonAsync(Guid sectionId, SaveLessonRequest request, CancellationToken ct = default);
     Task<Result<LessonEditDto>> UpdateLessonAsync(Guid lessonId, SaveLessonRequest request, CancellationToken ct = default);
     Task<Result> DeleteLessonAsync(Guid lessonId, CancellationToken ct = default);
+    Task<Result<LessonEditDto>> SetSubtitleAsync(Guid lessonId, SetSubtitleRequest request, CancellationToken ct = default);
     Task<Result> ReorderLessonsAsync(Guid sectionId, ReorderRequest request, CancellationToken ct = default);
 
     Task<Result<LessonResourceDto>> AddResourceAsync(Guid lessonId, AddResourceRequest request, CancellationToken ct = default);
@@ -40,7 +41,7 @@ public interface IInstructorCourseService
 /// Nội dung chỉ sửa được khi khóa học ở trạng thái Draft hoặc Rejected.
 /// </summary>
 public sealed class InstructorCourseService(
-    IAppDbContext db, ICurrentUser currentUser, IDateTimeProvider clock, INotificationService notifications) : IInstructorCourseService
+    IAppDbContext db, ICurrentUser currentUser, IDateTimeProvider clock, INotificationService notifications, IFileStorage storage) : IInstructorCourseService
 {
     private static readonly Error NotFound = Error.NotFound("Không tìm thấy khóa học.");
     private static readonly Error Locked = Error.Conflict(
@@ -292,6 +293,23 @@ public sealed class InstructorCourseService(
         return ToLessonDto(lesson);
     }
 
+    public async Task<Result<LessonEditDto>> SetSubtitleAsync(Guid lessonId, SetSubtitleRequest request, CancellationToken ct = default)
+    {
+        var lesson = await db.Lessons.Include(l => l.Section).ThenInclude(s => s.Course).Include(l => l.Resources)
+            .FirstOrDefaultAsync(l => l.Id == lessonId, ct);
+        if (lesson is null || lesson.Section.Course.IsDeleted || !CanManage(lesson.Section.Course)) return Error.NotFound("Không tìm thấy bài học.");
+        if (lesson.Type != LessonType.Video) return Error.Validation("Chỉ bài học video mới có phụ đề.");
+        var id = string.IsNullOrWhiteSpace(request.SubtitlePublicId) ? null : request.SubtitlePublicId.Trim();
+        if (id is { Length: > 300 } || (id is not null && id.Contains("..", StringComparison.Ordinal)))
+            return Error.Validation("Phụ đề không hợp lệ. Hãy tải lại tệp .vtt hoặc .srt.");
+        var old = lesson.SubtitlePublicId;
+        lesson.SubtitlePublicId = id;
+        await db.SaveChangesAsync(ct);
+        if (old is not null && old != id)
+            try { await storage.DeleteAsync(old, StoredFileKind.Document, ct); } catch { /* tệp cũ không xóa được thì bỏ qua */ }
+        return ToLessonDto(lesson);
+    }
+
     public async Task<Result> DeleteLessonAsync(Guid lessonId, CancellationToken ct = default)
     {
         var lesson = await db.Lessons.Include(l => l.Section).ThenInclude(s => s.Course)
@@ -411,6 +429,7 @@ public sealed class InstructorCourseService(
         lesson.Content = ContentSanitizer.SanitizeHtml(r.Content);
         lesson.VideoUrl = r.Type == LessonType.Video ? r.VideoUrl : null;
         lesson.VideoPublicId = r.Type == LessonType.Video ? r.VideoPublicId : null;
+        if (r.Type != LessonType.Video) lesson.SubtitlePublicId = null;
         lesson.DurationSeconds = r.DurationSeconds;
         lesson.IsPreview = r.IsPreview;
         lesson.IsRequired = r.IsRequired;
@@ -444,5 +463,5 @@ public sealed class InstructorCourseService(
     private static LessonEditDto ToLessonDto(Lesson l) => new(
         l.Id, l.SectionId, l.Title, l.Type, l.Content, l.VideoUrl, l.VideoPublicId, l.DurationSeconds, l.SortOrder,
         l.IsPreview, l.IsRequired,
-        l.Resources.Select(r => new LessonResourceDto(r.Id, r.FileName, r.FileUrl, r.ContentType, r.FileSize)).ToList());
+        l.Resources.Select(r => new LessonResourceDto(r.Id, r.FileName, r.FileUrl, r.ContentType, r.FileSize)).ToList(), l.SubtitlePublicId);
 }

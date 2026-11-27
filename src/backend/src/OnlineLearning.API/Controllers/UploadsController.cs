@@ -21,12 +21,14 @@ public sealed class UploadsController(IFileStorage storage, ILogger<UploadsContr
     private const long MaxImage = 5L * 1024 * 1024;
     private const long MaxDocument = 50L * 1024 * 1024;
     private const long MaxVideo = 500L * 1024 * 1024;
+    private const long MaxSubtitle = 2L * 1024 * 1024;
 
     private static readonly Dictionary<string, string[]> Allowed = new()
     {
         ["image"] = [".jpg", ".jpeg", ".png", ".webp", ".gif"],
         ["video"] = [".mp4", ".webm", ".mov", ".m4v"],
         ["document"] = [".pdf", ".zip", ".docx", ".xlsx", ".pptx", ".txt", ".md", ".rar"],
+        ["subtitle"] = [".vtt", ".srt"],
     };
 
     [HttpPost("{kind}")]
@@ -46,9 +48,11 @@ public sealed class UploadsController(IFileStorage storage, ILogger<UploadsContr
         if (!extensions.Contains(ext))
             return Problem(Application.Common.Models.Error.Validation($"Định dạng không được hỗ trợ. Cho phép: {string.Join(", ", extensions)}."));
 
-        var max = kind switch { "image" => MaxImage, "video" => MaxVideo, _ => MaxDocument };
+        var max = kind switch { "image" => MaxImage, "video" => MaxVideo, "subtitle" => MaxSubtitle, _ => MaxDocument };
         if (file.Length > max)
             return Problem(Application.Common.Models.Error.Validation($"Tệp vượt quá {max / 1024 / 1024} MB."));
+
+        if (kind == "subtitle") return await UploadSubtitleAsync(file, ext, ct);
 
         await using var stream = file.OpenReadStream();
         if (!await HasValidSignatureAsync(stream, ext, ct))
@@ -64,6 +68,24 @@ public sealed class UploadsController(IFileStorage storage, ILogger<UploadsContr
         logger.LogInformation("Người dùng {User} tải lên {Kind} {PublicId} ({Size} bytes) qua {Storage}", User.GetUserId(), kind, stored.PublicId, stored.Size, storage.ProviderName);
 
         return Ok(new UploadResultDto(stored.PublicId, stored.PublicUrl, stored.FileName, stored.ContentType, stored.Size, stored.DurationSeconds, kind, storage.ProviderName));
+    }
+
+    /// <summary>Phụ đề: đọc dạng văn bản UTF-8, chuyển SRT sang WebVTT rồi lưu riêng tư dưới dạng .vtt.</summary>
+    private async Task<IActionResult> UploadSubtitleAsync(IFormFile file, string ext, CancellationToken ct)
+    {
+        string text;
+        using (var reader = new StreamReader(file.OpenReadStream(), System.Text.Encoding.UTF8, detectEncodingFromByteOrderMarks: true))
+            text = await reader.ReadToEndAsync(ct);
+        var vtt = SubtitleConverter.ToWebVtt(text, ext);
+        if (vtt is null)
+            return Problem(Application.Common.Models.Error.Validation("Tệp phụ đề không hợp lệ. Cần định dạng WebVTT (.vtt) hoặc SubRip (.srt) có ít nhất một dòng thời gian."));
+
+        var baseName = Path.GetFileNameWithoutExtension(Path.GetFileName(file.FileName)).Replace("\"", "").Trim();
+        if (baseName.Length > 150) baseName = baseName[..150];
+        await using var ms = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(vtt));
+        var stored = await storage.UploadAsync(ms, $"{baseName}.vtt", "text/vtt", StoredFileKind.Document, ct);
+        logger.LogInformation("Người dùng {User} tải lên phụ đề {PublicId} ({Size} bytes)", User.GetUserId(), stored.PublicId, stored.Size);
+        return Ok(new UploadResultDto(stored.PublicId, stored.PublicUrl, stored.FileName, "text/vtt", stored.Size, null, "subtitle", storage.ProviderName));
     }
 
     /// <summary>Kiểm tra vài byte đầu của tệp để chặn tệp giả phần mở rộng.</summary>

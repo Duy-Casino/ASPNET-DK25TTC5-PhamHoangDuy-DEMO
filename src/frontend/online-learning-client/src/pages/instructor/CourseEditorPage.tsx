@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { ArrowDown, ArrowUp, Eye, FileText, Lock, Pencil, PlayCircle, Plus, Trash2 } from 'lucide-react'
+import { ArrowDown, ArrowUp, Captions, Eye, FileText, Lock, Pencil, PlayCircle, Plus, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Modal, PageHeader, Panel, SelectField, StatusBadge, Toggle } from '../../components/dashboard'
 import { ErrorState, Field, Skeleton, Spinner, TextArea } from '../../components/ui'
@@ -236,6 +236,7 @@ function CurriculumTab({ course, reload }: { course: CourseEdit; reload: () => v
   const [newSection, setNewSection] = useState('')
   const [editingSection, setEditingSection] = useState<SectionEdit | null>(null)
   const [lessonModal, setLessonModal] = useState<{ sectionId: string; lesson: LessonEdit | null } | null>(null)
+  const [subtitleOf, setSubtitleOf] = useState<LessonEdit | null>(null)
   const [busy, setBusy] = useState(false)
   const editable = course.isEditable
 
@@ -284,8 +285,11 @@ function CurriculumTab({ course, reload }: { course: CourseEdit; reload: () => v
                 {l.type === 'Video' ? <PlayCircle className="size-4 text-ink-muted" aria-hidden="true" /> : <FileText className="size-4 text-ink-muted" aria-hidden="true" />}
                 <span className="min-w-0 flex-1 font-medium">{l.title}</span>
                 <span className="text-sm text-ink-muted">
-                  {formatClock(l.durationSeconds)}{l.isPreview && ' · Học thử'}{!l.isRequired && ' · Không bắt buộc'}{l.resources.length > 0 && ` · ${l.resources.length} tài liệu`}
+                  {formatClock(l.durationSeconds)}{l.isPreview && ' · Học thử'}{!l.isRequired && ' · Không bắt buộc'}{l.resources.length > 0 && ` · ${l.resources.length} tài liệu`}{l.subtitlePublicId && ' · Có phụ đề'}
                 </span>
+                {!editable && l.type === 'Video' && (
+                  <IconButton label={`Phụ đề bài ${l.title}`} onClick={() => setSubtitleOf(l)}><Captions className="size-4" /></IconButton>
+                )}
                 {editable && (
                   <span className="flex gap-1">
                     <IconButton label="Lên" disabled={busy || li === 0} onClick={() => act(() => instructorService.reorderLessons(s.id, move(s.lessons, li, -1)))}><ArrowUp className="size-4" /></IconButton>
@@ -321,6 +325,11 @@ function CurriculumTab({ course, reload }: { course: CourseEdit; reload: () => v
       )}
       {lessonModal && (
         <LessonModal sectionId={lessonModal.sectionId} lesson={lessonModal.lesson} onClose={() => setLessonModal(null)} onSaved={() => { setLessonModal(null); reload() }} />
+      )}
+      {subtitleOf && (
+        <Modal title={`Phụ đề: ${subtitleOf.title}`} onClose={() => { setSubtitleOf(null); reload() }}>
+          <SubtitleControl lessonId={subtitleOf.id} initial={subtitleOf.subtitlePublicId ?? null} />
+        </Modal>
       )}
     </div>
   )
@@ -441,6 +450,7 @@ function LessonModal({ sectionId, lesson, onClose, onSaved }: { sectionId: strin
                 setF((x) => ({ ...x, videoPublicId: r.publicId, videoUrl: null }))
                 if (r.durationSeconds) setMinutes(String(Math.max(1, Math.round(r.durationSeconds / 60))))
               }} />
+            {lesson && lesson.type === 'Video' && <SubtitleControl lessonId={lesson.id} initial={lesson.subtitlePublicId ?? null} />}
           </div>
         )}
         <TextArea label={f.type === 'Article' ? 'Nội dung bài viết (HTML cơ bản)' : 'Ghi chú bài học (không bắt buộc)'} value={f.content ?? ''}
@@ -481,5 +491,36 @@ function LessonModal({ sectionId, lesson, onClose, onSaved }: { sectionId: strin
         </section>
       )}
     </Modal>
+  )
+}
+
+/** Gắn/gỡ phụ đề cho bài video; lưu ngay (không cần bấm "Lưu bài học"), dùng được cả khi khóa đã xuất bản. */
+function SubtitleControl({ lessonId, initial }: { lessonId: string; initial: string | null }) {
+  const [current, setCurrent] = useState(initial)
+  const [busy, setBusy] = useState(false)
+  const save = async (publicId: string | null) => {
+    setBusy(true)
+    try {
+      const l = await instructorService.setSubtitle(lessonId, publicId)
+      setCurrent(l.subtitlePublicId ?? null)
+      toast.success(publicId ? 'Đã gắn phụ đề cho bài học' : 'Đã gỡ phụ đề')
+    } catch (err) {
+      toast.error(getErrorMessage(err))
+    } finally {
+      setBusy(false)
+    }
+  }
+  return (
+    <div className="flex flex-col gap-3 border-t border-line pt-4">
+      <p className="flex flex-wrap items-center gap-3 text-sm">
+        <Captions className="size-4 text-ink-muted" aria-hidden="true" />
+        {current
+          ? <><span className="font-semibold text-success">Đã có phụ đề tiếng Việt.</span>
+              <button type="button" className="text-danger underline" disabled={busy} onClick={() => void save(null)}>Gỡ phụ đề</button></>
+          : <span className="text-ink-soft">Chưa có phụ đề. Phụ đề giúp người học trong môi trường ồn hoặc khiếm thính theo dõi bài giảng.</span>}
+      </p>
+      <FileUpload kind="subtitle" label={current ? 'Thay phụ đề khác' : 'Tải phụ đề lên (.vtt, .srt)'} disabled={busy}
+        onUploaded={(r) => void save(r.publicId)} />
+    </div>
   )
 }

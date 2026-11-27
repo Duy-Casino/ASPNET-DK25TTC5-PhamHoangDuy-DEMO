@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { CheckCircle2, Clock, XCircle } from 'lucide-react'
+import { CheckCircle2, Clock, Dumbbell, XCircle } from 'lucide-react'
 import { toast } from 'sonner'
 import { ErrorState, Skeleton, Spinner } from '../../components/ui'
 import { useAsync } from '../../hooks/useAsync'
@@ -10,6 +10,7 @@ import type { AttemptResult, AttemptTake } from '../../types/dashboard'
 import { formatDateTime } from '../../utils/format'
 import { useLearn } from './LearnPage'
 import { QuizNextSteps } from './SupportTools'
+import { PracticeWrong } from './QuizReview'
 
 type Answers = Record<string, string[]>
 
@@ -246,6 +247,10 @@ function TakeQuiz({ take, onSubmitted }: { take: AttemptTake; onSubmitted: (r: A
 function ResultView({ result, canRetry, onRetry, retrying, nextSteps }: {
   result: AttemptResult; canRetry: boolean; onRetry: () => void; retrying: boolean; nextSteps?: React.ReactNode
 }) {
+  const wrong = result.questions.filter((q) => !q.isCorrect)
+  const [onlyWrong, setOnlyWrong] = useState(false)
+  const [practice, setPractice] = useState(false)
+  const shown = result.questions.map((q, i) => ({ q, i })).filter(({ q }) => !onlyWrong || !q.isCorrect)
   return (
     <div className="mx-auto max-w-3xl px-4 py-10 sm:px-8">
       <div className={`p-6 sm:p-8 ${result.isPassed ? 'bg-success-50' : 'bg-danger-50'}`}>
@@ -272,9 +277,24 @@ function ResultView({ result, canRetry, onRetry, retrying, nextSteps }: {
       </div>
       {nextSteps}
 
-      <h2 className="mt-10 text-xl font-bold">Đáp án chi tiết</h2>
+      {practice ? <PracticeWrong questions={wrong} onClose={() => setPractice(false)} /> : (
+      <>
+      <div className="mt-10 flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-xl font-bold">Đáp án chi tiết</h2>
+        {wrong.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex rounded-(--radius-control) bg-surface-2 p-1 text-sm" role="group" aria-label="Lọc câu hỏi">
+              <button type="button" aria-pressed={!onlyWrong} onClick={() => setOnlyWrong(false)}
+                className={`rounded-(--radius-control) px-3 py-1.5 font-semibold ${!onlyWrong ? 'bg-white shadow-sm' : 'text-ink-soft'}`}>Tất cả ({result.questions.length})</button>
+              <button type="button" aria-pressed={onlyWrong} onClick={() => setOnlyWrong(true)}
+                className={`rounded-(--radius-control) px-3 py-1.5 font-semibold ${onlyWrong ? 'bg-white shadow-sm' : 'text-ink-soft'}`}>Câu sai ({wrong.length})</button>
+            </div>
+            <button type="button" className="btn-soft" onClick={() => setPractice(true)}><Dumbbell className="size-4" aria-hidden="true" />Luyện lại câu sai</button>
+          </div>
+        )}
+      </div>
       <ol className="mt-6 flex flex-col gap-8">
-        {result.questions.map((q, i) => (
+        {shown.map(({ q, i }) => (
           <li key={q.questionId}>
             <p className="font-bold">
               {q.isCorrect
@@ -295,6 +315,8 @@ function ResultView({ result, canRetry, onRetry, retrying, nextSteps }: {
           </li>
         ))}
       </ol>
+      </>
+      )}
     </div>
   )
 }

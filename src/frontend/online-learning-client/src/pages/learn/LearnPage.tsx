@@ -1,11 +1,11 @@
-import { createContext, useContext, useState } from 'react'
+import { createContext, useContext, useId, useState } from 'react'
 import { Link, Navigate, NavLink, Outlet, useParams } from 'react-router-dom'
-import { ArrowLeft, CheckCircle2, Circle, ClipboardCheck, FileText, ListTree, PlayCircle, X } from 'lucide-react'
+import { ArrowLeft, CheckCircle2, Circle, ClipboardCheck, FileText, ListTree, PlayCircle, Search, X } from 'lucide-react'
 import { ErrorState, Logo, Spinner } from '../../components/ui'
 import { useAsync, useDocumentTitle } from '../../hooks/useAsync'
 import { learningService } from '../../services/dashboardApi'
 import type { LearnCourse, LearnQuizBrief, Progress } from '../../types/dashboard'
-import { formatClock } from '../../utils/format'
+import { foldVietnamese as fold, formatClock } from '../../utils/format'
 import NotFoundPage from '../NotFoundPage'
 import { ReportIssueButton } from './SupportTools'
 
@@ -112,8 +112,27 @@ export function LearnIndex() {
 
 function Outline() {
   const { course } = useLearn()
+  const [query, setQuery] = useState('')
+  const inputId = useId()
+  const q = fold(query.trim())
+  const match = (title: string) => !q || fold(title).includes(q)
+  const sections = course.sections
+    .map((s) => ({ ...s, lessons: s.lessons.filter((l) => match(l.title) || match(s.title)), quizzes: s.quizzes.filter((x) => match(x.title) || match(s.title)) }))
+    .filter((s) => s.lessons.length + s.quizzes.length > 0)
+  const finals = course.courseQuizzes.filter((x) => match(x.title))
+  const total = sections.reduce((n, s) => n + s.lessons.length + s.quizzes.length, 0) + finals.length
+
   return (
     <nav className="pb-10">
+      <div className="px-5 pt-4">
+        <label htmlFor={inputId} className="sr-only">Tìm bài học trong khóa</label>
+        <div className="relative">
+          <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-ink-muted" aria-hidden="true" />
+          <input id={inputId} type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Tìm bài học…"
+            className="input min-h-10 bg-white py-2 pr-3 pl-9 text-sm" />
+        </div>
+        {q && <p className="mt-2 text-xs text-ink-soft" role="status">{total ? `${total} kết quả` : 'Không tìm thấy bài học phù hợp.'}</p>}
+      </div>
       {!course.isPreviewMode && (
         <div className="px-5 pt-5 pb-3">
           <p className="text-sm text-ink-soft">{course.completedLessons}/{course.requiredLessons} bài bắt buộc · {Math.round(course.progressPercent)}%</p>
@@ -125,7 +144,7 @@ function Outline() {
           )}
         </div>
       )}
-      {course.sections.map((s) => (
+      {sections.map((s) => (
         <div key={s.id} className="mt-2">
           <p className="px-5 py-2 font-bold">{s.title}</p>
           <ul>
@@ -150,10 +169,10 @@ function Outline() {
           </ul>
         </div>
       ))}
-      {course.courseQuizzes.length > 0 && (
+      {finals.length > 0 && (
         <div className="mt-4">
           <p className="px-5 py-2 font-bold">Kiểm tra cuối khóa</p>
-          <ul>{course.courseQuizzes.map((q) => <QuizLink key={q.id} quiz={q} slug={course.slug} />)}</ul>
+          <ul>{finals.map((x) => <QuizLink key={x.id} quiz={x} slug={course.slug} />)}</ul>
         </div>
       )}
     </nav>

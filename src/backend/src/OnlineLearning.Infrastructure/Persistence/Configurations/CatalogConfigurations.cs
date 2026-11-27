@@ -78,6 +78,7 @@ public class LessonConfiguration : IEntityTypeConfiguration<Lesson>
         b.Property(x => x.Title).HasMaxLength(200).IsRequired();
         b.Property(x => x.VideoUrl).HasMaxLength(500);
         b.Property(x => x.VideoPublicId).HasMaxLength(300);
+        b.Property(x => x.SubtitlePublicId).HasMaxLength(300);
         b.Property(x => x.IsRequired).HasDefaultValue(true).HasSentinel(true);
         b.HasIndex(x => new { x.SectionId, x.SortOrder });
 

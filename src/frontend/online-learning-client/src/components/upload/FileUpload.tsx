@@ -8,6 +8,7 @@ const accepts: Record<UploadResult['kind'], { accept: string; hint: string; maxM
   image: { accept: 'image/jpeg,image/png,image/webp,image/gif', hint: 'JPG, PNG, WEBP, GIF · tối đa 5 MB', maxMb: 5 },
   video: { accept: 'video/mp4,video/webm,video/quicktime,.m4v', hint: 'MP4, WEBM, MOV · tối đa 500 MB', maxMb: 500 },
   document: { accept: '.pdf,.zip,.rar,.docx,.xlsx,.pptx,.txt,.md', hint: 'PDF, ZIP, DOCX, XLSX, PPTX, TXT · tối đa 50 MB', maxMb: 50 },
+  subtitle: { accept: '.vtt,.srt', hint: 'WebVTT (.vtt) hoặc SubRip (.srt) · tối đa 2 MB', maxMb: 2 },
 }
 
 /**

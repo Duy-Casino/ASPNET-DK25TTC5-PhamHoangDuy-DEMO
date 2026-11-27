@@ -4,6 +4,8 @@ namespace OnlineLearning.Application.Features.Auth;
 
 public sealed record RegisterRequest(string FullName, string Email, string Password, string? ReferralCode = null);
 public sealed record LoginRequest(string Email, string Password);
+/// <summary>Credential = ID token do nút "Đăng nhập bằng Google" trả về.</summary>
+public sealed record GoogleLoginRequest(string Credential, string? ReferralCode = null);
 public sealed record ForgotPasswordRequest(string Email);
 public sealed record ResetPasswordRequest(string Email, string Token, string NewPassword);
 public sealed record ConfirmEmailRequest(Guid UserId, string Token);
@@ -28,6 +30,15 @@ internal static class PasswordRules
             .Matches("[A-Z]").WithMessage("Mật khẩu cần ít nhất một chữ hoa.")
             .Matches("[a-z]").WithMessage("Mật khẩu cần ít nhất một chữ thường.")
             .Matches("[0-9]").WithMessage("Mật khẩu cần ít nhất một chữ số.");
+}
+
+public sealed class GoogleLoginRequestValidator : AbstractValidator<GoogleLoginRequest>
+{
+    public GoogleLoginRequestValidator()
+    {
+        RuleFor(x => x.Credential).NotEmpty().WithMessage("Thiếu thông tin đăng nhập Google.").MaximumLength(8192);
+        RuleFor(x => x.ReferralCode).MaximumLength(16);
+    }
 }
 
 public sealed class RegisterRequestValidator : AbstractValidator<RegisterRequest>

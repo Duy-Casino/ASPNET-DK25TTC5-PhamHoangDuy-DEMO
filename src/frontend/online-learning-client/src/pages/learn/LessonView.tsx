@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import DOMPurify from 'dompurify'
-import { AlertTriangle, CheckCircle2, ChevronLeft, ChevronRight, Download } from 'lucide-react'
+import { CheckCircle2, ChevronLeft, ChevronRight, Download } from 'lucide-react'
 import { toast } from 'sonner'
 import { ErrorState, Skeleton, Spinner } from '../../components/ui'
 import { useAsync } from '../../hooks/useAsync'
@@ -9,6 +9,7 @@ import { learningService } from '../../services/dashboardApi'
 import { getErrorMessage } from '../../services/apiClient'
 import { useLearn } from './LearnPage'
 import { LessonNotes, LessonQA } from './LessonTools'
+import { VideoPlayer, type VideoPlayerHandle } from './VideoPlayer'
 
 const tabs = [
   { key: 'tong-quan', label: 'Tổng quan' },
@@ -28,18 +29,15 @@ export default function LessonView() {
   const { course, applyProgress } = useLearn()
   const navigate = useNavigate()
   const { data: lesson, loading, error, reload, setData } = useAsync(() => learningService.lesson(lessonId), [lessonId])
-  const videoRef = useRef<HTMLVideoElement>(null)
+  const playerRef = useRef<VideoPlayerHandle>(null)
   const lastSaved = useRef(0)
   const [saving, setSaving] = useState(false)
-  const [videoError, setVideoError] = useState(false)
   const [params, setParams] = useSearchParams()
   const tab: TabKey = tabs.some((t) => t.key === params.get('tab')) ? (params.get('tab') as TabKey) : 'tong-quan'
   const setTab = (t: TabKey) => setParams(t === 'tong-quan' ? {} : { tab: t }, { replace: true })
 
-  useEffect(() => setVideoError(false), [lessonId])
-
   const seek = (seconds: number) => {
-    const v = videoRef.current
+    const v = playerRef.current?.video
     if (!v) return
     v.currentTime = seconds
     void v.play().catch(() => undefined)
@@ -48,7 +46,7 @@ export default function LessonView() {
 
   // Lưu vị trí xem video mỗi 15 giây, khi tạm dừng và khi rời trang
   useEffect(() => {
-    const video = videoRef.current
+    const video = playerRef.current?.video
     if (!video || !lesson || course.isPreviewMode) return
     const save = () => {
       const pos = Math.floor(video.currentTime)
@@ -87,37 +85,19 @@ export default function LessonView() {
     }
   }
 
+  const nextId = lesson?.nextLessonId
+  const goNext = useCallback(() => {
+    if (nextId) navigate(`/hoc/${course.slug}/bai/${nextId}`)
+  }, [nextId, course.slug, navigate])
+
   if (error) return <div className="p-6 sm:p-10"><ErrorState message={error} onRetry={reload} /></div>
   if (loading || !lesson) return <div className="p-6 sm:p-10"><Skeleton className="aspect-video w-full" /><Skeleton className="mt-6 h-8 w-1/2" /></div>
 
   return (
     <article>
       {lesson.type === 'Video' && lesson.videoUrl && (
-        <div className="relative bg-black">
-          {videoError && (
-            <div className="absolute inset-0 z-[1] flex flex-col items-center justify-center gap-3 bg-ink/90 p-6 text-center text-white" role="alert">
-              <AlertTriangle className="size-10 text-sun-300" aria-hidden="true" />
-              <p className="max-w-md font-semibold">Không phát được video. Có thể kết nối mạng chập chờn hoặc liên kết video đã hết hạn.</p>
-              <button type="button" className="btn-primary" onClick={() => { setVideoError(false); reload() }}>Tải lại video</button>
-              <p className="text-sm text-white/70">Nếu vẫn lỗi, hãy đặt câu hỏi ở mục "Hỏi đáp" để giảng viên kiểm tra.</p>
-            </div>
-          )}
-          <video
-            onError={() => setVideoError(true)}
-            key={lesson.id}
-            ref={videoRef}
-            src={lesson.videoUrl}
-            controls
-            playsInline
-            className="mx-auto aspect-video max-h-[70svh] w-full"
-            onLoadedMetadata={(e) => {
-              if (lesson.lastPositionSeconds > 5 && lesson.lastPositionSeconds < lesson.durationSeconds - 5) {
-                e.currentTarget.currentTime = lesson.lastPositionSeconds
-              }
-            }}
-            onEnded={() => !lesson.isCompleted && setCompleted(true, true)}
-          />
-        </div>
+        <VideoPlayer ref={playerRef} lesson={lesson} onReload={reload} onNext={goNext}
+          onEnded={() => { if (!lesson.isCompleted) void setCompleted(true, true) }} />
       )}
 
       <div className="mx-auto max-w-4xl px-4 py-8 sm:px-8 sm:py-10">
@@ -151,7 +131,7 @@ export default function LessonView() {
         {tab === 'ghi-chu' && (
           <div className="mt-6">
             <LessonNotes lessonId={lesson.id} hasVideo={lesson.type === 'Video' && !!lesson.videoUrl}
-              getTime={() => (videoRef.current ? videoRef.current.currentTime : null)} seek={seek} />
+              getTime={() => playerRef.current?.video?.currentTime ?? null} seek={seek} />
           </div>
         )}
 

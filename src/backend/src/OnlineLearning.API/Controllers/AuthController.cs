@@ -23,6 +23,12 @@ public sealed class AuthController(IAuthService auth, IWebHostEnvironment env) :
     public async Task<IActionResult> Login(LoginRequest request, CancellationToken ct) =>
         WithRefreshCookie(await auth.LoginAsync(request, ct));
 
+    /// <summary>Đăng nhập/đăng ký bằng ID token Google (nút Google Identity Services ở trang đăng nhập).</summary>
+    [HttpPost("google")]
+    [ProducesResponseType<AuthResponse>(StatusCodes.Status200OK)]
+    public async Task<IActionResult> Google(GoogleLoginRequest request, CancellationToken ct) =>
+        WithRefreshCookie(await auth.GoogleLoginAsync(request, ct));
+
     /// <summary>Cấp access token mới bằng refresh token trong cookie HttpOnly (xoay vòng token).</summary>
     [HttpPost("refresh")]
     [ProducesResponseType<AuthResponse>(StatusCodes.Status200OK)]

@@ -50,6 +50,24 @@ public sealed class AdminEnrollmentQuery : PagedQuery
     public Guid? CourseId { get; set; }
     /// <summary>Một trong <see cref="LearningStates"/>.</summary>
     public string? State { get; set; }
+    /// <summary>Chỉ lượt ghi danh thuộc khóa của giảng viên này; API giảng viên luôn ghi đè bằng người đang đăng nhập.</summary>
+    public Guid? InstructorId { get; set; }
+}
+
+// ---------- Giảng viên xem học viên cần hỗ trợ trong khóa của mình ----------
+public sealed record StuckQuizDto(Guid QuizId, string Title, int AttemptsUsed, int MaxAttempts);
+public sealed record InstructorLearnerDto(Guid EnrollmentId, Guid UserId, string FullName, string Email, string? AvatarUrl, Guid CourseId, string CourseTitle, string CourseSlug,
+    decimal ProgressPercent, int CompletedLessons, int RequiredLessons, string State, decimal? FinalBestScore, bool FinalPassed,
+    DateTime EnrolledAt, DateTime? LastAccessedAt, StuckQuizDto? StuckQuiz);
+public sealed record InstructorLearnersDto(IReadOnlyDictionary<string, int> Counts, PagedResult<InstructorLearnerDto> Page);
+public sealed record InstructorGrantRequest(Guid QuizId, int ExtraAttempts, string Reason);
+public sealed class InstructorGrantRequestValidator : AbstractValidator<InstructorGrantRequest>
+{
+    public InstructorGrantRequestValidator()
+    {
+        RuleFor(x => x.ExtraAttempts).InclusiveBetween(1, 3).WithMessage("Giảng viên cấp thêm từ 1 đến 3 lượt mỗi lần.");
+        RuleFor(x => x.Reason).Must(r => r is not null && r.Trim().Length >= 5).WithMessage("Bắt buộc ghi lý do (ít nhất 5 ký tự).").MaximumLength(500);
+    }
 }
 
 public sealed record ReasonRequest(string Reason);
@@ -119,6 +137,9 @@ public interface ILearningAdminService
     Task<byte[]> ExportCsvAsync(AdminEnrollmentQuery query, CancellationToken ct = default);
 
     Task<Result> GrantAttemptsAsync(Guid adminId, Guid enrollmentId, GrantAttemptsRequest request, CancellationToken ct = default);
+    Task<InstructorLearnersDto> ListForInstructorAsync(Guid instructorId, AdminEnrollmentQuery query, CancellationToken ct = default);
+    /// <summary>Giảng viên cấp thêm lượt cho học viên hết lượt trong khóa của chính mình.</summary>
+    Task<Result> InstructorGrantAsync(Guid instructorId, Guid enrollmentId, InstructorGrantRequest request, CancellationToken ct = default);
     Task<Result> SetLessonAsync(Guid adminId, Guid enrollmentId, SetLessonRequest request, CancellationToken ct = default);
     Task<Result> ResetProgressAsync(Guid adminId, Guid enrollmentId, string reason, CancellationToken ct = default);
     /// <summary>Tính lại tiến độ; đủ điều kiện thì cấp chứng chỉ (dùng khi tiến độ hiển thị sai hoặc chưa nhận chứng chỉ).</summary>
@@ -144,7 +165,8 @@ public sealed class LearningAdminService(
 
     private sealed record QuizStat(Guid QuizId, Guid CourseId, bool IsRequired, bool IsFinal, int? Max);
 
-    private sealed record Classified(Row Row, string State, decimal? FinalBest, bool FinalPassed, int FinalUsed, int? FinalMax);
+    private sealed record Classified(Row Row, string State, decimal? FinalBest, bool FinalPassed, int FinalUsed, int? FinalMax,
+        Guid? StuckQuizId = null, int StuckUsed = 0, int StuckMax = 0);
 
     /// <summary>Lọc và sắp xếp trên Enrollment trước khi chiếu sang Row (EF không dịch được điều kiện trên record đã chiếu).</summary>
     private IQueryable<Row> Rows(AdminEnrollmentQuery? q, Guid? enrollmentId = null)
@@ -152,6 +174,7 @@ public sealed class LearningAdminService(
         var query = db.Enrollments.AsNoTracking().AsQueryable();
         if (enrollmentId is { } eid) query = query.Where(e => e.Id == eid);
         if (q?.CourseId is { } cid) query = query.Where(e => e.CourseId == cid);
+        if (q?.InstructorId is { } iid) query = query.Where(e => e.Course.InstructorId == iid);
         if (!string.IsNullOrWhiteSpace(q?.Keyword))
         {
             var kw = q.Keyword.Trim();
@@ -181,11 +204,17 @@ public sealed class LearningAdminService(
         {
             var courseQuizzes = quizzes.Where(q => q.CourseId == r.CourseId).ToList();
             bool stuck = false;
+            Guid? stuckQuiz = null;
+            int stuckUsed = 0, stuckMax = 0;
             foreach (var q in courseQuizzes)
             {
                 var a = attempts.FirstOrDefault(x => x.QuizId == q.QuizId && x.UserId == r.UserId);
                 var extra = grants.FirstOrDefault(x => x.QuizId == q.QuizId && x.UserId == r.UserId)?.Extra ?? 0;
-                if (a is { Passed: false } && q.Max is { } m && a.Used >= m + extra) stuck = true;
+                if (a is { Passed: false } && q.Max is { } m && a.Used >= m + extra)
+                {
+                    stuck = true;
+                    if (stuckQuiz is null) (stuckQuiz, stuckUsed, stuckMax) = (q.QuizId, a.Used, m + extra);
+                }
             }
             var final = courseQuizzes.FirstOrDefault(q => q.IsFinal) ?? courseQuizzes.FirstOrDefault();
             var fa = final is null ? null : attempts.FirstOrDefault(x => x.QuizId == final.QuizId && x.UserId == r.UserId);
@@ -200,7 +229,8 @@ public sealed class LearningAdminService(
                 : r.Completed == 0 && !anyAttempt ? LearningStates.NotStarted
                 : (r.LastAccessedAt ?? r.EnrolledAt) < now.AddDays(-InactiveDays) ? LearningStates.Inactive
                 : LearningStates.InProgress;
-            return new Classified(r, state, fa?.Best, fa?.Passed ?? false, fa?.Used ?? 0, final?.Max is { } fm ? fm + fExtra : null);
+            return new Classified(r, state, fa?.Best, fa?.Passed ?? false, fa?.Used ?? 0, final?.Max is { } fm ? fm + fExtra : null,
+                stuckQuiz, stuckUsed, stuckMax);
         }).ToList();
     }
 
@@ -232,6 +262,43 @@ public sealed class LearningAdminService(
                 : classified.Where(c => c.State == q.State).ToList();
         var items = classified.Skip((q.Page - 1) * q.PageSize).Take(q.PageSize).Select(ToDto).ToList();
         return new PagedResult<AdminEnrollmentDto>(items, q.Page, q.PageSize, classified.Count);
+    }
+
+    public async Task<InstructorLearnersDto> ListForInstructorAsync(Guid instructorId, AdminEnrollmentQuery q, CancellationToken ct = default)
+    {
+        var filterState = q.State;
+        q.InstructorId = instructorId;
+        q.State = null;
+        var classified = (await ClassifyAsync(await Rows(q).Take(5000).ToListAsync(ct), ct))
+            .Where(c => c.State != LearningStates.Revoked).ToList();
+        var counts = classified.GroupBy(c => c.State).ToDictionary(g => g.Key, g => g.Count());
+        counts["all"] = classified.Count;
+        counts[LearningStates.Completed] = classified.Count(c => c.Row.Status == EnrollmentStatus.Completed);
+
+        var filtered = string.IsNullOrWhiteSpace(filterState) ? classified
+            : filterState == LearningStates.Completed ? classified.Where(c => c.Row.Status == EnrollmentStatus.Completed).ToList()
+            : classified.Where(c => c.State == filterState).ToList();
+        // Ưu tiên học viên cần hỗ trợ: hết lượt → bỏ dở → còn lại
+        int Rank(string s) => s switch { LearningStates.Stuck => 0, LearningStates.Inactive => 1, _ => 2 };
+        var pageRows = filtered.OrderBy(c => Rank(c.State)).Skip((q.Page - 1) * q.PageSize).Take(q.PageSize).ToList();
+
+        var userIds = pageRows.Select(c => c.Row.UserId).Distinct().ToList();
+        var avatars = await db.Users.AsNoTracking().Where(u => userIds.Contains(u.Id)).ToDictionaryAsync(u => u.Id, u => u.AvatarUrl, ct);
+        var quizIds = pageRows.Where(c => c.StuckQuizId != null).Select(c => c.StuckQuizId!.Value).Distinct().ToList();
+        var quizTitles = await db.Quizzes.AsNoTracking().Where(x => quizIds.Contains(x.Id)).ToDictionaryAsync(x => x.Id, x => x.Title, ct);
+
+        var items = pageRows.Select(c => new InstructorLearnerDto(c.Row.Id, c.Row.UserId, c.Row.FullName, c.Row.Email, avatars.GetValueOrDefault(c.Row.UserId),
+            c.Row.CourseId, c.Row.CourseTitle, c.Row.CourseSlug, c.Row.Progress, c.Row.Completed, c.Row.Required, c.State, c.FinalBest, c.FinalPassed,
+            c.Row.EnrolledAt, c.Row.LastAccessedAt,
+            c.StuckQuizId is { } sq ? new StuckQuizDto(sq, quizTitles.GetValueOrDefault(sq, "Bài kiểm tra"), c.StuckUsed, c.StuckMax) : null)).ToList();
+        return new InstructorLearnersDto(counts, new PagedResult<InstructorLearnerDto>(items, q.Page, q.PageSize, filtered.Count));
+    }
+
+    public async Task<Result> InstructorGrantAsync(Guid instructorId, Guid enrollmentId, InstructorGrantRequest r, CancellationToken ct = default)
+    {
+        var owns = await db.Enrollments.AsNoTracking().AnyAsync(e => e.Id == enrollmentId && e.Course.InstructorId == instructorId, ct);
+        if (!owns) return Result.Failure(NotFoundEnrollment);
+        return await GrantAttemptsAsync(instructorId, enrollmentId, new GrantAttemptsRequest(r.QuizId, r.ExtraAttempts, r.Reason), ct);
     }
 
     public async Task<byte[]> ExportCsvAsync(AdminEnrollmentQuery q, CancellationToken ct = default)

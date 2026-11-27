@@ -83,3 +83,17 @@ public sealed class AdminLearningController(ILearningAdminService service) : Api
     public async Task<IActionResult> Respond(Guid id, RespondSupportRequest request, CancellationToken ct) =>
         FromResult(await service.RespondAsync(User.GetUserId(), id, request, ct));
 }
+
+/// <summary>Giảng viên theo dõi học viên trong khóa của mình: ai hết lượt kiểm tra, ai bỏ dở; cấp thêm lượt khi cần.</summary>
+[Route("api/instructor/learners")]
+[Authorize(Roles = Roles.Instructor)]
+public sealed class InstructorLearnersController(ILearningAdminService service) : ApiControllerBase
+{
+    [HttpGet]
+    public async Task<ActionResult<InstructorLearnersDto>> List([FromQuery] AdminEnrollmentQuery query, CancellationToken ct) =>
+        Ok(await service.ListForInstructorAsync(User.GetUserId(), query, ct));
+
+    [HttpPost("{enrollmentId:guid}/grant-attempts")]
+    public async Task<IActionResult> Grant(Guid enrollmentId, InstructorGrantRequest request, CancellationToken ct) =>
+        FromResult(await service.InstructorGrantAsync(User.GetUserId(), enrollmentId, request, ct));
+}

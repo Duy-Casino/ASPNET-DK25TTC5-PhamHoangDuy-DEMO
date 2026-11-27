@@ -18,9 +18,15 @@ public interface ICatalogService
     Task<IReadOnlyList<InstructorProfileDto>> GetFeaturedInstructorsAsync(int take, CancellationToken ct = default);
     /// <summary>Đường dẫn công khai cho sitemap.xml: khóa học đã xuất bản và giảng viên có khóa đã xuất bản.</summary>
     Task<IReadOnlyList<SitemapEntryDto>> GetSitemapEntriesAsync(CancellationToken ct = default);
+    /// <summary>Gợi ý khi gõ ô tìm kiếm: vài khóa học, giảng viên và danh mục khớp từ khóa.</summary>
+    Task<SearchSuggestionsDto> SuggestAsync(string? keyword, CancellationToken ct = default);
 }
 
 public sealed record SitemapEntryDto(string Path, DateTime? LastModified);
+public sealed record SuggestCourseDto(Guid Id, string Title, string Slug, string? ThumbnailUrl, string InstructorName);
+public sealed record SuggestInstructorDto(Guid Id, string FullName, string? AvatarUrl, string? Headline, int CourseCount);
+public sealed record SuggestCategoryDto(string Name, string Slug);
+public sealed record SearchSuggestionsDto(IReadOnlyList<SuggestCourseDto> Courses, IReadOnlyList<SuggestInstructorDto> Instructors, IReadOnlyList<SuggestCategoryDto> Categories);
 
 public sealed class CatalogService(IAppDbContext db, IFileStorage storage) : ICatalogService
 {
@@ -34,6 +40,34 @@ public sealed class CatalogService(IAppDbContext db, IFileStorage storage) : ICa
             .GroupBy(c => c.InstructorId)
             .Select(g => new SitemapEntryDto($"/giang-vien/{g.Key}", g.Max(c => c.Modified))));
         return entries;
+    }
+
+    public async Task<SearchSuggestionsDto> SuggestAsync(string? keyword, CancellationToken ct = default)
+    {
+        var kw = keyword?.Trim() ?? "";
+        if (kw.Length < 2) return new SearchSuggestionsDto([], [], []);
+        if (kw.Length > 100) kw = kw[..100];
+
+        // Khớp đầu tiêu đề xếp trước, sau đó theo độ phổ biến
+        var courses = await Published
+            .Where(c => c.Title.Contains(kw) || c.Instructor.FullName.Contains(kw) || (c.ShortDescription != null && c.ShortDescription.Contains(kw)))
+            .OrderByDescending(c => c.Title.StartsWith(kw)).ThenByDescending(c => c.Title.Contains(kw)).ThenByDescending(c => c.EnrollmentCount)
+            .Take(6)
+            .Select(c => new SuggestCourseDto(c.Id, c.Title, c.Slug, c.ThumbnailUrl, c.Instructor.FullName))
+            .ToListAsync(ct);
+        var instructors = await db.Users.AsNoTracking()
+            .Where(u => u.IsActive && u.FullName.Contains(kw) && db.Courses.Any(c => c.InstructorId == u.Id && c.Status == CourseStatus.Published && !c.IsDeleted))
+            .OrderByDescending(u => u.FullName.StartsWith(kw))
+            .Take(3)
+            .Select(u => new SuggestInstructorDto(u.Id, u.FullName, u.AvatarUrl, u.Headline,
+                db.Courses.Count(c => c.InstructorId == u.Id && c.Status == CourseStatus.Published && !c.IsDeleted)))
+            .ToListAsync(ct);
+        var categories = await db.Categories.AsNoTracking()
+            .Where(c => c.IsActive && c.Name.Contains(kw))
+            .OrderBy(c => c.Name).Take(3)
+            .Select(c => new SuggestCategoryDto(c.Name, c.Slug))
+            .ToListAsync(ct);
+        return new SearchSuggestionsDto(courses, instructors, categories);
     }
 
     /// <summary>Thẻ khóa học tại thời điểm hiện tại: khuyến mãi đã hết hạn thì trả giá gốc và DiscountPrice = null.</summary>

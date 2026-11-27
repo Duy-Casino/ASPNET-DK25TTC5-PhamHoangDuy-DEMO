@@ -36,7 +36,7 @@ public sealed record LearnResourceDto(Guid Id, string FileName, string FileUrl, 
 public sealed record LessonContentDto(
     Guid Id, Guid SectionId, string SectionTitle, string Title, LessonType Type, string? Content, string? VideoUrl,
     int DurationSeconds, bool IsCompleted, int LastPositionSeconds, IReadOnlyList<LearnResourceDto> Resources,
-    Guid? PreviousLessonId, Guid? NextLessonId);
+    Guid? PreviousLessonId, Guid? NextLessonId, string? SubtitleUrl = null, string? NextLessonTitle = null);
 
 public sealed record ProgressDto(decimal ProgressPercent, int CompletedLessons, int RequiredLessons, EnrollmentStatus Status, bool CourseCompleted, string? CertificateCode = null);
 public sealed record SavePositionRequest(int PositionSeconds);
@@ -153,8 +153,8 @@ public sealed class LearningService(
         var ordered = await db.Lessons.AsNoTracking()
             .Where(l => l.Section.CourseId == course.Id)
             .OrderBy(l => l.Section.SortOrder).ThenBy(l => l.SortOrder)
-            .Select(l => l.Id).ToListAsync(ct);
-        var index = ordered.IndexOf(lessonId);
+            .Select(l => new { l.Id, l.Title }).ToListAsync(ct);
+        var index = ordered.FindIndex(l => l.Id == lessonId);
 
         return new LessonContentDto(
             // Video/tài liệu riêng tư → URL có chữ ký, hết hạn; chỉ cấp sau khi đã kiểm tra quyền ở trên
@@ -162,8 +162,10 @@ public sealed class LearningService(
             lesson.VideoPublicId is { Length: > 0 } vid ? storage.GetSignedUrl(vid, StoredFileKind.Video) : lesson.VideoUrl,
             lesson.DurationSeconds, progress?.IsCompleted ?? false, progress?.LastPositionSeconds ?? 0,
             lesson.Resources.Select(r => new LearnResourceDto(r.Id, r.FileName, r.PublicId is { Length: > 0 } pid ? storage.GetSignedUrl(pid, StoredFileKind.Document) : r.FileUrl, r.ContentType, r.FileSize)).ToList(),
-            index > 0 ? ordered[index - 1] : null,
-            index >= 0 && index < ordered.Count - 1 ? ordered[index + 1] : null);
+            index > 0 ? ordered[index - 1].Id : null,
+            index >= 0 && index < ordered.Count - 1 ? ordered[index + 1].Id : null,
+            lesson.Type == LessonType.Video && lesson.SubtitlePublicId is { Length: > 0 } sub ? storage.GetSignedUrl(sub, StoredFileKind.Document) : null,
+            index >= 0 && index < ordered.Count - 1 ? ordered[index + 1].Title : null);
     }
 
     public async Task<Result<ProgressDto>> SetCompletedAsync(Guid userId, Guid lessonId, bool completed, CancellationToken ct = default)

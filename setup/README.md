@@ -5,7 +5,7 @@ Thư mục này chứa những gì cần để cài đặt EduViet trên một m
 | Thành phần | Nội dung |
 | --- | --- |
 | [`run-demo.ps1`](run-demo.ps1) | Script PowerShell: kiểm tra công cụ, đặt bí mật lần đầu, cài gói npm, mở API và web trong hai cửa sổ |
-| [`database/`](database/) | Script SQL Server: `full-schema.sql` (toàn bộ 58 bảng, sinh từ 9 migration), script migration từng bước (idempotent) và `schema.sql` (bản thiết kế ban đầu có chú thích) |
+| [`database/`](database/) | Script SQL Server: `full-schema.sql` (toàn bộ 58 bảng, sinh từ 10 migration), script migration từng bước (idempotent) và `schema.sql` (bản thiết kế ban đầu có chú thích) |
 | [`test-data/`](test-data/) | Mô tả dữ liệu thử: tài khoản, khóa học, mã giảm giá, và cách tạo lại dữ liệu khớp với kết quả báo cáo |
 
 Ứng dụng là website (API + giao diện web), không có tệp cài đặt `.exe`. Bộ cài .NET SDK, Node.js và SQL Server không lưu trong repository vì dung lượng lớn và có giấy phép riêng. Liên kết tải chính thức nằm ở [`../soft/`](../soft/README.md).
@@ -77,6 +77,7 @@ Chọn một trong hai cách tạo CSDL `OnlineLearningDb`:
   7. `database/migration-LearnerTools.sql` (hỏi đáp theo bài, ghi chú, nhắc học, tắt email nhắc nhở)
   8. `database/migration-LearningSupport.sql` (cấp thêm lượt kiểm tra, yêu cầu hỗ trợ học tập, nhật ký thao tác)
   9. `database/migration-AdminTools.sql` (hồ sơ đăng ký giảng viên, nhật ký quản trị, cài đặt hệ thống, thông báo hàng loạt)
+  10. `database/migration-LessonSubtitles.sql` (cột phụ đề `Lessons.SubtitlePublicId`)
 
   Các script migration đều idempotent, chạy lại không gây lỗi. Hoặc chạy một lần `database/full-schema.sql` trên CSDL trống để tạo đủ 58 bảng. `database/schema.sql` là bản thiết kế ban đầu (giai đoạn 1) có chú thích, dùng để đọc.
 

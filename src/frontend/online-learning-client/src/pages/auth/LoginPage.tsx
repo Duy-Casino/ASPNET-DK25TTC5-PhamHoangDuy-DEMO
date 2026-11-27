@@ -5,6 +5,7 @@ import { Field, Spinner } from '../../components/ui'
 import { useDocumentTitle } from '../../hooks/useAsync'
 import { useAuth } from '../../hooks/useAuth'
 import { getErrorMessage, getFieldErrors } from '../../services/apiClient'
+import { GoogleSignInButton } from '../../components/GoogleSignInButton'
 
 /** Chỉ cho phép quay lại đường dẫn nội bộ (chống open redirect). */
 export function safeNext(next: string | null): string {
@@ -13,7 +14,7 @@ export function safeNext(next: string | null): string {
 
 export default function LoginPage() {
   useDocumentTitle('Đăng nhập')
-  const { login, isAuthenticated } = useAuth()
+  const { login, loginWithGoogle, isAuthenticated } = useAuth()
   const navigate = useNavigate()
   const [params] = useSearchParams()
   const next = safeNext(params.get('next'))
@@ -43,6 +44,20 @@ export default function LoginPage() {
     }
   }
 
+  const google = async (credential: string) => {
+    setFormError(null)
+    setLoading(true)
+    try {
+      const user = await loginWithGoogle(credential)
+      toast.success(`Chào mừng, ${user.fullName}!`)
+      navigate(next, { replace: true })
+    } catch (err) {
+      setFormError(getErrorMessage(err))
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
     <>
       <h1 className="text-title font-semibold">Đăng nhập</h1>
@@ -57,6 +72,7 @@ export default function LoginPage() {
           {loading && <Spinner className="size-4" />} Đăng nhập
         </button>
       </form>
+      <GoogleSignInButton onCredential={google} disabled={loading} />
       <p className="mt-8 text-ink-soft">
         Chưa có tài khoản?{' '}
         <Link to={`/dang-ky${params.get('next') ? `?next=${encodeURIComponent(next)}` : ''}`} className="font-semibold text-brand-700 hover:underline">Đăng ký miễn phí</Link>

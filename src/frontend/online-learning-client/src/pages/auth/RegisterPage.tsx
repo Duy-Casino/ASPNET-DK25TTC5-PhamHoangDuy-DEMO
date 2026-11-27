@@ -8,6 +8,7 @@ import { useAuth } from '../../hooks/useAuth'
 import { getErrorMessage, getFieldErrors } from '../../services/apiClient'
 import { clearReferral, rememberReferral, storedReferral } from '../../services/rewardApi'
 import { safeNext } from './LoginPage'
+import { GoogleSignInButton } from '../../components/GoogleSignInButton'
 
 export const PASSWORD_HINT = 'Tối thiểu 8 ký tự, có chữ hoa, chữ thường và chữ số.'
 
@@ -17,7 +18,7 @@ export function validatePassword(pw: string): string | undefined {
 
 export default function RegisterPage() {
   useDocumentTitle('Đăng ký')
-  const { register, isAuthenticated } = useAuth()
+  const { register, loginWithGoogle, isAuthenticated } = useAuth()
   const navigate = useNavigate()
   const [params] = useSearchParams()
   const next = safeNext(params.get('next'))
@@ -64,6 +65,21 @@ export default function RegisterPage() {
     }
   }
 
+  const google = async (credential: string) => {
+    setFormError(null)
+    setLoading(true)
+    try {
+      await loginWithGoogle(credential, referral)
+      clearReferral()
+      toast.success('Đăng nhập bằng Google thành công!')
+      navigate(next, { replace: true })
+    } catch (err) {
+      setFormError(getErrorMessage(err))
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
     <>
       <h1 className="text-title font-semibold">Tạo tài khoản</h1>
@@ -84,6 +100,7 @@ export default function RegisterPage() {
           {loading && <Spinner className="size-4" />} Đăng ký
         </button>
       </form>
+      <GoogleSignInButton text="signup_with" onCredential={google} disabled={loading} />
       <p className="mt-8 text-ink-soft">
         Đã có tài khoản? <Link to="/dang-nhap" className="font-semibold text-brand-700 hover:underline">Đăng nhập</Link>
       </p>

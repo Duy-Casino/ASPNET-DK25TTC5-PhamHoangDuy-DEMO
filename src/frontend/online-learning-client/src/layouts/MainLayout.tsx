@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode, type RefObject } from 'react'
+import { useCallback, useEffect, useId, useRef, useState, type FormEvent, type ReactNode, type RefObject } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import {
   ArrowRight, Bell, BookOpen, ChevronDown, GraduationCap, Home, LogOut, Mail, MapPin, Menu, Phone, Search, ShieldCheck, ShoppingCart, X, Layers,
@@ -28,32 +28,114 @@ function useDismiss(open: boolean, close: () => void, ref: RefObject<HTMLElement
   }, [open, close, ref])
 }
 
+type Suggestion = { key: string; label: string; sub?: string; to: string; group: string; image?: string | null; round?: boolean }
+
+/** Ô tìm kiếm có gợi ý khi gõ (combobox): khóa học, giảng viên, danh mục; mũi tên lên/xuống để chọn, Enter để mở. */
 function SearchBox({ onDone, autoFocus = false }: { onDone?: () => void; autoFocus?: boolean }) {
   const navigate = useNavigate()
   const [params] = useSearchParams()
   const [q, setQ] = useState(params.get('keyword') ?? '')
+  const [items, setItems] = useState<Suggestion[]>([])
+  const [open, setOpen] = useState(false)
+  const [active, setActive] = useState(-1)
+  const [loading, setLoading] = useState(false)
+  const listId = useId()
+  const boxRef = useRef<HTMLDivElement>(null)
+  useDismiss(open, () => setOpen(false), boxRef)
 
-  const submit = (e: FormEvent) => {
-    e.preventDefault()
+  useEffect(() => {
     const keyword = q.trim()
-    navigate(keyword ? `/khoa-hoc?keyword=${encodeURIComponent(keyword)}` : '/khoa-hoc')
+    if (keyword.length < 2) { setItems([]); setLoading(false); return }
+    const ctrl = new AbortController()
+    setLoading(true)
+    const t = window.setTimeout(() => {
+      catalogService.suggest(keyword, ctrl.signal).then((r) => {
+        setItems([
+          ...r.courses.map((c) => ({ key: `c-${c.id}`, label: c.title, sub: c.instructorName, to: `/khoa-hoc/${c.slug}`, group: 'Khóa học', image: c.thumbnailUrl })),
+          ...r.instructors.map((u) => ({ key: `i-${u.id}`, label: u.fullName, sub: `${u.courseCount} khóa học${u.headline ? ` · ${u.headline}` : ''}`, to: `/giang-vien/${u.id}`, group: 'Giảng viên', image: u.avatarUrl, round: true })),
+          ...r.categories.map((c) => ({ key: `g-${c.slug}`, label: c.name, to: `/khoa-hoc?category=${encodeURIComponent(c.slug)}`, group: 'Danh mục' })),
+        ])
+        setActive(-1)
+        setLoading(false)
+      }).catch(() => { if (!ctrl.signal.aborted) { setItems([]); setLoading(false) } })
+    }, 250)
+    return () => { ctrl.abort(); window.clearTimeout(t) }
+  }, [q])
+
+  const go = (to: string) => {
+    setOpen(false)
+    navigate(to)
     onDone?.()
   }
 
+  const submit = (e: FormEvent) => {
+    e.preventDefault()
+    if (open && active >= 0 && items[active]) return go(items[active].to)
+    const keyword = q.trim()
+    go(keyword ? `/khoa-hoc?keyword=${encodeURIComponent(keyword)}` : '/khoa-hoc')
+  }
+
+  const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'ArrowDown' && items.length) { e.preventDefault(); setOpen(true); setActive((a) => (a + 1) % items.length) }
+    else if (e.key === 'ArrowUp' && items.length) { e.preventDefault(); setOpen(true); setActive((a) => (a <= 0 ? items.length - 1 : a - 1)) }
+    else if (e.key === 'Escape' && open) { e.stopPropagation(); setOpen(false); setActive(-1) }
+  }
+
+  const showList = open && q.trim().length >= 2
   return (
     <form role="search" onSubmit={submit} className="flex w-full items-center gap-2">
       <label htmlFor="site-search" className="sr-only">Tìm khóa học</label>
-      <div className="relative flex-1">
+      <div ref={boxRef} className="relative flex-1">
         <Search className="pointer-events-none absolute top-1/2 left-4 size-5 -translate-y-1/2 text-ink-muted" aria-hidden="true" />
         <input
           id="site-search"
           type="search"
           value={q}
           autoFocus={autoFocus}
-          onChange={(e) => setQ(e.target.value)}
+          autoComplete="off"
+          role="combobox"
+          aria-expanded={showList}
+          aria-controls={listId}
+          aria-autocomplete="list"
+          aria-activedescendant={showList && active >= 0 ? `${listId}-${active}` : undefined}
+          onChange={(e) => { setQ(e.target.value); setOpen(true) }}
+          onFocus={() => setOpen(true)}
+          onKeyDown={onKeyDown}
           placeholder="Tìm khóa học, giảng viên, kỹ năng…"
           className="input pl-12"
         />
+        {showList && (
+          <div className="absolute inset-x-0 top-full z-50 mt-2 max-h-[min(70svh,480px)] overflow-y-auto rounded-(--radius-card) bg-white py-2 shadow-xl ring-1 ring-line">
+            <ul id={listId} role="listbox" aria-label="Gợi ý tìm kiếm">
+              {items.map((it, i) => (
+                <li key={it.key} role="presentation">
+                  {(i === 0 || items[i - 1].group !== it.group) && (
+                    <p className="px-4 pt-2 pb-1 text-xs font-semibold tracking-wide text-ink-muted uppercase" aria-hidden="true">{it.group}</p>
+                  )}
+                  <div id={`${listId}-${i}`} role="option" aria-selected={i === active}
+                    onMouseDown={(e) => e.preventDefault()} onClick={() => go(it.to)} onMouseEnter={() => setActive(i)}
+                    className={`flex cursor-pointer items-center gap-3 px-4 py-2 ${i === active ? 'bg-brand-50' : ''}`}>
+                    {it.group !== 'Danh mục' && (
+                      it.image
+                        ? <img src={it.image} alt="" className={`size-10 shrink-0 object-cover ${it.round ? 'rounded-full' : 'rounded-lg'}`} loading="lazy" />
+                        : <span className={`flex size-10 shrink-0 items-center justify-center bg-surface-2 text-ink-muted ${it.round ? 'rounded-full' : 'rounded-lg'}`}><BookOpen className="size-4" aria-hidden="true" /></span>
+                    )}
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate font-medium">{it.label}</span>
+                      {it.sub && <span className="block truncate text-sm text-ink-soft">{it.sub}</span>}
+                    </span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+            {loading && items.length === 0 && <p className="flex items-center gap-2 px-4 py-3 text-sm text-ink-soft"><Spinner className="size-4" />Đang tìm…</p>}
+            {!loading && items.length === 0 && <p className="px-4 py-3 text-sm text-ink-soft">Không có gợi ý phù hợp.</p>}
+            <button type="submit" onMouseDown={(e) => e.preventDefault()}
+              className="mt-1 flex w-full items-center gap-2 border-t border-line px-4 pt-3 pb-1 text-left text-sm font-semibold text-brand-700 hover:underline">
+              <Search className="size-4" aria-hidden="true" />Xem tất cả kết quả cho “{q.trim()}”
+            </button>
+          </div>
+        )}
       </div>
       <button type="submit" className="btn-primary min-h-12 px-6">Tìm kiếm</button>
     </form>
