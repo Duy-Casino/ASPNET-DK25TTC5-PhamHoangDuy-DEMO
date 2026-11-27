@@ -13,6 +13,9 @@ public class AppUser : IdentityUser<Guid>
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
 
+    /// <summary>Người dùng tắt email nhắc nhở (nhắc học, nhắc giỏ hàng). Mặc định false = vẫn nhận.</summary>
+    public bool ReminderEmailsDisabled { get; set; }
+
     // ---------- Hồ sơ giảng viên ----------
     /// <summary>Số năm kinh nghiệm làm nghề/giảng dạy do giảng viên khai.</summary>
     public int? YearsOfExperience { get; set; }

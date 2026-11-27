@@ -49,6 +49,9 @@ public interface IAppDbContext
     DbSet<Bundle> Bundles { get; }
     DbSet<BundleCourse> BundleCourses { get; }
     DbSet<CourseGift> CourseGifts { get; }
+    DbSet<LessonQuestion> LessonQuestions { get; }
+    DbSet<LessonAnswer> LessonAnswers { get; }
+    DbSet<LessonNote> LessonNotes { get; }
 
     DatabaseFacade Database { get; }
 

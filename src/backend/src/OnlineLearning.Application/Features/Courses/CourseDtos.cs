@@ -151,7 +151,8 @@ public sealed class SaveCourseRequestValidator : AbstractValidator<SaveCourseReq
     internal static bool BeHttpsOrNull(string? url) =>
         string.IsNullOrWhiteSpace(url) ||
         (url.Length <= 500 && ((Uri.TryCreate(url, UriKind.Absolute, out var u) && u.Scheme == Uri.UriSchemeHttps)
-                               || ((url.StartsWith("/uploads/", StringComparison.Ordinal) || url.StartsWith("/avatars/demo/", StringComparison.Ordinal))
+                               || ((url.StartsWith("/uploads/", StringComparison.Ordinal) || url.StartsWith("/avatars/demo/", StringComparison.Ordinal)
+                                    || url.StartsWith("/videos/demo/", StringComparison.Ordinal))
                                    && !url.Contains("..", StringComparison.Ordinal))));
 }
 

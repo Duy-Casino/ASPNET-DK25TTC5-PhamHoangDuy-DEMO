@@ -6,20 +6,22 @@
 | Sinh viên | Phạm Hoàng Duy, MSSV 170125375, lớp DK25TTC5 |
 | Thời gian | **Thứ Năm 26/11/2026 – Thứ Tư 02/12/2026** |
 | Trạng thái | Đang thực hiện (cập nhật ngày 27/11/2026) |
-| Commit trong tuần | Nhóm tính năng tăng doanh số (27/11) |
+| Commit trong tuần | `93b7c29` Tăng doanh số (27/11); tiện ích người học (27/11) |
 
 ## 1. Tóm tắt tuần
 
 - Hoàn thành **nhóm 2: tăng doanh số** gồm 6 tính năng: yêu thích, gợi ý khóa học, flash sale, combo, mua tặng, email nhắc giỏ hàng.
 - CSDL thêm 4 bảng (`WishlistItems`, `Bundles`, `BundleCourses`, `CourseGifts`) và 4 cột (`Courses.DiscountEndsAt`, `Carts.ReminderSentAt`, `Orders.BundleId`, `Orders.IsGift`); tổng **48 bảng**, migration thứ 6 `SalesGrowth` kèm script SQL Server.
-- Kiểm thử: **backend 61/61, E2E 28/28** đạt (thêm 6 test backend và 1 kịch bản E2E).
+- Rà soát trải nghiệm người học: phát hiện **video bài học mẫu không phát được** (máy chủ ngoài trả 403, trang chỉ hiện khung đen). Đã đóng gói video mẫu cùng Frontend và thêm thông báo lỗi kèm nút tải lại.
+- Thêm **tiện ích người học**: hỏi đáp theo từng bài học, ghi chú gắn mốc thời gian video, email nhắc học khi bỏ dở, tùy chọn tắt email nhắc nhở. CSDL thêm 3 bảng (51 bảng), migration thứ 7 `LearnerTools`.
+- Kiểm thử: **backend 65/65, E2E 29/29** đạt.
 
 | Chỉ số | Cuối tuần 03 | Hiện tại (27/11) |
 | --- | --- | --- |
-| Test backend | 55 | 61 |
-| Kịch bản E2E | 27 | 28 |
-| Bảng dữ liệu | 44 | 48 |
-| Migration CSDL | 5 | 6 (thêm `SalesGrowth`) |
+| Test backend | 55 | 65 |
+| Kịch bản E2E | 27 | 29 |
+| Bảng dữ liệu | 44 | 51 |
+| Migration CSDL | 5 | 7 (thêm `SalesGrowth`, `LearnerTools`) |
 
 ## 2. Công việc theo ngày
 
@@ -38,6 +40,16 @@
 | Combo | Admin tạo combo 2–10 khóa đang xuất bản, giá thấp hơn tổng giá gốc. Giá combo được chia cho từng khóa theo tỷ lệ giá gốc nên mã giảm giá, điểm thưởng, thu nhập giảng viên, hoàn tiền vẫn tính đúng. Combo chỉ bán trọn bộ; combo đã có đơn không xóa được, chỉ ẩn |
 | Mua tặng | Ở trang thanh toán chọn "Mua tặng người khác", nhập email, tên, lời nhắn. Người mua không được ghi danh. Thanh toán xong, người nhận nhận email có liên kết `/qua-tang/:mã`; phải đăng nhập bằng đúng email được tặng mới nhận được. Hoàn tiền đơn quà đã nhận thì thu hồi quyền học của người nhận |
 | Nhắc giỏ hàng | Công việc nền chạy mỗi giờ: giỏ có khóa học thêm vào quá 24 giờ chưa thanh toán thì gửi email liệt kê khóa học (báo nếu flash sale sắp kết thúc). Mỗi lần giỏ thay đổi chỉ nhắc một lần. Cấu hình mục `CartReminder` |
+
+### Tiện ích người học
+
+| Chức năng | Mô tả |
+| --- | --- |
+| Sửa video bài học | Video mẫu cũ trỏ tới bucket công khai của Google, nay bị chặn (403). Thay bằng video mẫu tự tạo (40 giây, 240 KB) đóng gói trong `public/videos/demo`; DB demo cũ tự chuyển đường dẫn khi khởi động. Video lỗi thì trình học hiện thông báo và nút "Tải lại video" (lấy lại liên kết có chữ ký) |
+| Hỏi đáp theo bài học | Tab "Hỏi đáp" dưới video: học viên đã ghi danh, giảng viên của khóa và Admin cùng xem, cùng trả lời; câu trả lời của giảng viên có nhãn "Giảng viên"; người hỏi hoặc giảng viên đánh dấu "Đã giải đáp". Giảng viên nhận thông báo khi có câu hỏi, học viên nhận thông báo khi có trả lời. Trang `/giang-day/hoi-dap` gom câu hỏi chưa trả lời |
+| Ghi chú theo mốc thời gian | Tab "Ghi chú": ghi chú riêng tư, tự gắn giây hiện tại của video; bấm mốc thời gian để tua tới đúng đoạn; sửa, xóa; sắp xếp theo thời gian video |
+| Nhắc học | Công việc nền mỗi 6 giờ: khóa học đang dở mà học viên không vào học 7 ngày thì gửi một email (gom các khóa) kèm thông báo "Học tiếp nhé!"; mỗi đợt bỏ dở nhắc một lần, quay lại học rồi bỏ dở tiếp mới nhắc lại |
+| Tắt email nhắc nhở | Hồ sơ cá nhân có công tắc "Nhận email nhắc nhở" áp dụng cho nhắc học và nhắc giỏ hàng; email giao dịch vẫn gửi |
 
 ## 4. Các điều chỉnh trong tuần
 
@@ -59,12 +71,13 @@
 ## 6. Đánh giá so với kế hoạch
 
 - **Đã xong:** nhóm 2 (tăng doanh số) gồm 6 tính năng đã đề xuất.
-- **Chưa xong:** cập nhật báo cáo đồ án và slide với chức năng nhóm 1 và nhóm 2; chạy thử trên SQL Server thật.
+- **Đã xong thêm:** sửa video bài học, nhóm tiện ích người học mức ưu tiên cao (hỏi đáp, ghi chú, nhắc học).
+- **Chưa xong:** tiện ích mức trung bình (phụ đề, nút tốc độ và phím tắt trình phát, ôn lại câu sai, tìm bài trong mục lục); cập nhật báo cáo đồ án và slide; chạy thử trên SQL Server thật.
 
 ## 7. Kế hoạch còn lại của tuần
 
 | Việc | Đầu ra |
 | --- | --- |
 | Bổ sung chức năng nhóm 1 và nhóm 2 vào báo cáo đồ án (chương 2, 3) và slide | `thesis/doc`, `thesis/pdf`, `thesis/abs` |
-| Thử chạy 6 script SQL trên SQL Server thật | Ghi kết quả vào báo cáo kiểm thử |
+| Thử chạy 7 script SQL trên SQL Server thật | Ghi kết quả vào báo cáo kiểm thử |
 | Chốt báo cáo tuần 04 vào 02/12 | Cập nhật tệp này |

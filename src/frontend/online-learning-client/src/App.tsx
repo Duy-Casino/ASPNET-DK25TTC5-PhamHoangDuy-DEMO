@@ -68,6 +68,7 @@ const BundleDetailPage = lazy(() => growth().then((m) => ({ default: m.BundleDet
 const GiftRedeemPage = lazy(() => growth().then((m) => ({ default: m.GiftRedeemPage })))
 const WishlistPage = lazy(() => growth().then((m) => ({ default: m.WishlistPage })))
 const AdminBundlesPage = lazy(() => import('./pages/admin/AdminBundlesPage'))
+const InstructorQuestionsPage = lazy(() => import('./pages/instructor/InstructorQuestionsPage').then((m) => ({ default: m.InstructorQuestionsPage })))
 const InstructorEarningsPage = lazy(() => import('./pages/instructor/InstructorEarningsPage').then((m) => ({ default: m.InstructorEarningsPage })))
 
 function PageLoader() {
@@ -136,6 +137,7 @@ export default function App() {
           <Route path="khoa-hoc/:id" element={<CourseEditorPage />} />
           <Route path="hoc-vien" element={<InstructorStudentsPage />} />
           <Route path="doanh-thu" element={<InstructorEarningsPage />} />
+          <Route path="hoi-dap" element={<InstructorQuestionsPage />} />
           <Route path="danh-gia" element={<InstructorReviewsPage />} />
           <Route path="ho-so" element={<InstructorProfilePage />} />
           <Route path="tin-nhan" element={<MessagesPage area="instructor" />} />

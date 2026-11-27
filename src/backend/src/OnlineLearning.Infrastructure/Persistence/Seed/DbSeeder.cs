@@ -73,6 +73,13 @@ public static class DbSeeder
 
         await SeedInstructorAvatarsAsync(db, ct);
 
+        // Video mẫu cũ (máy chủ ngoài đã chặn) → video mẫu đóng gói cùng Frontend
+        var moved = await db.Lessons.Where(l => l.VideoUrl == SampleData.LegacySampleVideo)
+            .ExecuteUpdateAsync(s => s.SetProperty(l => l.VideoUrl, SampleData.SampleVideo), ct);
+        moved += await db.Courses.Where(c => c.PreviewVideoUrl == SampleData.LegacySampleVideo)
+            .ExecuteUpdateAsync(s => s.SetProperty(c => c.PreviewVideoUrl, SampleData.SampleVideo), ct);
+        if (moved > 0) logger.LogInformation("Đã chuyển {Count} video mẫu sang /videos/demo.", moved);
+
         if (!await db.Bundles.AnyAsync(ct) && await db.Courses.AnyAsync(ct))
         {
             await SeedBundlesAndFlashSaleAsync(db, ct);

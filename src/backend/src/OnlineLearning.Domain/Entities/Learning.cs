@@ -23,6 +23,8 @@ public class Enrollment : BaseEntity
     public DateTime EnrolledAt { get; set; }
     public DateTime? LastAccessedAt { get; set; }
     public DateTime? CompletedAt { get; set; }
+    /// <summary>Lần gửi nhắc học gần nhất; nhắc lại chỉ khi học viên đã vào học sau thời điểm này rồi lại bỏ dở.</summary>
+    public DateTime? StudyReminderSentAt { get; set; }
 
     public ICollection<LessonProgress> LessonProgresses { get; set; } = [];
     public Certificate? Certificate { get; set; }

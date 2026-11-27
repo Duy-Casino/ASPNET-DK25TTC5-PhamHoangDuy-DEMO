@@ -5,7 +5,7 @@ Thư mục này chứa những gì cần để cài đặt EduViet trên một m
 | Thành phần | Nội dung |
 | --- | --- |
 | [`run-demo.ps1`](run-demo.ps1) | Script PowerShell: kiểm tra công cụ, đặt bí mật lần đầu, cài gói npm, mở API và web trong hai cửa sổ |
-| [`database/`](database/) | Script SQL Server: `full-schema.sql` (toàn bộ 48 bảng, sinh từ 6 migration), script migration từng bước (idempotent) và `schema.sql` (bản thiết kế ban đầu có chú thích) |
+| [`database/`](database/) | Script SQL Server: `full-schema.sql` (toàn bộ 51 bảng, sinh từ 7 migration), script migration từng bước (idempotent) và `schema.sql` (bản thiết kế ban đầu có chú thích) |
 | [`test-data/`](test-data/) | Mô tả dữ liệu thử: tài khoản, khóa học, mã giảm giá, và cách tạo lại dữ liệu khớp với kết quả báo cáo |
 
 Ứng dụng là website (API + giao diện web), không có tệp cài đặt `.exe`. Bộ cài .NET SDK, Node.js và SQL Server không lưu trong repository vì dung lượng lớn và có giấy phép riêng. Liên kết tải chính thức nằm ở [`../soft/`](../soft/README.md).
@@ -74,8 +74,9 @@ Chọn một trong hai cách tạo CSDL `OnlineLearningDb`:
   4. `database/migration-CheckoutPoints.sql`
   5. `database/migration-InstructorPayouts.sql` (thu nhập, rút tiền của giảng viên; yêu cầu hoàn tiền)
   6. `database/migration-SalesGrowth.sql` (yêu thích, combo, quà tặng; hạn flash sale, nhắc giỏ hàng)
+  7. `database/migration-LearnerTools.sql` (hỏi đáp theo bài, ghi chú, nhắc học, tắt email nhắc nhở)
 
-  Các script migration đều idempotent, chạy lại không gây lỗi. Hoặc chạy một lần `database/full-schema.sql` trên CSDL trống để tạo đủ 48 bảng. `database/schema.sql` là bản thiết kế ban đầu (giai đoạn 1) có chú thích, dùng để đọc.
+  Các script migration đều idempotent, chạy lại không gây lỗi. Hoặc chạy một lần `database/full-schema.sql` trên CSDL trống để tạo đủ 51 bảng. `database/schema.sql` là bản thiết kế ban đầu (giai đoạn 1) có chú thích, dùng để đọc.
 
 Sau đó đặt chuỗi kết nối và chạy API:
 
@@ -93,8 +94,8 @@ dotnet run
 | <http://localhost:5080/api/health> | `{"status":"ok", ...}` |
 | <http://localhost:5080/swagger> | Trang Swagger liệt kê các endpoint |
 | <http://localhost:5173> | Trang chủ có danh sách khóa học |
-| `cd src\backend; dotnet test` | 61/61 test đạt |
-| `cd src\frontend\online-learning-client; $env:E2E_CHANNEL="chrome"; npm run test:e2e` | 28/28 kịch bản đạt |
+| `cd src\backend; dotnet test` | 65/65 test đạt |
+| `cd src\frontend\online-learning-client; $env:E2E_CHANNEL="chrome"; npm run test:e2e` | 29/29 kịch bản đạt |
 
 ## 5. Lỗi thường gặp
 

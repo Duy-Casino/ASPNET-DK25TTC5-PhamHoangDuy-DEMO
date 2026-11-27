@@ -52,6 +52,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<Bundle> Bundles => Set<Bundle>();
     public DbSet<BundleCourse> BundleCourses => Set<BundleCourse>();
     public DbSet<CourseGift> CourseGifts => Set<CourseGift>();
+    public DbSet<LessonQuestion> LessonQuestions => Set<LessonQuestion>();
+    public DbSet<LessonAnswer> LessonAnswers => Set<LessonAnswer>();
+    public DbSet<LessonNote> LessonNotes => Set<LessonNote>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

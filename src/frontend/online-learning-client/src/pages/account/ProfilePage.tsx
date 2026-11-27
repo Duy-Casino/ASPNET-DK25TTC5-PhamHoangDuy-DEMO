@@ -8,6 +8,9 @@ import { useAuth } from '../../hooks/useAuth'
 import { accountService } from '../../services/api'
 import { getErrorMessage, getFieldErrors } from '../../services/apiClient'
 import { formatDate } from '../../utils/format'
+import { Toggle } from '../../components/dashboard'
+import { useAsync } from '../../hooks/useAsync'
+import { reminderSettingsService } from '../../services/learnerApi'
 import { PASSWORD_HINT, validatePassword } from '../auth/RegisterPage'
 
 const roleLabel: Record<string, string> = { Admin: 'Quản trị viên', Instructor: 'Giảng viên', Student: 'Học viên' }
@@ -31,7 +34,10 @@ export default function ProfilePage() {
       </div>
       <div className="mt-12 grid gap-12 lg:grid-cols-2">
         <ProfileForm />
-        <PasswordForm />
+        <div className="flex flex-col gap-12">
+          <PasswordForm />
+          <ReminderSettings />
+        </div>
       </div>
     </div>
   )
@@ -133,6 +139,32 @@ function PasswordForm() {
           onChange={(e) => setForm((f) => ({ ...f, confirm: e.target.value }))} error={errors.confirm} />
         <button type="submit" className="btn-primary w-fit" disabled={saving}>{saving && <Spinner className="size-4" />}Đổi mật khẩu</button>
       </form>
+    </section>
+  )
+}
+
+/** Bật/tắt email nhắc nhở: nhắc học khi bỏ dở khóa học, nhắc giỏ hàng chưa thanh toán. */
+function ReminderSettings() {
+  const { data, setData } = useAsync(() => reminderSettingsService.get(), [])
+  const [saving, setSaving] = useState(false)
+  const change = async (enabled: boolean) => {
+    setSaving(true)
+    try {
+      setData(await reminderSettingsService.set(enabled))
+      toast.success(enabled ? 'Đã bật email nhắc nhở' : 'Đã tắt email nhắc nhở')
+    } catch (err) {
+      toast.error(getErrorMessage(err))
+    } finally {
+      setSaving(false)
+    }
+  }
+  return (
+    <section aria-labelledby="remind-h" className="rounded-(--radius-card) bg-surface-2 p-6 sm:p-10">
+      <h2 id="remind-h" className="text-2xl font-semibold">Email nhắc nhở</h2>
+      <p className="mt-2 text-ink-soft">Nhắc bạn quay lại khi bỏ dở khóa học 7 ngày, và nhắc khóa học còn trong giỏ hàng. Email giao dịch (thanh toán, hoàn tiền) vẫn được gửi.</p>
+      <div className="mt-6">
+        {data ? <fieldset disabled={saving}><Toggle checked={data.reminderEmailsEnabled} onChange={change} label="Nhận email nhắc nhở" /></fieldset> : <Spinner className="size-5" />}
+      </div>
     </section>
   )
 }

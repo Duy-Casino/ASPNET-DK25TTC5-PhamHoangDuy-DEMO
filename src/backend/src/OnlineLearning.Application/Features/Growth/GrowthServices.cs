@@ -430,7 +430,7 @@ public sealed class CartReminderService(
         var cutoff = now.AddHours(-Math.Max(1, options.Value.DelayHours));
 
         var due = await db.Carts
-            .Where(c => c.Items.Any() && c.User.IsActive && c.User.Email != null)
+            .Where(c => c.Items.Any() && c.User.IsActive && !c.User.ReminderEmailsDisabled && c.User.Email != null)
             .Select(c => new { c.Id, c.UserId, c.ReminderSentAt, Last = c.Items.Max(i => i.AddedAt) })
             .Where(c => c.Last <= cutoff && (c.ReminderSentAt == null || c.ReminderSentAt < c.Last))
             .Take(200)
@@ -476,7 +476,7 @@ public sealed class CartReminderService(
             sb.Append($"<li><a href=\"{client}/khoa-hoc/{i.Course.Slug}\">{E(i.Course.Title)}</a> · {price.ToString("#,0", Vi)}đ{sale}</li>");
         }
         sb.Append($"</ul><p><a href=\"{client}/gio-hang\">Hoàn tất thanh toán</a></p>");
-        sb.Append("<p style=\"color:#64748b;font-size:12px\">Bạn nhận email này vì có khóa học trong giỏ hàng EduViet. Xóa khóa học khỏi giỏ để không nhận nhắc nữa.</p>");
+        sb.Append($"<p style=\"color:#64748b;font-size:12px\">Bạn nhận email này vì có khóa học trong giỏ hàng EduViet. Tắt email nhắc nhở tại <a href=\"{client}/tai-khoan\">Hồ sơ cá nhân</a>.</p>");
         return sb.ToString();
     }
 }

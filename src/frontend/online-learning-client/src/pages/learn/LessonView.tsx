@@ -1,13 +1,21 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import DOMPurify from 'dompurify'
-import { CheckCircle2, ChevronLeft, ChevronRight, Download } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, ChevronLeft, ChevronRight, Download } from 'lucide-react'
 import { toast } from 'sonner'
 import { ErrorState, Skeleton, Spinner } from '../../components/ui'
 import { useAsync } from '../../hooks/useAsync'
 import { learningService } from '../../services/dashboardApi'
 import { getErrorMessage } from '../../services/apiClient'
 import { useLearn } from './LearnPage'
+import { LessonNotes, LessonQA } from './LessonTools'
+
+const tabs = [
+  { key: 'tong-quan', label: 'Tổng quan' },
+  { key: 'hoi-dap', label: 'Hỏi đáp' },
+  { key: 'ghi-chu', label: 'Ghi chú' },
+] as const
+type TabKey = (typeof tabs)[number]['key']
 
 function formatSize(bytes: number) {
   if (bytes < 1024) return `${bytes} B`
@@ -23,6 +31,20 @@ export default function LessonView() {
   const videoRef = useRef<HTMLVideoElement>(null)
   const lastSaved = useRef(0)
   const [saving, setSaving] = useState(false)
+  const [videoError, setVideoError] = useState(false)
+  const [params, setParams] = useSearchParams()
+  const tab: TabKey = tabs.some((t) => t.key === params.get('tab')) ? (params.get('tab') as TabKey) : 'tong-quan'
+  const setTab = (t: TabKey) => setParams(t === 'tong-quan' ? {} : { tab: t }, { replace: true })
+
+  useEffect(() => setVideoError(false), [lessonId])
+
+  const seek = (seconds: number) => {
+    const v = videoRef.current
+    if (!v) return
+    v.currentTime = seconds
+    void v.play().catch(() => undefined)
+    v.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }
 
   // Lưu vị trí xem video mỗi 15 giây, khi tạm dừng và khi rời trang
   useEffect(() => {
@@ -71,8 +93,17 @@ export default function LessonView() {
   return (
     <article>
       {lesson.type === 'Video' && lesson.videoUrl && (
-        <div className="bg-black">
+        <div className="relative bg-black">
+          {videoError && (
+            <div className="absolute inset-0 z-[1] flex flex-col items-center justify-center gap-3 bg-ink/90 p-6 text-center text-white" role="alert">
+              <AlertTriangle className="size-10 text-sun-300" aria-hidden="true" />
+              <p className="max-w-md font-semibold">Không phát được video. Có thể kết nối mạng chập chờn hoặc liên kết video đã hết hạn.</p>
+              <button type="button" className="btn-primary" onClick={() => { setVideoError(false); reload() }}>Tải lại video</button>
+              <p className="text-sm text-white/70">Nếu vẫn lỗi, hãy đặt câu hỏi ở mục "Hỏi đáp" để giảng viên kiểm tra.</p>
+            </div>
+          )}
           <video
+            onError={() => setVideoError(true)}
             key={lesson.id}
             ref={videoRef}
             src={lesson.videoUrl}
@@ -107,14 +138,31 @@ export default function LessonView() {
           )}
         </div>
 
-        {lesson.content && (
+        <div className="mt-8 flex gap-1 border-b border-line" role="tablist" aria-label="Nội dung bài học">
+          {tabs.map((t) => (
+            <button key={t.key} type="button" role="tab" aria-selected={tab === t.key} onClick={() => setTab(t.key)}
+              className={`-mb-px border-b-2 px-4 py-2 font-semibold transition-colors ${tab === t.key ? 'border-brand-600 text-brand-700' : 'border-transparent text-ink-soft hover:text-ink'}`}>
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        {tab === 'hoi-dap' && <div className="mt-6"><LessonQA lessonId={lesson.id} readOnly={false} /></div>}
+        {tab === 'ghi-chu' && (
+          <div className="mt-6">
+            <LessonNotes lessonId={lesson.id} hasVideo={lesson.type === 'Video' && !!lesson.videoUrl}
+              getTime={() => (videoRef.current ? videoRef.current.currentTime : null)} seek={seek} />
+          </div>
+        )}
+
+        {tab === 'tong-quan' && lesson.content && (
           <div
             className="mt-8 max-w-[70ch] space-y-4 text-lg leading-relaxed [&_a]:text-brand-700 [&_a]:underline [&_h2]:text-2xl [&_h2]:font-bold [&_li]:ml-6 [&_ol]:list-decimal [&_ul]:list-disc"
             dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(lesson.content) }}
           />
         )}
 
-        {lesson.resources.length > 0 && (
+        {tab === 'tong-quan' && lesson.resources.length > 0 && (
           <section className="mt-10" aria-labelledby="res-h">
             <h2 id="res-h" className="text-xl font-bold">Tài liệu</h2>
             <ul className="mt-4 flex flex-col gap-2">

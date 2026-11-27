@@ -270,6 +270,9 @@ namespace OnlineLearning.Infrastructure.Persistence.Migrations
                     b.Property<bool>("PhoneNumberConfirmed")
                         .HasColumnType("bit");
 
+                    b.Property<bool>("ReminderEmailsDisabled")
+                        .HasColumnType("bit");
+
                     b.Property<string>("SecurityStamp")
                         .HasColumnType("nvarchar(max)");
 
@@ -1075,6 +1078,9 @@ namespace OnlineLearning.Infrastructure.Persistence.Migrations
                         .HasColumnType("nvarchar(20)")
                         .HasDefaultValue("Active");
 
+                    b.Property<DateTime?>("StudyReminderSentAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<Guid>("UserId")
                         .HasColumnType("uniqueidentifier");
 
@@ -1349,6 +1355,84 @@ namespace OnlineLearning.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("OnlineLearning.Domain.Entities.LessonAnswer", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsInstructor")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("QuestionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("QuestionId", "CreatedAt");
+
+                    b.ToTable("LessonAnswers", (string)null);
+                });
+
+            modelBuilder.Entity("OnlineLearning.Domain.Entities.LessonNote", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<Guid>("CourseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("LessonId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int?>("PositionSeconds")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LessonId");
+
+                    b.HasIndex("UserId", "CourseId");
+
+                    b.HasIndex("UserId", "LessonId");
+
+                    b.ToTable("LessonNotes", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_LessonNotes_Position", "[PositionSeconds] IS NULL OR [PositionSeconds] >= 0");
+                        });
+                });
+
             modelBuilder.Entity("OnlineLearning.Domain.Entities.LessonProgress", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1381,6 +1465,49 @@ namespace OnlineLearning.Infrastructure.Persistence.Migrations
                         .IsUnique();
 
                     b.ToTable("LessonProgress", (string)null);
+                });
+
+            modelBuilder.Entity("OnlineLearning.Domain.Entities.LessonQuestion", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<Guid>("CourseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsResolved")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("LastActivityAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("LessonId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("CourseId", "IsResolved");
+
+                    b.HasIndex("LessonId", "LastActivityAt");
+
+                    b.ToTable("LessonQuestions", (string)null);
                 });
 
             modelBuilder.Entity("OnlineLearning.Domain.Entities.LessonResource", b =>
@@ -2705,6 +2832,44 @@ namespace OnlineLearning.Infrastructure.Persistence.Migrations
                     b.Navigation("Section");
                 });
 
+            modelBuilder.Entity("OnlineLearning.Domain.Entities.LessonAnswer", b =>
+                {
+                    b.HasOne("OnlineLearning.Domain.Entities.LessonQuestion", "Question")
+                        .WithMany("Answers")
+                        .HasForeignKey("QuestionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("OnlineLearning.Domain.Entities.AppUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Question");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("OnlineLearning.Domain.Entities.LessonNote", b =>
+                {
+                    b.HasOne("OnlineLearning.Domain.Entities.Lesson", "Lesson")
+                        .WithMany()
+                        .HasForeignKey("LessonId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("OnlineLearning.Domain.Entities.AppUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Lesson");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("OnlineLearning.Domain.Entities.LessonProgress", b =>
                 {
                     b.HasOne("OnlineLearning.Domain.Entities.Enrollment", "Enrollment")
@@ -2722,6 +2887,25 @@ namespace OnlineLearning.Infrastructure.Persistence.Migrations
                     b.Navigation("Enrollment");
 
                     b.Navigation("Lesson");
+                });
+
+            modelBuilder.Entity("OnlineLearning.Domain.Entities.LessonQuestion", b =>
+                {
+                    b.HasOne("OnlineLearning.Domain.Entities.Lesson", "Lesson")
+                        .WithMany()
+                        .HasForeignKey("LessonId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("OnlineLearning.Domain.Entities.AppUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Lesson");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("OnlineLearning.Domain.Entities.LessonResource", b =>
@@ -3110,6 +3294,11 @@ namespace OnlineLearning.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("OnlineLearning.Domain.Entities.Lesson", b =>
                 {
                     b.Navigation("Resources");
+                });
+
+            modelBuilder.Entity("OnlineLearning.Domain.Entities.LessonQuestion", b =>
+                {
+                    b.Navigation("Answers");
                 });
 
             modelBuilder.Entity("OnlineLearning.Domain.Entities.Order", b =>

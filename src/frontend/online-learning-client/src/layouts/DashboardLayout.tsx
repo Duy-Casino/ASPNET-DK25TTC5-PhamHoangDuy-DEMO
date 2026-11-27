@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
-  Award, BarChart3, Gift, CreditCard, BookOpen, ClipboardList, FolderTree, IdCard, LayoutDashboard, LogOut, Menu, MessageSquare, MessagesSquare, Receipt, ShieldCheck, Tag, User, Users, X, type LucideIcon, Wallet, Banknote, RotateCcw, Heart, Layers,
+  Award, BarChart3, Gift, CreditCard, BookOpen, ClipboardList, FolderTree, IdCard, LayoutDashboard, LogOut, Menu, MessageSquare, MessagesSquare, Receipt, ShieldCheck, Tag, User, Users, X, type LucideIcon, Wallet, Banknote, RotateCcw, Heart, Layers, MessageCircleQuestion,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Avatar, Logo } from '../components/ui'
@@ -31,6 +31,7 @@ const areas: Record<'student' | 'instructor' | 'admin', { title: string; items: 
       { to: '/giang-day/khoa-hoc', label: 'Khóa học', icon: BookOpen },
       { to: '/giang-day/hoc-vien', label: 'Học viên', icon: Users },
       { to: '/giang-day/doanh-thu', label: 'Doanh thu', icon: Wallet },
+      { to: '/giang-day/hoi-dap', label: 'Hỏi đáp', icon: MessageCircleQuestion },
       { to: '/giang-day/danh-gia', label: 'Đánh giá', icon: MessageSquare },
       { to: '/giang-day/tin-nhan', label: 'Tin nhắn', icon: MessagesSquare, badge: 'messages' },
       { to: '/giang-day/ho-so', label: 'Hồ sơ giảng viên', icon: IdCard },

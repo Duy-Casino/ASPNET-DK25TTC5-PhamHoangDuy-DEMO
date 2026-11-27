@@ -5,7 +5,10 @@ namespace OnlineLearning.Infrastructure.Persistence.Seed;
 /// <summary>Dữ liệu demo (nội dung mẫu, có thể thay khi triển khai thật).</summary>
 internal static class SampleData
 {
-    public const string SampleVideo = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
+    /// <summary>Video bài giảng mẫu đóng gói cùng Frontend (public/videos/demo), không phụ thuộc máy chủ ngoài.</summary>
+    public const string SampleVideo = "/videos/demo/bai-giang-mau.mp4";
+    /// <summary>Đường dẫn mẫu cũ (bucket công khai của Google, nay trả 403) — DB demo cũ được chuyển sang <see cref="SampleVideo"/>.</summary>
+    public const string LegacySampleVideo = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
 
     public sealed record InstructorSeed(string Email, string FullName, string Headline, string Bio);
     public sealed record StudentSeed(string Email, string FullName);
